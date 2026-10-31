@@ -47,7 +47,7 @@ public class DamBuilderController3D : MonoBehaviour
 
         if (waterController == null)
         {
-            waterController = FindFirstObjectByType<WaterLevelController>();
+            waterController = FindAnyObjectByType<WaterLevelController>();
         }
 
         // Başlangıçta opsiyonel blok görsellerini kapat
@@ -61,6 +61,12 @@ public class DamBuilderController3D : MonoBehaviour
                 }
             }
         }
+    }
+
+    private void OnDestroy()
+    {
+        OnDamProgressUpdated = null;
+        OnDamFullyBuilt = null;
     }
 
     private void OnTriggerEnter(Collider other)
