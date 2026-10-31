@@ -17,9 +17,13 @@ public class DamBuilderController3D : MonoBehaviour
     [SerializeField] private WaterLevelController waterController;
     [SerializeField] private Transform[] blockVisuals; // Opsiyonel: Her 4 parçada bir aktifleşecek 5 hazır baraj bloğu objesi
 
-    [Header("Otomatik Dizilim Boyutları (Parçaları Barajda Göster)")]
+    [Header("Otomatik Dizilim ve Başlangıç Offseti (Spot Light'tan Ayırmak İçin)")]
+    [SerializeField] private Vector3 buildStartOffset = new Vector3(-5f, 0f, 0f); // Barajın Dam objesine göre başlayacağı offset (örn. 5 birim sol: X = -5)
     [SerializeField] private float blockSpacingX = 1.2f; // 5 bloğun yan yana (X ekseni) aralığı
     [SerializeField] private float itemLayerSpacingY = 0.25f; // Her bloktaki 4 parçanın üst üste (Y ekseni) aralığı
+
+    [Header("Su Üstü Görünürlük (Render Queue Katmanı)")]
+    [SerializeField] private int damRenderQueue = 2010; // Suyun (2005) baraj parçalarını kapatmaması için üst katman
 
     private int currentPlacedItems = 0;
     private int currentCompletedBlocks = 0;
@@ -50,6 +54,8 @@ public class DamBuilderController3D : MonoBehaviour
             waterController = FindAnyObjectByType<WaterLevelController>();
         }
 
+        ApplyRenderQueueToHierarchy(transform, damRenderQueue);
+
         // Başlangıçta opsiyonel blok görsellerini kapat
         if (blockVisuals != null)
         {
@@ -57,6 +63,7 @@ public class DamBuilderController3D : MonoBehaviour
             {
                 if (blockVisuals[i] != null)
                 {
+                    ApplyRenderQueueToHierarchy(blockVisuals[i], damRenderQueue);
                     blockVisuals[i].gameObject.SetActive(false);
                 }
             }
@@ -70,6 +77,16 @@ public class DamBuilderController3D : MonoBehaviour
     }
 
     private void OnTriggerEnter(Collider other)
+    {
+        TryPlaceCarriedItem(other);
+    }
+
+    private void OnTriggerStay(Collider other)
+    {
+        TryPlaceCarriedItem(other);
+    }
+
+    private void TryPlaceCarriedItem(Collider other)
     {
         if (IsDamCompleted) return;
 
@@ -91,15 +108,15 @@ public class DamBuilderController3D : MonoBehaviour
         int blockIndex = currentPlacedItems / itemsPerBlock; // 0..4 arası hangi blok
         int slotInBlock = currentPlacedItems % itemsPerBlock; // 0..3 arası blok içi sıra
 
-        // Parçayı 5x4'lük baraj ızgarasında kendi bloğuna ve katmanına hizala
-        float startX = -((totalBlocks - 1) * blockSpacingX) * 0.5f;
-        Vector3 slotLocalPos = new Vector3(
-            startX + (blockIndex * blockSpacingX),
+        // Parçayı buildStartOffset (örn. 5 birim sol) noktasından başlayarak 5x4 ızgarada hizala
+        Vector3 slotLocalPos = buildStartOffset + new Vector3(
+            blockIndex * blockSpacingX,
             slotInBlock * itemLayerSpacingY,
             0f
         );
 
         item.LockIntoDam(transform, slotLocalPos, Quaternion.identity);
+        ApplyRenderQueueToHierarchy(item.transform, damRenderQueue);
 
         currentPlacedItems++;
         int newCompletedBlocks = currentPlacedItems / itemsPerBlock;
@@ -132,6 +149,24 @@ public class DamBuilderController3D : MonoBehaviour
             if (winWhenDamCompleted && waterController != null)
             {
                 waterController.CompleteDamAndSaveRiver();
+            }
+        }
+    }
+
+    private void ApplyRenderQueueToHierarchy(Transform root, int queue)
+    {
+        if (root == null) return;
+
+        Renderer[] renderers = root.GetComponentsInChildren<Renderer>(true);
+        for (int i = 0; i < renderers.Length; i++)
+        {
+            Material[] mats = renderers[i].materials;
+            for (int m = 0; m < mats.Length; m++)
+            {
+                if (mats[m] != null)
+                {
+                    mats[m].renderQueue = queue;
+                }
             }
         }
     }

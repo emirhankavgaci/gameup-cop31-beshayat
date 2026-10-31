@@ -19,7 +19,7 @@ public class PlayerCarryController3D : MonoBehaviour
 
     [Header("Dinamik Etkileşim Promptu (HUD Text - Opsiyonel)")]
     [SerializeField] private TMP_Text interactionPromptText;
-    [SerializeField] private bool useTurkishPrompt = true;
+    [SerializeField] private bool useTurkishPrompt = false;
 
     private TrashPickup3D nearbyItem = null;
     private TrashPickup3D currentItem = null;
@@ -97,7 +97,7 @@ public class PlayerCarryController3D : MonoBehaviour
             interactionPromptText.text = useTurkishPrompt
                 ? $"[{buttonName} Basılı Tut] ({itemName} Al)"
                 : $"Hold [{buttonName}] (to Pick Up {itemName})";
-        } 
+        }
         else
         {
             if (interactionPromptText.gameObject.activeSelf)
