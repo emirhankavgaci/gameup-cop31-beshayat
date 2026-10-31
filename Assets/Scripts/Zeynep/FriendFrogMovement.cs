@@ -16,8 +16,12 @@ public class FriendFrogMovement : MonoBehaviour
 
     [Header("References")]
     [SerializeField] private FriendFrog friendFrog;
+    [SerializeField] private Animator animator;
 
     private Vector3 startingPosition;
+
+    private static readonly int IsMovingHash =
+        Animator.StringToHash("IsMoving");
 
     private void Awake()
     {
@@ -25,6 +29,12 @@ public class FriendFrogMovement : MonoBehaviour
 
         if (friendFrog == null)
             friendFrog = GetComponent<FriendFrog>();
+
+        if (animator == null)
+            animator = GetComponentInChildren<Animator>();
+
+        if (animator != null)
+            animator.applyRootMotion = false;
     }
 
     private void Start()
@@ -38,6 +48,9 @@ public class FriendFrogMovement : MonoBehaviour
         {
             if (friendFrog != null && !friendFrog.IsAlive)
                 yield break;
+
+            if (animator != null)
+                animator.SetBool(IsMovingHash, false);
 
             float waitTime = Random.Range(
                 minWaitTime,
@@ -66,7 +79,6 @@ public class FriendFrogMovement : MonoBehaviour
         Vector3 start = transform.position;
         Vector3 target = start + offset;
 
-        // Baþlangýç noktasýndan fazla uzaklaþmasýn.
         Vector3 fromOrigin = target - startingPosition;
         fromOrigin.y = 0f;
 
@@ -83,9 +95,14 @@ public class FriendFrogMovement : MonoBehaviour
         }
 
         Vector3 direction = target - start;
+        direction.y = 0f;
 
         if (direction.sqrMagnitude > 0.001f)
             transform.rotation = Quaternion.LookRotation(direction);
+
+        // Zýplama animasyonunu baþlat.
+        if (animator != null)
+            animator.SetBool(IsMovingHash, true);
 
         float elapsed = 0f;
 
@@ -112,5 +129,9 @@ public class FriendFrogMovement : MonoBehaviour
         }
 
         transform.position = target;
+
+        // Zýplama bitince bekleme animasyonuna dön.
+        if (animator != null)
+            animator.SetBool(IsMovingHash, false);
     }
 }

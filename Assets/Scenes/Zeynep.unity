@@ -528,6 +528,8 @@ GameObject:
   - component: {fileID: 557312017}
   - component: {fileID: 557312016}
   - component: {fileID: 557312021}
+  - component: {fileID: 557312023}
+  - component: {fileID: 557312022}
   m_Layer: 0
   m_Name: Friend_Frog_02
   m_TagString: Untagged
@@ -573,8 +575,6 @@ MonoBehaviour:
   friendName: 02
   frogSound: {fileID: 8300000, guid: 2f0ae54005ddbfb469d3936fdd2c3acd, type: 3}
   requiredFood: 1
-  healAmount: 20
-  heartEffect: {fileID: 0}
 --- !u!23 &557312018
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -745,6 +745,33 @@ AudioSource:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+--- !u!114 &557312022
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 557312015}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c93d6f748e46aaa4db4179a39983fbec, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::FrogFriendFeeder
+  interactionRange: 3
+--- !u!114 &557312023
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 557312015}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ba657b602395edf48988740f75bc6671, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::FrogFoodCollector
+  playerCamera: {fileID: 0}
+  catchRange: 5
 --- !u!1001 &575417875
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -812,7 +839,7 @@ PrefabInstance:
     - target: {fileID: 5866666021909216657, guid: a33bf03da2add274794afd39337f866e, type: 3}
       propertyPath: m_Controller
       value: 
-      objectReference: {fileID: 9100000, guid: 0e93751bbfa42de4693fc46ebcf0d59a, type: 2}
+      objectReference: {fileID: 9100000, guid: 2860e3ba92299264eb0c4c4239e62467, type: 2}
     - target: {fileID: 7851229863360657343, guid: a33bf03da2add274794afd39337f866e, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
@@ -900,6 +927,9 @@ GameObject:
   - component: {fileID: 682838353}
   - component: {fileID: 682838352}
   - component: {fileID: 682838357}
+  - component: {fileID: 682838360}
+  - component: {fileID: 682838361}
+  - component: {fileID: 682838362}
   m_Layer: 0
   m_Name: Frog
   m_TagString: Untagged
@@ -1083,6 +1113,133 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::FrogFoodCollector
   playerCamera: {fileID: 330585545}
   catchRange: 5
+--- !u!114 &682838360
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 682838351}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c93d6f748e46aaa4db4179a39983fbec, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::FrogFriendFeeder
+  interactionRange: 3
+--- !u!114 &682838361
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 682838351}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1c9656e51be7be74986248f7bb990bb3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::FrogCroak
+  croakKey: 101
+  croakCooldown: 15
+  healAmount: 10
+  pondHealthManager: {fileID: 699320408}
+  croakSound: {fileID: 8300000, guid: 2f0ae54005ddbfb469d3936fdd2c3acd, type: 3}
+--- !u!82 &682838362
+AudioSource:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 682838351}
+  m_Enabled: 1
+  serializedVersion: 4
+  OutputAudioMixerGroup: {fileID: 0}
+  m_audioClip: {fileID: 0}
+  m_Resource: {fileID: 0}
+  m_PlayOnAwake: 0
+  m_Volume: 1
+  m_Pitch: 1
+  Loop: 0
+  Mute: 0
+  Spatialize: 0
+  SpatializePostEffects: 0
+  Priority: 128
+  DopplerLevel: 1
+  MinDistance: 1
+  MaxDistance: 500
+  Pan2D: 0
+  rolloffMode: 0
+  BypassEffects: 0
+  BypassListenerEffects: 0
+  BypassReverbZones: 0
+  rolloffCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 1
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  panLevelCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  spreadCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  reverbZoneMixCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
 --- !u!1001 &696411114
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1150,7 +1307,7 @@ PrefabInstance:
     - target: {fileID: 5866666021909216657, guid: a33bf03da2add274794afd39337f866e, type: 3}
       propertyPath: m_Controller
       value: 
-      objectReference: {fileID: 9100000, guid: 0e93751bbfa42de4693fc46ebcf0d59a, type: 2}
+      objectReference: {fileID: 9100000, guid: 2860e3ba92299264eb0c4c4239e62467, type: 2}
     - target: {fileID: 7851229863360657343, guid: a33bf03da2add274794afd39337f866e, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
@@ -1165,6 +1322,68 @@ Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: a33bf03da2add274794afd39337f866e, type: 3}
   m_PrefabInstance: {fileID: 696411114}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &699320407
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 699320409}
+  - component: {fileID: 699320408}
+  - component: {fileID: 699320410}
+  m_Layer: 0
+  m_Name: PondManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &699320408
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 699320407}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6058c4685154e5c4083b72a94d5cf946, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PondHealthManager
+  startingHealth: 50
+  healthDecreasePerSecond: 0.5
+--- !u!4 &699320409
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 699320407}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -0.78695, y: 0, z: -3.90477}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &699320410
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 699320407}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 64316d808a0158f4b95486830eaf3d85, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::FrogGameUI
+  pondHealthManager: {fileID: 699320408}
+  frogCroak: {fileID: 682838361}
+  foodCollector: {fileID: 682838359}
 --- !u!1 &832575517
 GameObject:
   m_ObjectHideFlags: 0
@@ -1228,6 +1447,8 @@ GameObject:
   - component: {fileID: 930274132}
   - component: {fileID: 930274131}
   - component: {fileID: 930274136}
+  - component: {fileID: 930274138}
+  - component: {fileID: 930274137}
   m_Layer: 0
   m_Name: Friend_Frog_01
   m_TagString: Untagged
@@ -1273,8 +1494,6 @@ MonoBehaviour:
   friendName: 01
   frogSound: {fileID: 8300000, guid: 2f0ae54005ddbfb469d3936fdd2c3acd, type: 3}
   requiredFood: 1
-  healAmount: 20
-  heartEffect: {fileID: 0}
 --- !u!23 &930274133
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -1445,6 +1664,33 @@ AudioSource:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+--- !u!114 &930274137
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 930274130}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c93d6f748e46aaa4db4179a39983fbec, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::FrogFriendFeeder
+  interactionRange: 3
+--- !u!114 &930274138
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 930274130}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ba657b602395edf48988740f75bc6671, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::FrogFoodCollector
+  playerCamera: {fileID: 0}
+  catchRange: 5
 --- !u!1001 &1007093029
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1870,6 +2116,8 @@ GameObject:
   - component: {fileID: 1975349304}
   - component: {fileID: 1975349303}
   - component: {fileID: 1975349308}
+  - component: {fileID: 1975349310}
+  - component: {fileID: 1975349309}
   m_Layer: 0
   m_Name: Friend_Frog_03
   m_TagString: Untagged
@@ -1915,8 +2163,6 @@ MonoBehaviour:
   friendName: 03
   frogSound: {fileID: 8300000, guid: 2f0ae54005ddbfb469d3936fdd2c3acd, type: 3}
   requiredFood: 1
-  healAmount: 20
-  heartEffect: {fileID: 0}
 --- !u!23 &1975349305
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -2087,6 +2333,33 @@ AudioSource:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+--- !u!114 &1975349309
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1975349302}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c93d6f748e46aaa4db4179a39983fbec, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::FrogFriendFeeder
+  interactionRange: 3
+--- !u!114 &1975349310
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1975349302}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ba657b602395edf48988740f75bc6671, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::FrogFoodCollector
+  playerCamera: {fileID: 0}
+  catchRange: 5
 --- !u!1001 &1996786862
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -2211,7 +2484,7 @@ PrefabInstance:
     - target: {fileID: 5866666021909216657, guid: a33bf03da2add274794afd39337f866e, type: 3}
       propertyPath: m_Controller
       value: 
-      objectReference: {fileID: 9100000, guid: 0e93751bbfa42de4693fc46ebcf0d59a, type: 2}
+      objectReference: {fileID: 9100000, guid: 2860e3ba92299264eb0c4c4239e62467, type: 2}
     - target: {fileID: 7851229863360657343, guid: a33bf03da2add274794afd39337f866e, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
@@ -2303,3 +2576,4 @@ SceneRoots:
   - {fileID: 597816938}
   - {fileID: 1007093029}
   - {fileID: 1159854596}
+  - {fileID: 699320409}
