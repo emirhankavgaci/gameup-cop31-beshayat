@@ -51,21 +51,35 @@ public class FrogInteraction : MonoBehaviour
         }
     }
 
+
+    private GUIStyle interactionStyle;
+
     private void OnGUI()
     {
         if (nearestFriend == null)
             return;
 
+        if (interactionStyle == null)
+        {
+            interactionStyle = new GUIStyle(GUI.skin.label);
+            interactionStyle.fontSize = 26;
+            interactionStyle.fontStyle = FontStyle.Bold;
+            interactionStyle.alignment = TextAnchor.MiddleCenter;
+            interactionStyle.normal.textColor = Color.white;
+        }
+
         GUI.Label(
             new Rect(
-                Screen.width / 2f - 90f,
-                Screen.height - 100f,
-                220f,
-                30f
+                Screen.width / 2f - 200f,
+                Screen.height - 130f,
+                400f,
+                50f
             ),
-            $"[E] {nearestFriend.FriendName} ile etkileþim"
+            $"[E] {nearestFriend.FriendName} ile etkileþim",
+            interactionStyle
         );
     }
+
 
     private void OnDrawGizmosSelected()
     {
