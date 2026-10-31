@@ -734,6 +734,7 @@ GameObject:
   - component: {fileID: 682838355}
   - component: {fileID: 682838354}
   - component: {fileID: 682838358}
+  - component: {fileID: 682838359}
   - component: {fileID: 682838353}
   - component: {fileID: 682838352}
   - component: {fileID: 682838357}
@@ -900,6 +901,20 @@ MonoBehaviour:
   interactionLayers:
     serializedVersion: 2
     m_Bits: 4294967295
+--- !u!114 &682838359
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 682838351}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ba657b602395edf48988740f75bc6671, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::FrogFoodCollector
+  playerCamera: {fileID: 330585545}
+  catchRange: 5
 --- !u!1 &832575517
 GameObject:
   m_ObjectHideFlags: 0
@@ -1300,6 +1315,7 @@ GameObject:
   - component: {fileID: 1557471527}
   - component: {fileID: 1557471526}
   - component: {fileID: 1557471525}
+  - component: {fileID: 1557471528}
   - component: {fileID: 1557471524}
   m_Layer: 0
   m_Name: Fly_01
@@ -1401,6 +1417,19 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1557471528
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1557471523}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0896e954a680a4944bdaf7b22418afd2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Fly
+  foodValue: 1
 --- !u!1 &1975349302
 GameObject:
   m_ObjectHideFlags: 0
