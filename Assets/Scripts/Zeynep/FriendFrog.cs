@@ -13,6 +13,12 @@ public class FriendFrog : MonoBehaviour
     [Header("Feeding")]
     [SerializeField] private int requiredFood = 1;
 
+    [Header("Pond Restoration")]
+    [SerializeField] private float healAmount = 20f;
+
+    [Header("Effects")]
+    [SerializeField] private FriendFrogHeartEffect heartEffect;
+
     private AudioSource audioSource;
     private bool isAlive = true;
     private bool isFed = false;
@@ -26,6 +32,8 @@ public class FriendFrog : MonoBehaviour
         audioSource = GetComponent<AudioSource>();
         audioSource.playOnAwake = false;
         audioSource.spatialBlend = 1f;
+        if (heartEffect == null)
+            heartEffect = GetComponent<FriendFrogHeartEffect>();
     }
 
     public void Interact()
@@ -38,6 +46,7 @@ public class FriendFrog : MonoBehaviour
         if (frogSound != null)
             audioSource.PlayOneShot(frogSound);
     }
+
 
     public bool Feed(FrogFoodCollector collector)
     {
@@ -52,12 +61,25 @@ public class FriendFrog : MonoBehaviour
 
         isFed = true;
 
+        if (heartEffect != null)
+            heartEffect.Play();
+
         Debug.Log($"{friendName} beslendi ve mutlu oldu!");
 
+        // Arkadaþ kurbaða mutlu bir ses çýkarýr.
         Interact();
+
+        // Göletin saðlýðýný artýrýr.
+        PondHealthManager pond = FindFirstObjectByType<PondHealthManager>();
+
+        if (pond != null)
+            pond.Heal(healAmount);
+        else
+            Debug.LogWarning("PondHealthManager bulunamadý!");
 
         return true;
     }
+
 
     public void Die()
     {
