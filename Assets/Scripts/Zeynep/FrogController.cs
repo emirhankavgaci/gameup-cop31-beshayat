@@ -4,8 +4,10 @@ using UnityEngine;
 [RequireComponent(typeof(Rigidbody))]
 public class FrogController : MonoBehaviour
 {
-    [Header("Swimming")]
+    [Header("Movement")]
     [SerializeField] private float swimSpeed = 4f;
+    [SerializeField] private float rotationSpeed = 180f;
+    [SerializeField] private float backTurnSpeed = 360f;
 
     [Header("Dash")]
     [SerializeField] private float dashSpeed = 10f;
@@ -18,12 +20,18 @@ public class FrogController : MonoBehaviour
     [Header("Animation")]
     [SerializeField] private Animator animator;
 
+    [Header("Attack")]
+    [SerializeField] private Camera attackCamera;
+    [SerializeField] private float attackRotationSpeed = 360f;
+
     [Header("Debug")]
     [SerializeField] private bool enableDebugLogs = true;
 
     private Rigidbody rb;
 
-    private Vector3 movement;
+    private float moveInput;
+    private float turnInput;
+
     private Vector3 dashDirection;
 
     private float dashTimer;
@@ -32,21 +40,36 @@ public class FrogController : MonoBehaviour
     private bool isDashing;
     private bool isInMud;
 
+    private bool isTurningBack;
+    private float targetBackYaw;
+
+    private bool isTurningToFly;
+    private Quaternion flyTargetRotation;
+
     private static readonly int IsMovingHash =
         Animator.StringToHash("IsMoving");
 
     private static readonly int IsDashingHash =
         Animator.StringToHash("IsDashing");
 
+    private static readonly int AttackHash =
+        Animator.StringToHash("Attack");
+
     private void Awake()
     {
         rb = GetComponent<Rigidbody>();
 
         rb.useGravity = false;
-        rb.constraints = RigidbodyConstraints.FreezeRotation;
+
+        rb.constraints =
+            RigidbodyConstraints.FreezeRotationX |
+            RigidbodyConstraints.FreezeRotationZ;
 
         if (animator == null)
             animator = GetComponentInChildren<Animator>(true);
+
+        if (attackCamera == null)
+            attackCamera = Camera.main;
 
         if (animator == null)
         {
@@ -54,23 +77,10 @@ public class FrogController : MonoBehaviour
                 "FrogController: Animator bulunamadý!",
                 this
             );
-            return;
         }
-
-        animator.applyRootMotion = false;
-
-        if (enableDebugLogs)
+        else
         {
-            Debug.Log(
-                $"Animator bulundu: {animator.gameObject.name}",
-                this
-            );
-
-            Debug.Log(
-                $"Animator Controller: " +
-                $"{animator.runtimeAnimatorController?.name}",
-                this
-            );
+            animator.applyRootMotion = false;
         }
     }
 
@@ -78,25 +88,59 @@ public class FrogController : MonoBehaviour
     {
         HandleMovementInput();
         HandleDash();
+        HandleAttack();
         UpdateAnimator();
     }
 
     private void HandleMovementInput()
     {
-        float horizontal = Input.GetAxisRaw("Horizontal");
         float vertical = Input.GetAxisRaw("Vertical");
 
-        movement = new Vector3(
-            horizontal,
-            0f,
-            vertical
-        ).normalized;
+        // W ile ileri hareket.
+        moveInput = Mathf.Max(0f, vertical);
+
+        // A / D ile kendi etrafýnda dönüþ.
+        turnInput = Input.GetAxisRaw("Horizontal");
+
+        // S'ye ilk basýldýðýnda 180 derece dönüþ baþlat.
+        if (Input.GetKeyDown(KeyCode.S)
+            && !isTurningBack
+            && !isDashing)
+        {
+            StartBackTurn();
+        }
+
+        // Dönüþ sýrasýnda hareket etme.
+        if (isTurningBack)
+        {
+            moveInput = 0f;
+            turnInput = 0f;
+        }
+        // S basýlý tutuluyorsa dönüþten sonra ileri git.
+        else if (Input.GetKey(KeyCode.S))
+        {
+            moveInput = 1f;
+        }
+    }
+
+    private void StartBackTurn()
+    {
+        isTurningBack = true;
+
+        targetBackYaw =
+            rb.rotation.eulerAngles.y + 180f;
+
+        moveInput = 0f;
+        turnInput = 0f;
     }
 
     private void HandleDash()
     {
         if (cooldownTimer > 0f)
-            cooldownTimer -= Time.deltaTime;
+        {
+            cooldownTimer =
+                Mathf.Max(0f, cooldownTimer - Time.deltaTime);
+        }
 
         if (isDashing)
         {
@@ -108,8 +152,9 @@ public class FrogController : MonoBehaviour
 
         if (Input.GetKeyDown(KeyCode.LeftShift)
             && !isDashing
+            && !isTurningBack
             && cooldownTimer <= 0f
-            && movement != Vector3.zero)
+            && moveInput > 0f)
         {
             StartDash();
         }
@@ -117,11 +162,52 @@ public class FrogController : MonoBehaviour
 
     private void StartDash()
     {
-        dashDirection = movement;
+        dashDirection = transform.forward;
 
         isDashing = true;
         dashTimer = dashDuration;
         cooldownTimer = dashCooldown;
+    }
+
+    private void HandleAttack()
+    {
+        if (!Input.GetMouseButtonDown(0))
+            return;
+
+        if (attackCamera == null || isTurningBack)
+            return;
+
+        Ray ray = attackCamera.ScreenPointToRay(Input.mousePosition);
+
+        if (!Physics.Raycast(ray, out RaycastHit hit))
+            return;
+
+        if (!hit.collider.CompareTag("Fly"))
+            return;
+
+        Vector3 direction =
+            hit.collider.bounds.center - rb.position;
+
+        direction.y = 0f;
+
+        if (direction.sqrMagnitude > 0.001f)
+        {
+            flyTargetRotation =
+                Quaternion.LookRotation(direction.normalized);
+
+            isTurningToFly = true;
+        }
+
+        if (animator != null)
+            animator.SetTrigger(AttackHash);
+
+        if (enableDebugLogs)
+        {
+            Debug.Log(
+                $"Kurbaða sineðe saldýrdý: {hit.collider.name}",
+                this
+            );
+        }
     }
 
     private void UpdateAnimator()
@@ -130,27 +216,79 @@ public class FrogController : MonoBehaviour
             return;
 
         bool isMoving =
-            movement.sqrMagnitude > 0.01f || isDashing;
+            !isTurningBack &&
+            (moveInput > 0.01f || isDashing);
 
         animator.SetBool(IsMovingHash, isMoving);
         animator.SetBool(IsDashingHash, isDashing);
-
-        if (enableDebugLogs &&
-            Input.GetKeyDown(KeyCode.W))
-        {
-            Debug.Log(
-                $"Movement: {movement} | " +
-                $"Animator: {animator.gameObject.name} | " +
-                $"IsMoving: {animator.GetBool(IsMovingHash)}",
-                this
-            );
-        }
     }
 
     private void FixedUpdate()
     {
+        // S ile 180 derece dönüþ.
+        if (isTurningBack)
+        {
+            Quaternion targetRotation =
+                Quaternion.Euler(0f, targetBackYaw, 0f);
+
+            Quaternion newRotation =
+                Quaternion.RotateTowards(
+                    rb.rotation,
+                    targetRotation,
+                    backTurnSpeed * Time.fixedDeltaTime
+                );
+
+            rb.MoveRotation(newRotation);
+
+            if (Quaternion.Angle(newRotation, flyTargetRotation) < 0.5f)
+            {
+                isTurningToFly = false;
+            }
+        }
+
+        // Sineðe yumuþak dönüþ.
+        if (isTurningToFly)
+        {
+            // A/D veya Dash kullanýlýrsa sineðe dönüþü iptal et.
+            if (Mathf.Abs(turnInput) > 0.01f || isDashing)
+            {
+                isTurningToFly = false;
+            }
+            else
+            {
+                Quaternion newRotation =
+                    Quaternion.RotateTowards(
+                        rb.rotation,
+                        flyTargetRotation,
+                        attackRotationSpeed * Time.fixedDeltaTime
+                    );
+
+                rb.MoveRotation(newRotation);
+
+                if (Quaternion.Angle(newRotation, flyTargetRotation) < 0.5f)
+                {
+                    isTurningToFly = false;
+                }
+            }
+        }
+        // A / D ile kendi etrafýnda dön.
+        else if (!isDashing && Mathf.Abs(turnInput) > 0.01f)
+        {
+            float rotationAmount =
+                turnInput * rotationSpeed * Time.fixedDeltaTime;
+
+            Quaternion targetRotation =
+                rb.rotation *
+                Quaternion.Euler(0f, rotationAmount, 0f);
+
+            rb.MoveRotation(targetRotation);
+        }
+
+        // W veya S ile baktýðý yöne ilerle.
         Vector3 direction =
-            isDashing ? dashDirection : movement;
+            isDashing
+                ? dashDirection
+                : transform.forward * moveInput;
 
         float speed =
             isDashing ? dashSpeed : swimSpeed;
@@ -164,6 +302,7 @@ public class FrogController : MonoBehaviour
         );
     }
 
+
     private void OnTriggerEnter(Collider other)
     {
         if (other.CompareTag("Mud"))
@@ -171,7 +310,12 @@ public class FrogController : MonoBehaviour
             isInMud = true;
 
             if (enableDebugLogs)
-                Debug.Log("Kurbaða çamura girdi!", this);
+            {
+                Debug.Log(
+                    "Kurbaða çamura girdi!",
+                    this
+                );
+            }
         }
     }
 
@@ -182,7 +326,12 @@ public class FrogController : MonoBehaviour
             isInMud = false;
 
             if (enableDebugLogs)
-                Debug.Log("Kurbaða çamurdan çýktý!", this);
+            {
+                Debug.Log(
+                    "Kurbaða çamurdan çýktý!",
+                    this
+                );
+            }
         }
     }
 }
