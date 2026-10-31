@@ -12,6 +12,10 @@ PrefabInstance:
       propertyPath: m_IsTrigger
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 4331852997724656476, guid: a3c3d295d6ffcab4d97bba2048e4f6f5, type: 3}
+      propertyPath: debrisType
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 4708052782660666744, guid: a3c3d295d6ffcab4d97bba2048e4f6f5, type: 3}
       propertyPath: m_LocalPosition.x
       value: 520.05255

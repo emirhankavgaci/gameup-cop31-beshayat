@@ -6,7 +6,7 @@ using TMPro;
 
 /// <summary>
 /// Unity 6 (6000.x) uyumlu, Kazanma ("Korku Değil Ümit") ve Kaybetme (Nehir Kurudu) durumlarını,
-/// Su Miktarı Barını, 5x4 Baraj İlerleme Arayüzünü ve Sahne Yeniden Başlatmayı yöneten kontrolcü.
+/// Su Miktarı Barını, 5x4 Baraj İlerleme Arayüzünü, Köşe Kontrol Rehberini ve Sahne Yeniden Başlatmayı yöneten kontrolcü.
 /// </summary>
 public class GameOutcomeController3D : MonoBehaviour
 {
@@ -24,6 +24,11 @@ public class GameOutcomeController3D : MonoBehaviour
     [SerializeField] private Image waterBarFillImage;
     [SerializeField] private TMP_Text waterPercentText;
     [SerializeField] private TMP_Text damProgressText;
+    [SerializeField] private TMP_Text cornerControlsHintText; // Köşedeki sabit mini kontrol rehberi
+
+    [Header("Köşe Kontrol Rehberi Metni")]
+    [SerializeField] [TextArea(2, 4)] private string defaultControlsHint =
+        "WASD: Hareket  |  Shift: Koş  |  Space: Zıpla  |  Mouse: Bakış  |  Sol Tık (Basılı Tut): Nesne Taşı";
 
     [Header("Kısayol Ayarları")]
     [SerializeField] private bool allowRKeyToRestartOnEnd = true;
@@ -45,6 +50,11 @@ public class GameOutcomeController3D : MonoBehaviour
 
         if (winPanel != null) winPanel.SetActive(false);
         if (losePanel != null) losePanel.SetActive(false);
+
+        if (cornerControlsHintText != null && !string.IsNullOrEmpty(defaultControlsHint))
+        {
+            cornerControlsHintText.text = defaultControlsHint;
+        }
     }
 
     private void OnEnable()
