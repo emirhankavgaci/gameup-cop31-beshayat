@@ -223,6 +223,7 @@ public class FrogController : MonoBehaviour
         animator.SetBool(IsDashingHash, isDashing);
     }
 
+
     private void FixedUpdate()
     {
         // S ile 180 derece dönüþ.
@@ -240,16 +241,20 @@ public class FrogController : MonoBehaviour
 
             rb.MoveRotation(newRotation);
 
-            if (Quaternion.Angle(newRotation, flyTargetRotation) < 0.5f)
+            // Hedef dönüþ tamamlandý mý?
+            if (Quaternion.Angle(newRotation, targetRotation) < 0.5f)
             {
-                isTurningToFly = false;
+                rb.MoveRotation(targetRotation);
+                isTurningBack = false;
             }
+
+            // Dönüþ sýrasýnda hareket etmiyoruz.
+            return;
         }
 
         // Sineðe yumuþak dönüþ.
         if (isTurningToFly)
         {
-            // A/D veya Dash kullanýlýrsa sineðe dönüþü iptal et.
             if (Mathf.Abs(turnInput) > 0.01f || isDashing)
             {
                 isTurningToFly = false;
@@ -266,9 +271,7 @@ public class FrogController : MonoBehaviour
                 rb.MoveRotation(newRotation);
 
                 if (Quaternion.Angle(newRotation, flyTargetRotation) < 0.5f)
-                {
                     isTurningToFly = false;
-                }
             }
         }
         // A / D ile kendi etrafýnda dön.
@@ -301,6 +304,7 @@ public class FrogController : MonoBehaviour
             direction * speed * Time.fixedDeltaTime
         );
     }
+
 
 
     private void OnTriggerEnter(Collider other)
