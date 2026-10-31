@@ -8,6 +8,8 @@ public class FrogFoodCollector : MonoBehaviour
 
     private int foodCount;
 
+    public int FoodCount => foodCount;
+
     private void Awake()
     {
         if (playerCamera == null)
@@ -42,5 +44,16 @@ public class FrogFoodCollector : MonoBehaviour
     {
         foodCount += amount;
         Debug.Log($"Toplanan besin: {foodCount}");
+    }
+
+    public bool TrySpendFood(int amount)
+    {
+        if (amount <= 0 || foodCount < amount)
+            return false;
+
+        foodCount -= amount;
+
+        Debug.Log($"Kalan besin: {foodCount}");
+        return true;
     }
 }
