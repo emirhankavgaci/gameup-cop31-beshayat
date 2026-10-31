@@ -28,7 +28,7 @@ public class GameOutcomeController3D : MonoBehaviour
 
     [Header("Köşe Kontrol Rehberi Metni")]
     [SerializeField] [TextArea(2, 4)] private string defaultControlsHint =
-        "WASD: Hareket  |  Shift: Koş  |  Space: Zıpla  |  Mouse: Bakış  |  Sol Tık (Basılı Tut): Nesne Taşı";
+        "WASD: Movement  |  Shift: Run  |  Space: Jump  |  Mouse: Look Around  |  Left Mouse Button (Hold): Carry";
 
     [Header("Kısayol Ayarları")]
     [SerializeField] private bool allowRKeyToRestartOnEnd = true;
@@ -143,7 +143,7 @@ public class GameOutcomeController3D : MonoBehaviour
             waterBarSlider.value = waterBarSlider.maxValue > 1.5f ? ratio * 100f : ratio;
         }
 
-        if (waterBarFillImage != null && waterBarFillImage.gameObject != null)
+        if (waterBarFillImage != null && waterBarFillImage.gameObject != null)  
         {
             waterBarFillImage.fillAmount = ratio;
         }
@@ -151,7 +151,7 @@ public class GameOutcomeController3D : MonoBehaviour
         if (waterPercentText != null && waterPercentText.gameObject != null)
         {
             int percent = Mathf.RoundToInt(ratio * 100f);
-            waterPercentText.text = $"Su: %{percent}";
+            waterPercentText.text = $"%{percent}";
         }
     }
 
@@ -161,7 +161,7 @@ public class GameOutcomeController3D : MonoBehaviour
 
         if (damProgressText != null && damProgressText.gameObject != null)
         {
-            damProgressText.text = $"Baraj: {completedBlocks}/5 Blok ({placedItems}/{totalItems})";
+            damProgressText.text = $"{completedBlocks}/5 Blocks ({placedItems}/{totalItems}) Tiles";
         }
     }
 

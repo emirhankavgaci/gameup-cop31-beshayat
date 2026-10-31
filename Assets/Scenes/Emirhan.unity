@@ -456,7 +456,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4069648045882089839, guid: 7e915999a10f1154da56f0090c5b6191, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 505.25354
+      value: 503.86
       objectReference: {fileID: 0}
     - target: {fileID: 4069648045882089839, guid: 7e915999a10f1154da56f0090c5b6191, type: 3}
       propertyPath: m_LocalPosition.y
@@ -646,8 +646,8 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4283410675
-  m_fontColor: {r: 0.9528302, g: 0.660586, b: 0.31011927, a: 1}
+    rgba: 4282690045
+  m_fontColor: {r: 0.99215686, g: 0.6627451, b: 0.26666668, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -1670,7 +1670,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -256.3, y: 127}
+  m_AnchoredPosition: {x: -257, y: 132}
   m_SizeDelta: {x: 200, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &592480093
@@ -1693,9 +1693,9 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: '%100
+  m_text: '0/5 Blocks
 
-    00/20'
+    20/20 Tiles'
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -1704,8 +1704,8 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4286496757
-  m_fontColor: {r: 0.9622642, g: 0.74846154, b: 0.49474904, a: 1}
+    rgba: 4282690045
+  m_fontColor: {r: 0.990566, g: 0.66192174, b: 0.2663314, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -1761,7 +1761,7 @@ MonoBehaviour:
   m_VertexBufferAutoSizeReduction: 0
   m_useMaxVisibleDescender: 1
   m_pageToDisplay: 1
-  m_margin: {x: 0, y: 0, z: 0, w: -30.817474}
+  m_margin: {x: 0, y: 0, z: 1.4003601, w: -30.817474}
   m_isUsingLegacyAnimationComponent: 0
   m_isVolumetricText: 0
   m_hasFontAssetChanged: 0
@@ -1847,7 +1847,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 4708052782660666744, guid: a3c3d295d6ffcab4d97bba2048e4f6f5, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 506.26855
+      value: 501.52
       objectReference: {fileID: 0}
     - target: {fileID: 4708052782660666744, guid: a3c3d295d6ffcab4d97bba2048e4f6f5, type: 3}
       propertyPath: m_LocalPosition.y
@@ -2343,7 +2343,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4069648045882089839, guid: 7e915999a10f1154da56f0090c5b6191, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 747.1383
+      value: 749.25
       objectReference: {fileID: 0}
     - target: {fileID: 4069648045882089839, guid: 7e915999a10f1154da56f0090c5b6191, type: 3}
       propertyPath: m_LocalRotation.w
@@ -2568,8 +2568,8 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294963592
-  m_fontColor: {r: 0.5330188, g: 0.94481134, b: 1, a: 1}
+    rgba: 4294830421
+  m_fontColor: {r: 0.3317462, g: 0.9130578, b: 0.990566, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -2932,7 +2932,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4708052782660666744, guid: a3c3d295d6ffcab4d97bba2048e4f6f5, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 507.27737
+      value: 498.93
       objectReference: {fileID: 0}
     - target: {fileID: 4708052782660666744, guid: a3c3d295d6ffcab4d97bba2048e4f6f5, type: 3}
       propertyPath: m_LocalPosition.y
@@ -3509,7 +3509,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -513, y: -132}
+  m_AnchoredPosition: {x: -513, y: -120.7}
   m_SizeDelta: {x: 200, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1377493070
@@ -3827,7 +3827,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4069648045882089839, guid: 7e915999a10f1154da56f0090c5b6191, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 509.02884
+      value: 506.01
       objectReference: {fileID: 0}
     - target: {fileID: 4069648045882089839, guid: 7e915999a10f1154da56f0090c5b6191, type: 3}
       propertyPath: m_LocalPosition.y
@@ -3913,7 +3913,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4069648045882089839, guid: 7e915999a10f1154da56f0090c5b6191, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 510.4915
+      value: 509.12
       objectReference: {fileID: 0}
     - target: {fileID: 4069648045882089839, guid: 7e915999a10f1154da56f0090c5b6191, type: 3}
       propertyPath: m_LocalPosition.y
@@ -4558,7 +4558,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4069648045882089839, guid: 7e915999a10f1154da56f0090c5b6191, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 747.4991
+      value: 754.04
       objectReference: {fileID: 0}
     - target: {fileID: 4069648045882089839, guid: 7e915999a10f1154da56f0090c5b6191, type: 3}
       propertyPath: m_LocalRotation.w
@@ -4681,7 +4681,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4708052782660666744, guid: a3c3d295d6ffcab4d97bba2048e4f6f5, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 746.53577
+      value: 749.98
       objectReference: {fileID: 0}
     - target: {fileID: 4708052782660666744, guid: a3c3d295d6ffcab4d97bba2048e4f6f5, type: 3}
       propertyPath: m_LocalRotation.w
@@ -5029,8 +5029,8 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294829894
-  m_fontColor: {r: 0.2756764, g: 0.9067209, b: 0.990566, a: 1}
+    rgba: 4294830421
+  m_fontColor: {r: 0.33333334, g: 0.9137255, b: 0.990566, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -5435,7 +5435,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4069648045882089839, guid: 7e915999a10f1154da56f0090c5b6191, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 511.38785
+      value: 508.84
       objectReference: {fileID: 0}
     - target: {fileID: 4069648045882089839, guid: 7e915999a10f1154da56f0090c5b6191, type: 3}
       propertyPath: m_LocalPosition.y
