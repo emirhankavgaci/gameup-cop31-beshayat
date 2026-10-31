@@ -7,12 +7,14 @@ public class FriendFrogMovement : MonoBehaviour
     [Header("Movement")]
     [SerializeField] private float wanderRadius = 2f;
     [SerializeField] private float jumpDistance = 0.8f;
-    [SerializeField] private float jumpHeight = 0.35f;
+    [SerializeField] private float jumpHeight = 0.25f;
     [SerializeField] private float jumpDuration = 0.6f;
+    [SerializeField] private float rotationSpeed = 360f;
 
     [Header("Waiting")]
     [SerializeField] private float minWaitTime = 2f;
     [SerializeField] private float maxWaitTime = 5f;
+    [SerializeField] private float fedWaitMultiplier = 0.5f;
 
     [Header("References")]
     [SerializeField] private FriendFrog friendFrog;
@@ -34,7 +36,10 @@ public class FriendFrogMovement : MonoBehaviour
             animator = GetComponentInChildren<Animator>();
 
         if (animator != null)
+        {
             animator.applyRootMotion = false;
+            animator.SetBool(IsMovingHash, false);
+        }
     }
 
     private void Start()
@@ -47,10 +52,12 @@ public class FriendFrogMovement : MonoBehaviour
         while (true)
         {
             if (friendFrog != null && !friendFrog.IsAlive)
+            {
+                SetMoving(false);
                 yield break;
+            }
 
-            if (animator != null)
-                animator.SetBool(IsMovingHash, false);
+            SetMoving(false);
 
             float waitTime = Random.Range(
                 minWaitTime,
@@ -58,9 +65,12 @@ public class FriendFrogMovement : MonoBehaviour
             );
 
             if (friendFrog != null && friendFrog.IsFed)
-                waitTime *= 0.5f;
+                waitTime *= fedWaitMultiplier;
 
             yield return new WaitForSeconds(waitTime);
+
+            if (friendFrog != null && !friendFrog.IsAlive)
+                continue;
 
             yield return StartCoroutine(Jump());
         }
@@ -69,6 +79,9 @@ public class FriendFrogMovement : MonoBehaviour
     private IEnumerator Jump()
     {
         Vector2 randomDirection = Random.insideUnitCircle;
+
+        if (randomDirection.sqrMagnitude < 0.001f)
+            randomDirection = Vector2.up;
 
         Vector3 offset = new Vector3(
             randomDirection.x,
@@ -85,7 +98,10 @@ public class FriendFrogMovement : MonoBehaviour
         if (fromOrigin.magnitude > wanderRadius)
         {
             Vector3 limitedOffset =
-                Vector3.ClampMagnitude(fromOrigin, wanderRadius);
+                Vector3.ClampMagnitude(
+                    fromOrigin,
+                    wanderRadius
+                );
 
             target = new Vector3(
                 startingPosition.x + limitedOffset.x,
@@ -97,12 +113,14 @@ public class FriendFrogMovement : MonoBehaviour
         Vector3 direction = target - start;
         direction.y = 0f;
 
-        if (direction.sqrMagnitude > 0.001f)
-            transform.rotation = Quaternion.LookRotation(direction);
+        if (direction.sqrMagnitude < 0.001f)
+            yield break;
 
-        // Zýplama animasyonunu baþlat.
-        if (animator != null)
-            animator.SetBool(IsMovingHash, true);
+        Quaternion targetRotation =
+            Quaternion.LookRotation(direction.normalized);
+
+        // Zýplama boyunca run animasyonu oynar.
+        SetMoving(true);
 
         float elapsed = 0f;
 
@@ -114,24 +132,44 @@ public class FriendFrogMovement : MonoBehaviour
                 elapsed / jumpDuration
             );
 
+            // Yatay hareket
             Vector3 position = Vector3.Lerp(
                 start,
                 target,
                 progress
             );
 
+            // Yay þeklinde zýplama
             position.y += Mathf.Sin(progress * Mathf.PI)
                           * jumpHeight;
 
             transform.position = position;
+
+            // Hareket yönüne yumuþak dönüþ
+            transform.rotation = Quaternion.RotateTowards(
+                transform.rotation,
+                targetRotation,
+                rotationSpeed * Time.deltaTime
+            );
 
             yield return null;
         }
 
         transform.position = target;
 
-        // Zýplama bitince bekleme animasyonuna dön.
+        // Yere inince stand animasyonuna döner.
+        SetMoving(false);
+    }
+
+    private void SetMoving(bool isMoving)
+    {
         if (animator != null)
-            animator.SetBool(IsMovingHash, false);
+            animator.SetBool(IsMovingHash, isMoving);
+    }
+
+    private void OnDisable()
+    {
+        if (animator != null)
+            SetMoving(false);
     }
 }

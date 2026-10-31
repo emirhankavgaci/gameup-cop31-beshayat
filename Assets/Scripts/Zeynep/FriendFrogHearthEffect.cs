@@ -31,7 +31,8 @@ public class FriendFrogHeartEffect : MonoBehaviour
 
         TextMesh textMesh = heartObject.AddComponent<TextMesh>();
 
-        textMesh.text = "♥";
+        // Unicode kalp karakteri
+        textMesh.text = "\u2665";
         textMesh.fontSize = 64;
         textMesh.characterSize = heartSize;
         textMesh.anchor = TextAnchor.MiddleCenter;
@@ -39,7 +40,6 @@ public class FriendFrogHeartEffect : MonoBehaviour
         textMesh.color = new Color(1f, 0.3f, 0.6f);
 
         Vector3 startPosition = heartObject.transform.position;
-
         float elapsed = 0f;
 
         while (elapsed < duration)
@@ -51,12 +51,14 @@ public class FriendFrogHeartEffect : MonoBehaviour
             heartObject.transform.position =
                 startPosition + Vector3.up * (riseDistance * progress);
 
+            // Kalp kameraya dönük kalır.
             if (mainCamera != null)
             {
                 heartObject.transform.rotation =
                     mainCamera.transform.rotation;
             }
 
+            // Yavaşça saydamlaşır.
             Color color = textMesh.color;
             color.a = 1f - progress;
             textMesh.color = color;
