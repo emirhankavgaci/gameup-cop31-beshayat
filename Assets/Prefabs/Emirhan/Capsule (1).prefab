@@ -155,8 +155,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b4618fdffba535347be8f2ce1456a3d3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TrashPickup3D
+  debrisType: 0
+  customWaterBonus: -1
+  customDrainReduction: -1
   interactionPromptUI: {fileID: 0}
-  pickupTriggerRadius: 1.2
+  pickupTriggerRadius: 1.4
   holdLocalPosition: {x: 0, y: 0, z: 0.5}
   holdLocalRotation: {x: 0, y: 0, z: 0}
-  waterRestoreAmount: 0.25

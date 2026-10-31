@@ -1,6 +1,12 @@
 using System;
 using UnityEngine;
 
+public enum DebrisType
+{
+    Trash,  // Çöp: Düşük su katkısı (+5), düşük sızıntı azaltma
+    Branch  // Dal / Kütük: Yüksek su katkısı (+10), yüksek sızıntı azaltma
+}
+
 /// <summary>
 /// Unity 6 (6000.x) uyumlu, toplanabilir çöp / dal / kütük (Debris) objesi kontrolcüsü.
 /// Hem gerçek fizikle yere düşer (katı Collider + Rigidbody) hem de otomatik Trigger alanı ile oyuncuyu algılar.
@@ -9,6 +15,11 @@ using UnityEngine;
 [RequireComponent(typeof(Rigidbody))]
 public class TrashPickup3D : MonoBehaviour
 {
+    [Header("Nesne Türü (Çöp vs Dal)")]
+    [SerializeField] private DebrisType debrisType = DebrisType.Trash;
+    [SerializeField] private float customWaterBonus = -1f; // -1 ise türe göre otomatik (Çöp: +5, Dal: +10)
+    [SerializeField] private float customDrainReduction = -1f; // -1 ise türe göre otomatik (Çöp: 0.03, Dal: 0.07)
+
     [Header("Arayüz ve Algılama")]
     [SerializeField] private GameObject interactionPromptUI;
     [SerializeField] private float pickupTriggerRadius = 1.2f; // Oyuncunun çöpü algılama yarıçapı
@@ -17,16 +28,27 @@ public class TrashPickup3D : MonoBehaviour
     [SerializeField] private Vector3 holdLocalPosition = new Vector3(0f, 0f, 0.5f);
     [SerializeField] private Vector3 holdLocalRotation = Vector3.zero;
 
-    [Header("Baraj Su Katkısı")]
-    [SerializeField] private float waterRestoreAmount = 0.25f; // Baraja yerleştirildiğinde nehir suyunu yükseltme miktarı
-
     private Collider physicsCollider;
     private SphereCollider pickupTriggerCollider;
     private Rigidbody itemRb;
     private bool isCarried = false;
 
     public bool IsCarried => isCarried;
-    public float WaterRestoreAmount => waterRestoreAmount;
+    public DebrisType Type => debrisType;
+
+    /// <summary>
+    /// Baraja eklendiğinde anlık kazandıracağı su miktarı (100 üzerinden: Çöp = +5, Dal = +10).
+    /// </summary>
+    public float WaterRestoreAmount => customWaterBonus >= 0f
+        ? customWaterBonus
+        : (debrisType == DebrisType.Branch ? 10f : 5f);
+
+    /// <summary>
+    /// Baraja eklendiğinde suyun saniyelik azalma hızını düşürme miktarı.
+    /// </summary>
+    public float DrainRateReduction => customDrainReduction >= 0f
+        ? customDrainReduction
+        : (debrisType == DebrisType.Branch ? 0.06f : 0.025f);
 
     public static event Action<TrashPickup3D> OnTrashPickedUp;
     public static event Action<TrashPickup3D> OnTrashDropped;
@@ -164,7 +186,7 @@ public class TrashPickup3D : MonoBehaviour
         OnTrashDropped?.Invoke(this);
     }
 
-    public void LockIntoDam(Transform damParentSlot)
+    public void LockIntoDam(Transform damParentSlot, Vector3 localOffset, Quaternion localRot)
     {
         isCarried = false;
 
@@ -174,8 +196,8 @@ public class TrashPickup3D : MonoBehaviour
         }
 
         transform.SetParent(damParentSlot);
-        transform.localPosition = Vector3.zero;
-        transform.localRotation = Quaternion.identity;
+        transform.localPosition = localOffset;
+        transform.localRotation = localRot;
 
         if (physicsCollider != null)
         {
@@ -190,10 +212,20 @@ public class TrashPickup3D : MonoBehaviour
 
         if (itemRb != null)
         {
+            if (!itemRb.isKinematic)
+            {
+                itemRb.linearVelocity = Vector3.zero;
+                itemRb.angularVelocity = Vector3.zero;
+            }
             itemRb.isKinematic = true;
             itemRb.detectCollisions = true;
         }
 
         enabled = false;
+    }
+
+    public void LockIntoDam(Transform damParentSlot)
+    {
+        LockIntoDam(damParentSlot, Vector3.zero, Quaternion.identity);
     }
 }
