@@ -1,4 +1,4 @@
-
+﻿
 using UnityEngine;
 
 public class PondWaterLevel : MonoBehaviour
@@ -27,7 +27,7 @@ public class PondWaterLevel : MonoBehaviour
         waterAudioSource.playOnAwake = false;
         waterAudioSource.loop = true;
         waterAudioSource.spatialBlend = 0f;
-        waterAudioSource.volume = waterVolume;
+        waterAudioSource.volume = waterVolume * GameAudioManager.SFXVolume; GameAudioManager.OnSFXVolumeChanged += (v) => { if (waterAudioSource != null) waterAudioSource.volume = waterVolume * v; };
     }
 
     private void Start()

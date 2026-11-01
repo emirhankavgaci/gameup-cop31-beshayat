@@ -20,7 +20,7 @@ public class EndingInfoUI : MonoBehaviour
 
     [Header("Sahne Geçiş Ayarları")]
     [Tooltip("Bilgi ekranından sonra yüklenecek sahnenin adı veya build index numarası (ör: 'Scene2' veya '1').")]
-    [SerializeField] private string nextSceneName = "";
+    [SerializeField] private string nextSceneName = "Ozlem";
 
     [Tooltip("Tüm metin göründükten sonra otomatik sahne geçişi için beklenecek süre (varsayılan 8 sn).")]
     [SerializeField] private float infoHoldTime = 8.0f;
@@ -300,7 +300,7 @@ public class EndingInfoUI : MonoBehaviour
 
     private AsyncOperation BeginLoadTargetSceneAsync()
     {
-        string trimmed = nextSceneName != null ? nextSceneName.Trim() : string.Empty;
+        string trimmed = !string.IsNullOrWhiteSpace(nextSceneName) ? nextSceneName.Trim() : "Ozlem";
 
         if (!string.IsNullOrEmpty(trimmed) && int.TryParse(trimmed, out int parsedBuildIndex))
         {

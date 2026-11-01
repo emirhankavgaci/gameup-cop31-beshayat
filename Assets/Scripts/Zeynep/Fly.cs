@@ -1,5 +1,4 @@
-
-using System.Collections;
+ï»¿using System.Collections;
 using UnityEngine;
 
 [RequireComponent(typeof(AudioSource))]
@@ -34,7 +33,25 @@ public class Fly : MonoBehaviour
         audioSource.rolloffMode = AudioRolloffMode.Linear;
         audioSource.minDistance = minDistance;
         audioSource.maxDistance = maxDistance;
-        audioSource.volume = flyVolume;
+        audioSource.volume = flyVolume * GameAudioManager.SFXVolume;
+    }
+
+    private void OnEnable()
+    {
+        GameAudioManager.OnSFXVolumeChanged += HandleSFXVolumeChanged;
+    }
+
+    private void OnDisable()
+    {
+        GameAudioManager.OnSFXVolumeChanged -= HandleSFXVolumeChanged;
+    }
+
+    private void HandleSFXVolumeChanged(float v)
+    {
+        if (audioSource != null)
+        {
+            audioSource.volume = flyVolume * v;
+        }
     }
 
     private void Start()
@@ -53,7 +70,6 @@ public class Fly : MonoBehaviour
 
         isCaught = true;
 
-        // Sinek yakalandýðýnda uçma sesini durdur.
         audioSource.Stop();
 
         collector.AddFood(foodValue);

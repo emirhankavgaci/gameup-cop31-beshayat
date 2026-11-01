@@ -1,4 +1,3 @@
-
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -25,7 +24,7 @@ public class FlowerArea : MonoBehaviour
     {
         propertyBlock = new MaterialPropertyBlock();
 
-        if (areaRenderer != null)
+        if (areaRenderer != null && areaRenderer.sharedMaterial != null)
         {
             colorPropertyId = areaRenderer.sharedMaterial.HasProperty("_BaseColor")
                 ? Shader.PropertyToID("_BaseColor")
@@ -107,7 +106,7 @@ public class FlowerArea : MonoBehaviour
     {
         if (spawnManager == null)
         {
-            Debug.LogError($"{name}: FlowerSpawnManager ba?lant?s? yok!");
+            Debug.LogError($"{name}: FlowerSpawnManager bağlantısı yok!");
             return;
         }
 

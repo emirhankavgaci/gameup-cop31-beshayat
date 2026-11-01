@@ -1,107 +1,107 @@
-using System.Collections;
+﻿using System.Collections;
 using UnityEngine;
 
 /// <summary>
 /// CANOPY: The Last Run - Oyuncu ve Genel Ses Sistemi (PlayerAudioHandler).
-/// Bu bileşen oyundaki tüm ses efektlerini ve müzik döngüsünü koordine eder:
-/// 1. musicloop.mp3: Arka planda sürekli çalan müzik döngüsü.
-/// 2. Runmonkey.mp3: Karakter yerde koşarken çalan ayak/koşma sesi.
-/// 3. Jumpmonkey.mp3: Karakter zıpladığında (veya duvardan zıpladığında) çalan ses.
-/// 4. rastgelemonkeysound.mp3: Her 10 - 15 saniyede bir rastgele çalan maymun sesi.
-/// 5. whenmonkeydie.mp3: Maymun kaktüse çarptığında veya sele kapılıp öldüğünde çalan ses.
-/// 6. drowingmonkey.mp3: Final sekansında su altında boğulurken çalan ses.
+/// Bu bileÅŸen oyundaki tÃ¼m ses efektlerini ve mÃ¼zik dÃ¶ngÃ¼sÃ¼nÃ¼ koordine eder:
+/// 1. musicloop.mp3: Arka planda sÃ¼rekli Ã§alan mÃ¼zik dÃ¶ngÃ¼sÃ¼.
+/// 2. Runmonkey.mp3: Karakter yerde koÅŸarken Ã§alan ayak/koÅŸma sesi.
+/// 3. Jumpmonkey.mp3: Karakter zÄ±pladÄ±ÄŸÄ±nda (veya duvardan zÄ±pladÄ±ÄŸÄ±nda) Ã§alan ses.
+/// 4. rastgelemonkeysound.mp3: Her 10 - 15 saniyede bir rastgele Ã§alan maymun sesi.
+/// 5. whenmonkeydie.mp3: Maymun kaktÃ¼se Ã§arptÄ±ÄŸÄ±nda veya sele kapÄ±lÄ±p Ã¶ldÃ¼ÄŸÃ¼nde Ã§alan ses.
+/// 6. drowingmonkey.mp3: Final sekansÄ±nda su altÄ±nda boÄŸulurken Ã§alan ses.
 /// </summary>
 public class PlayerAudioHandler : MonoBehaviour
 {
     public static PlayerAudioHandler Instance { get; private set; }
 
-    [Header("Bileşen Referansları (Boşsa Otomatik Bulunur)")]
-    [Tooltip("Oyuncu hareket ve durum yöneticisi.")]
+    [Header("BileÅŸen ReferanslarÄ± (BoÅŸsa Otomatik Bulunur)")]
+    [Tooltip("Oyuncu hareket ve durum yÃ¶neticisi.")]
     [SerializeField] private PlayerMotor playerMotor;
 
-    [Tooltip("Duvar koşusu ve duvardan zıplama yöneticisi.")]
+    [Tooltip("Duvar koÅŸusu ve duvardan zÄ±plama yÃ¶neticisi.")]
     [SerializeField] private WallRunHandler wallRunHandler;
 
-    [Tooltip("Oyun akışı ve ölüm yöneticisi.")]
+    [Tooltip("Oyun akÄ±ÅŸÄ± ve Ã¶lÃ¼m yÃ¶neticisi.")]
     [SerializeField] private GameFlowManager gameFlowManager;
 
-    [Header("AudioSource Kaynakları (Boşsa Çalışma Zamanında Otomatik Üretilir)")]
-    [Tooltip("Müzik çalan 2D AudioSource.")]
+    [Header("AudioSource KaynaklarÄ± (BoÅŸsa Ã‡alÄ±ÅŸma ZamanÄ±nda Otomatik Ãœretilir)")]
+    [Tooltip("MÃ¼zik Ã§alan 2D AudioSource.")]
     [SerializeField] private AudioSource musicSource;
 
-    [Tooltip("Koşma/ayak sesi çalan 2D AudioSource.")]
+    [Tooltip("KoÅŸma/ayak sesi Ã§alan 2D AudioSource.")]
     [SerializeField] private AudioSource runSource;
 
-    [Tooltip("Tek seferlik ses efektlerini (Zıplama, Ölüm, Boğulma) çalan AudioSource.")]
+    [Tooltip("Tek seferlik ses efektlerini (ZÄ±plama, Ã–lÃ¼m, BoÄŸulma) Ã§alan AudioSource.")]
     [SerializeField] private AudioSource sfxSource;
 
-    [Tooltip("Rastgele maymun çığlığını çalan AudioSource.")]
+    [Tooltip("Rastgele maymun Ã§Ä±ÄŸlÄ±ÄŸÄ±nÄ± Ã§alan AudioSource.")]
     [SerializeField] private AudioSource voiceSource;
 
-    [Header("1. Arka Plan Müziği (musicloop.mp3)")]
-    [Tooltip("Arka plan müzik klibi.")]
+    [Header("1. Arka Plan MÃ¼ziÄŸi (musicloop.mp3)")]
+    [Tooltip("Arka plan mÃ¼zik klibi.")]
     [SerializeField] private AudioClip musicLoopClip;
 
     [Range(0f, 1f)]
-    [Tooltip("Müzik ses seviyesi (varsayılan 0.45).")]
+    [Tooltip("MÃ¼zik ses seviyesi (varsayÄ±lan 0.45).")]
     [SerializeField] private float musicVolume = 0.45f;
 
-    [Tooltip("Oyun başlar başlamaz müziği otomatik başlat.")]
+    [Tooltip("Oyun baÅŸlar baÅŸlamaz mÃ¼ziÄŸi otomatik baÅŸlat.")]
     [SerializeField] private bool autoPlayMusic = true;
 
-    [Header("2. Koşma Sesi (Runmonkey.mp3)")]
-    [Tooltip("Karakter yerde koşarken döngüsel çalan ses.")]
+    [Header("2. KoÅŸma Sesi (Runmonkey.mp3)")]
+    [Tooltip("Karakter yerde koÅŸarken dÃ¶ngÃ¼sel Ã§alan ses.")]
     [SerializeField] private AudioClip runClip;
 
     [Range(0f, 1f)]
-    [Tooltip("Koşma maksimum ses seviyesi (varsayılan 0.7).")]
+    [Tooltip("KoÅŸma maksimum ses seviyesi (varsayÄ±lan 0.7).")]
     [SerializeField] private float runVolume = 0.7f;
 
-    [Tooltip("Sesin açılma ve kısılma yumuşatma hızı.")]
+    [Tooltip("Sesin aÃ§Ä±lma ve kÄ±sÄ±lma yumuÅŸatma hÄ±zÄ±.")]
     [SerializeField] private float runFadeSpeed = 10f;
 
-    [Tooltip("Koşma sesinin tetikleneceği minimum yatay hız eşiği (m/s).")]
+    [Tooltip("KoÅŸma sesinin tetikleneceÄŸi minimum yatay hÄ±z eÅŸiÄŸi (m/s).")]
     [SerializeField] private float minRunSpeedThreshold = 1.2f;
 
-    [Header("3. Zıplama Sesi (Jumpmonkey.mp3)")]
-    [Tooltip("Zıplama ses efekti.")]
+    [Header("3. ZÄ±plama Sesi (Jumpmonkey.mp3)")]
+    [Tooltip("ZÄ±plama ses efekti.")]
     [SerializeField] private AudioClip jumpClip;
 
     [Range(0f, 1f)]
-    [Tooltip("Zıplama ses seviyesi (varsayılan 0.85).")]
+    [Tooltip("ZÄ±plama ses seviyesi (varsayÄ±lan 0.85).")]
     [SerializeField] private float jumpVolume = 0.85f;
 
     [Header("4. Rastgele Maymun Sesi (rastgelemonkeysound.mp3)")]
-    [Tooltip("10 - 15 saniyede bir rastgele çalacak maymun ses efekti.")]
+    [Tooltip("10 - 15 saniyede bir rastgele Ã§alacak maymun ses efekti.")]
     [SerializeField] private AudioClip randomMonkeyClip;
 
     [Range(0f, 1f)]
-    [Tooltip("Rastgele maymun ses seviyesi (varsayılan 0.8).")]
+    [Tooltip("Rastgele maymun ses seviyesi (varsayÄ±lan 0.8).")]
     [SerializeField] private float randomMonkeyVolume = 0.8f;
 
-    [Tooltip("Rastgele ses için minimum bekleme süresi (sn).")]
+    [Tooltip("Rastgele ses iÃ§in minimum bekleme sÃ¼resi (sn).")]
     [SerializeField] private float minRandomInterval = 10f;
 
-    [Tooltip("Rastgele ses için maksimum bekleme süresi (sn).")]
+    [Tooltip("Rastgele ses iÃ§in maksimum bekleme sÃ¼resi (sn).")]
     [SerializeField] private float maxRandomInterval = 15f;
 
-    [Header("5. Boğulma ve Bitiş Ölüm Sesi (whenmonkeydie.mp3)")]
-    [Tooltip("Yalnızca FinishTrigger tetiklendiğinde ve maymun boğulurken çalan ölüm sesi (her ölümde/respawn'da çalmaz).")]
+    [Header("5. BoÄŸulma ve BitiÅŸ Ã–lÃ¼m Sesi (whenmonkeydie.mp3)")]
+    [Tooltip("YalnÄ±zca FinishTrigger tetiklendiÄŸinde ve maymun boÄŸulurken Ã§alan Ã¶lÃ¼m sesi (her Ã¶lÃ¼mde/respawn'da Ã§almaz).")]
     [SerializeField] private AudioClip deathClip;
 
     [Range(0f, 1f)]
-    [Tooltip("Ölüm sesi seviyesi (varsayılan 0.95).")]
+    [Tooltip("Ã–lÃ¼m sesi seviyesi (varsayÄ±lan 0.95).")]
     [SerializeField] private float deathVolume = 0.95f;
 
-    [Header("6. Boğulma Sesi (drowingmonkey.mp3)")]
-    [Tooltip("Final boğulma anında çalan maymun sesi.")]
+    [Header("6. BoÄŸulma Sesi (drowingmonkey.mp3)")]
+    [Tooltip("Final boÄŸulma anÄ±nda Ã§alan maymun sesi.")]
     [SerializeField] private AudioClip drowningClip;
 
     [Range(0f, 1f)]
-    [Tooltip("Boğulma sesi seviyesi (varsayılan 0.9).")]
+    [Tooltip("BoÄŸulma sesi seviyesi (varsayÄ±lan 0.9).")]
     [SerializeField] private float drowningVolume = 0.9f;
 
-    // Dahili zamanlayıcılar ve durumlar
+    // Dahili zamanlayÄ±cÄ±lar ve durumlar
     private float randomMonkeyTimer;
     private float currentRunVolume;
     private float lastJumpSoundTime = -1f;
@@ -134,7 +134,7 @@ public class PlayerAudioHandler : MonoBehaviour
         {
             musicSource.clip = musicLoopClip;
             musicSource.loop = true;
-            musicSource.volume = musicVolume;
+            musicSource.volume = musicVolume * GameAudioManager.MusicVolume; GameAudioManager.OnMusicVolumeChanged += (v) => { if (musicSource != null) musicSource.volume = musicVolume * v; };
             musicSource.Play();
         }
     }
@@ -170,7 +170,7 @@ public class PlayerAudioHandler : MonoBehaviour
 
     private void EnsureAudioSources()
     {
-        // 2D ses kaynaklarını oluştur veya hazırla
+        // 2D ses kaynaklarÄ±nÄ± oluÅŸtur veya hazÄ±rla
         if (musicSource == null)
         {
             GameObject musicObj = new GameObject("Music_AudioSource");
@@ -246,7 +246,7 @@ public class PlayerAudioHandler : MonoBehaviour
     }
 
     /// <summary>
-    /// Koşma/ayak sesinin oyuncunun hareket hızına ve zemin durumuna göre dinamik yönetimi.
+    /// KoÅŸma/ayak sesinin oyuncunun hareket hÄ±zÄ±na ve zemin durumuna gÃ¶re dinamik yÃ¶netimi.
     /// </summary>
     private void UpdateRunFootsteps(float dt)
     {
@@ -276,7 +276,7 @@ public class PlayerAudioHandler : MonoBehaviour
 
         float targetVolume = isGroundedAndMoving ? (runVolume * Mathf.Lerp(0.6f, 1f, speedRatio)) : 0f;
         currentRunVolume = Mathf.MoveTowards(currentRunVolume, targetVolume, dt * runFadeSpeed);
-        runSource.volume = currentRunVolume;
+        runSource.volume = currentRunVolume * GameAudioManager.SFXVolume;
 
         if (currentRunVolume > 0.01f)
         {
@@ -284,7 +284,7 @@ public class PlayerAudioHandler : MonoBehaviour
             {
                 runSource.Play();
             }
-            // Hıza göre adım temposunu hafifçe hızlandır
+            // HÄ±za gÃ¶re adÄ±m temposunu hafifÃ§e hÄ±zlandÄ±r
             runSource.pitch = Mathf.Lerp(0.92f, 1.12f, speedRatio);
         }
         else if (runSource.isPlaying)
@@ -327,7 +327,7 @@ public class PlayerAudioHandler : MonoBehaviour
     }
 
     /// <summary>
-    /// Zıplama sesini çalar (çift tetiklenmeyi önleme korumasıyla).
+    /// ZÄ±plama sesini Ã§alar (Ã§ift tetiklenmeyi Ã¶nleme korumasÄ±yla).
     /// </summary>
     public void PlayJumpSound()
     {
@@ -338,12 +338,12 @@ public class PlayerAudioHandler : MonoBehaviour
         if (sfxSource != null && jumpClip != null)
         {
             sfxSource.pitch = Random.Range(0.95f, 1.05f);
-            sfxSource.PlayOneShot(jumpClip, jumpVolume);
+            sfxSource.PlayOneShot(jumpClip, jumpVolume * GameAudioManager.SFXVolume);
         }
     }
 
     /// <summary>
-    /// Rastgele maymun ses efektini çalar (10 - 15 sn kuralı).
+    /// Rastgele maymun ses efektini Ã§alar (10 - 15 sn kuralÄ±).
     /// </summary>
     public void PlayRandomMonkeySound()
     {
@@ -353,19 +353,19 @@ public class PlayerAudioHandler : MonoBehaviour
         if (voiceSource != null)
         {
             voiceSource.pitch = Random.Range(0.93f, 1.07f);
-            voiceSource.PlayOneShot(randomMonkeyClip, randomMonkeyVolume);
+            voiceSource.PlayOneShot(randomMonkeyClip, randomMonkeyVolume * GameAudioManager.SFXVolume);
         }
         else if (sfxSource != null)
         {
             sfxSource.pitch = Random.Range(0.93f, 1.07f);
-            sfxSource.PlayOneShot(randomMonkeyClip, randomMonkeyVolume);
+            sfxSource.PlayOneShot(randomMonkeyClip, randomMonkeyVolume * GameAudioManager.SFXVolume);
         }
     }
 
     /// <summary>
-    /// Maymunun boğulma anındaki ölüm sesini (whenmonkeydie.mp3) çalar.
-    /// YALNIZCA FinishTrigger tetiklendiğinde veya final boğulma sekansı başladığında çalışır.
-    /// Normal checkpoint respawn veya kaktüs çarpmalarında kesinlikle ÇALMAZ.
+    /// Maymunun boÄŸulma anÄ±ndaki Ã¶lÃ¼m sesini (whenmonkeydie.mp3) Ã§alar.
+    /// YALNIZCA FinishTrigger tetiklendiÄŸinde veya final boÄŸulma sekansÄ± baÅŸladÄ±ÄŸÄ±nda Ã§alÄ±ÅŸÄ±r.
+    /// Normal checkpoint respawn veya kaktÃ¼s Ã§arpmalarÄ±nda kesinlikle Ã‡ALMAZ.
     /// </summary>
     public void PlayWhenMonkeyDieSound()
     {
@@ -375,25 +375,25 @@ public class PlayerAudioHandler : MonoBehaviour
         if (voiceSource != null && deathClip != null)
         {
             voiceSource.pitch = 1f;
-            voiceSource.PlayOneShot(deathClip, deathVolume);
+            voiceSource.PlayOneShot(deathClip, deathVolume * GameAudioManager.SFXVolume);
         }
         else if (sfxSource != null && deathClip != null)
         {
             sfxSource.pitch = 1f;
-            sfxSource.PlayOneShot(deathClip, deathVolume);
+            sfxSource.PlayOneShot(deathClip, deathVolume * GameAudioManager.SFXVolume);
         }
     }
 
     /// <summary>
-    /// Eski metod çağrıları için: Normal ölümlerde artık ses çalınmaz.
+    /// Eski metod Ã§aÄŸrÄ±larÄ± iÃ§in: Normal Ã¶lÃ¼mlerde artÄ±k ses Ã§alÄ±nmaz.
     /// </summary>
     public void PlayDeathSound()
     {
-        // Normal ölümlerde ses çalınması kapatıldı. Sadece FinishTrigger ile PlayWhenMonkeyDieSound() tetiklenir.
+        // Normal Ã¶lÃ¼mlerde ses Ã§alÄ±nmasÄ± kapatÄ±ldÄ±. Sadece FinishTrigger ile PlayWhenMonkeyDieSound() tetiklenir.
     }
 
     /// <summary>
-    /// Oyun sonu sel altında boğulma sesini çalar (drowingmonkey.mp3).
+    /// Oyun sonu sel altÄ±nda boÄŸulma sesini Ã§alar (drowingmonkey.mp3).
     /// </summary>
     public void PlayDrowningSound()
     {
@@ -404,7 +404,7 @@ public class PlayerAudioHandler : MonoBehaviour
             runSource.Stop();
         }
 
-        // Müzik sesini boğulma anında kısıp atmosferi derinleştir
+        // MÃ¼zik sesini boÄŸulma anÄ±nda kÄ±sÄ±p atmosferi derinleÅŸtir
         if (musicSource != null)
         {
             StartCoroutine(FadeOutMusicCoroutine(1.5f));
@@ -413,12 +413,12 @@ public class PlayerAudioHandler : MonoBehaviour
         if (voiceSource != null && drowningClip != null)
         {
             voiceSource.pitch = 1f;
-            voiceSource.PlayOneShot(drowningClip, drowningVolume);
+            voiceSource.PlayOneShot(drowningClip, drowningVolume * GameAudioManager.SFXVolume);
         }
         else if (sfxSource != null && drowningClip != null)
         {
             sfxSource.pitch = 1f;
-            sfxSource.PlayOneShot(drowningClip, drowningVolume);
+            sfxSource.PlayOneShot(drowningClip, drowningVolume * GameAudioManager.SFXVolume);
         }
     }
 

@@ -1,5 +1,4 @@
-
-using UnityEngine;
+﻿using UnityEngine;
 
 public class BeeNectar : MonoBehaviour
 {
@@ -13,11 +12,11 @@ public class BeeNectar : MonoBehaviour
     [SerializeField] private PollenCapacitySO capacitySO;
 
     [Header("Collection")]
-    [SerializeField] private float collectionStartDelay = 2f;
-    [SerializeField] private float collectInterval = 0.5f;
+    [SerializeField] private float collectionStartDelay = 0.5f;
+    [SerializeField] private float collectInterval = 0.4f;
 
     [Header("Pollination")]
-    [SerializeField] private float pollinationDelay = 3f;
+    [SerializeField] private float pollinationDelay = 5f;
     [SerializeField] private float pollenSpreadInterval = 0.5f;
 
     [Header("Particle Effects")]
@@ -43,18 +42,61 @@ public class BeeNectar : MonoBehaviour
 
     private void Awake()
     {
-        PollenCapacity data = capacitySO.capacities.Find(
-            x => x.type == PollenCapacityType.Bee
-        );
+        if (capacitySO != null && capacitySO.capacities != null)
+        {
+            PollenCapacity data = capacitySO.capacities.Find(
+                x => x.type == PollenCapacityType.Bee
+            );
+            capacity = data != null ? data.capacity : 25;
+        }
+        else
+        {
+            capacity = 25;
+        }
 
-        capacity = data != null ? data.capacity : 0;
         currentNectar = 0;
     }
 
     private void OnTriggerEnter(Collider other)
     {
         HiveArea hive = other.GetComponentInParent<HiveArea>();
+        if (hive != null)
+        {
+            DepositToHive(hive);
+        }
+    }
 
+    private void OnTriggerStay(Collider other)
+    {
+        HiveArea hive = other.GetComponentInParent<HiveArea>();
+        if (hive != null)
+        {
+            DepositToHive(hive);
+            return;
+        }
+
+        FlowerArea area = other.GetComponent<FlowerArea>();
+        if (area == null)
+            return;
+
+        switch (currentState)
+        {
+            case BeeState.Collecting:
+                CollectNectar(area);
+                break;
+
+            case BeeState.Waiting:
+                WaitBeforePollination();
+                break;
+
+            case BeeState.Pollinating:
+                SpreadPollen(area);
+                break;
+        }
+    }
+
+    private void DepositToHive(HiveArea hive)
+    {
         if (hive == null || currentNectar <= 0)
             return;
 
@@ -72,29 +114,6 @@ public class BeeNectar : MonoBehaviour
             areaEnterTimer = 0f;
             collectTimer = 0f;
             stateTimer = 0f;
-        }
-    }
-
-    private void OnTriggerStay(Collider other)
-    {
-        FlowerArea area = other.GetComponent<FlowerArea>();
-
-        if (area == null)
-            return;
-
-        switch (currentState)
-        {
-            case BeeState.Collecting:
-                CollectNectar(area);
-                break;
-
-            case BeeState.Waiting:
-                WaitBeforePollination();
-                break;
-
-            case BeeState.Pollinating:
-                SpreadPollen(area);
-                break;
         }
     }
 
