@@ -673,12 +673,8 @@ public class FloodChaser : MonoBehaviour
 
     private void EnsureCameraFarClipSufficient()
     {
-        Camera mainCam = Camera.main;
-        if (mainCam != null && mainCam.farClipPlane < DEFAULT_CAMERA_MIN_FAR_CLIP)
-        {
-            mainCam.farClipPlane = DEFAULT_CAMERA_MIN_FAR_CLIP;
-        }
-
+        // Sel mesh'lerinin oyuncu arkasına baktığında frustum culling nedeniyle erken kaybolmaması için
+        // dinamik occlusion'ı kapat (Kamera farClipPlane değeri PlayerLook 50m sis sınırı tarafından yönetilir)
         Renderer[] renderers = GetComponentsInChildren<Renderer>();
         for (int i = 0; i < renderers.Length; i++)
         {

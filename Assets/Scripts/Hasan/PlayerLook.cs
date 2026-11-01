@@ -104,6 +104,25 @@ public class PlayerLook : MonoBehaviour
     [Tooltip("FOV değişimlerinin yumuşatma hızı.")]
     [SerializeField] private float fovLerpSpeed = 10f;
 
+    [Header("Kamera Sis (Fog) ve Maksimum Görüş Mesafesi (50m)")]
+    [Tooltip("Açık olduğunda sahnede Linear Fog aktif edilir ve karakter maxViewDistance (50 m) ötesini göremez.")]
+    [SerializeField] private bool enableViewDistanceFog = true;
+
+    [Tooltip("Sisin yoğunlaşmaya başlayacağı başlangıç mesafesi (varsayılan 15 m).")]
+    [SerializeField] private float fogStartDistance = 15f;
+
+    [Tooltip("Sisin %100 kapandığı ve ötesinin kesinlikle görünmediği maksimum görüş mesafesi (varsayılan 50 m).")]
+    [SerializeField] private float maxViewDistance = 50f;
+
+    [Tooltip("Varsayılan sis rengi (ZoneManager yoksa bu renk kullanılır).")]
+    [SerializeField] private Color defaultFogColor = new Color(0.55f, 0.68f, 0.62f, 1f);
+
+    [Tooltip("Kameranın Far Clip Plane değerini de maksimum görüş mesafesine (50 m) sınırla (50 m ötesini hiç çizmez).")]
+    [SerializeField] private bool limitCameraFarClipToMaxView = true;
+
+    [Tooltip("50 m ötesi kesildiğinde ufukta keskin çizgi oluşmaması için kamera arka planını sis rengiyle eşitle.")]
+    [SerializeField] private bool matchCameraBackgroundToFog = true;
+
     [Header("Ayrı Kamera Offset Sistemi (Sarkaç, Transfer, Wall Run, Slide)")]
     [Tooltip("Dal bırakıldığında tüm swing ve transfer kamera offsetlerinin SmoothDamp ile sıfıra dönme süresi (varsayılan 0.25 sn).")]
     [SerializeField] private float cameraOffsetResetTime = 0.25f;
@@ -240,6 +259,8 @@ public class PlayerLook : MonoBehaviour
             targetCamera.nearClipPlane = 0.03f;
         }
 
+        ApplyCameraViewDistanceFog();
+
         thirdPersonBlend = (currentViewMode == ViewMode.ThirdPerson) ? 1f : 0f;
         ApplyViewModeState(currentViewMode);
     }
@@ -298,8 +319,65 @@ public class PlayerLook : MonoBehaviour
             playerVisual.SyncVisualForCurrentFrame(dt);
         }
 
+        if (enableViewDistanceFog && !isDrowningCameraActive)
+        {
+            SyncCameraFarClipAndBackgroundWithFog();
+        }
+
         UpdateCameraViewPosition(dt);
         ApplyCameraRotation();
+    }
+
+    /// <summary>
+    /// Karakterin maxViewDistance (50 m) ötesini görmemesi için Linear Fog ve Camera Far Clip ayarlarını uygular.
+    /// </summary>
+    public void ApplyCameraViewDistanceFog()
+    {
+        if (!enableViewDistanceFog)
+            return;
+
+        float safeEnd = Mathf.Max(5f, maxViewDistance);
+        float safeStart = Mathf.Clamp(fogStartDistance, 0f, safeEnd - 1f);
+
+        RenderSettings.fog = true;
+        RenderSettings.fogMode = FogMode.Linear;
+        RenderSettings.fogStartDistance = safeStart;
+        RenderSettings.fogEndDistance = safeEnd;
+
+        if (RenderSettings.fogColor.a <= 0.01f)
+        {
+            RenderSettings.fogColor = defaultFogColor;
+        }
+
+        SyncCameraFarClipAndBackgroundWithFog();
+    }
+
+    private void SyncCameraFarClipAndBackgroundWithFog()
+    {
+        float safeEnd = Mathf.Max(5f, maxViewDistance);
+        float safeStart = Mathf.Clamp(fogStartDistance, 0f, safeEnd - 1f);
+
+        if (RenderSettings.fogMode != FogMode.Linear)
+        {
+            RenderSettings.fogMode = FogMode.Linear;
+        }
+
+        RenderSettings.fogStartDistance = safeStart;
+        RenderSettings.fogEndDistance = safeEnd;
+
+        if (targetCamera != null)
+        {
+            if (limitCameraFarClipToMaxView)
+            {
+                targetCamera.farClipPlane = safeEnd;
+            }
+
+            if (matchCameraBackgroundToFog)
+            {
+                targetCamera.clearFlags = CameraClearFlags.SolidColor;
+                targetCamera.backgroundColor = RenderSettings.fogColor;
+            }
+        }
     }
 
     private void HandlePlayerJumpShake()

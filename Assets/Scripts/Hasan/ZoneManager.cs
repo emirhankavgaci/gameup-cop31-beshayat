@@ -122,10 +122,6 @@ public class ZoneManager : MonoBehaviour
         if (enableFogOnStart)
         {
             RenderSettings.fog = true;
-            if (RenderSettings.fogMode == FogMode.Linear)
-            {
-                RenderSettings.fogMode = FogMode.ExponentialSquared;
-            }
         }
     }
 
