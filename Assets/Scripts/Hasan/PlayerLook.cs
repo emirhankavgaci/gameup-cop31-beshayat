@@ -149,6 +149,8 @@ public class PlayerLook : MonoBehaviour
     private float impactTrauma;
     private Vector3 currentShakePosOffset;
     private Vector3 currentShakeRotEuler;
+    private Vector3 externalShakePosOffset;
+    private Vector3 externalShakeRotEuler;
     private Vector3 initialPivotLocalPos;
     private float thirdPersonBlend;
     private float thirdPersonBlendVelocity;
@@ -276,6 +278,46 @@ public class PlayerLook : MonoBehaviour
     public void AddCameraShakeImpulse(float normalizedImpulse)
     {
         impactTrauma = Mathf.Clamp01(impactTrauma + normalizedImpulse);
+    }
+
+    /// <summary>
+    /// CameraShake gibi harici bileşenlerin PlayerLook ile çakışmadan ek pozisyon ve açısal sarsıntı
+    /// ofseti uygulamasını sağlar.
+    /// </summary>
+    public void SetExternalShakeOffset(Vector3 positionOffset, Vector3 rotationEulerOffset)
+    {
+        externalShakePosOffset = positionOffset;
+        externalShakeRotEuler = rotationEulerOffset;
+    }
+
+    /// <summary>
+    /// Checkpoint'e ışınlanma (Respawn) sırasında kameranın dikey bakış açısını ve tüm geçici ofsetlerini sıfırlar.
+    /// </summary>
+    public void ResetLookState(Quaternion targetBodyRotation)
+    {
+        pitchAngle = 0f;
+        currentRollOffset = 0f;
+        currentPitchOffset = 0f;
+        targetSwingPitchOffset = 0f;
+        targetSwingRollOffset = 0f;
+        targetSlideRollOffset = 0f;
+        targetSlideFovBoost = 0f;
+        targetCameraHeightOffset = 0f;
+        currentCameraHeightOffset = 0f;
+        impactTrauma = 0f;
+        currentShakePosOffset = Vector3.zero;
+        currentShakeRotEuler = Vector3.zero;
+        externalShakePosOffset = Vector3.zero;
+        externalShakeRotEuler = Vector3.zero;
+        allowMouseInput = true;
+
+        if (playerBody != null)
+        {
+            Vector3 euler = targetBodyRotation.eulerAngles;
+            playerBody.rotation = Quaternion.Euler(0f, euler.y, 0f);
+        }
+
+        ApplyCameraRotation();
     }
 
     public void ToggleViewMode()
@@ -448,13 +490,15 @@ public class PlayerLook : MonoBehaviour
     private void ApplyCameraRotation()
     {
         float shakeWeight = 1f - thirdPersonBlend * 0.6f;
+        Vector3 totalRotShake = (currentShakeRotEuler * shakeWeight) + externalShakeRotEuler;
+
         float finalPitch = Mathf.Clamp(
-            pitchAngle + currentPitchOffset + (currentShakeRotEuler.x * shakeWeight),
+            pitchAngle + currentPitchOffset + totalRotShake.x,
             minVerticalAngle,
             maxVerticalAngle
         );
-        float finalYaw = currentShakeRotEuler.y * shakeWeight;
-        float finalRoll = currentRollOffset + (currentShakeRotEuler.z * shakeWeight);
+        float finalYaw = totalRotShake.y;
+        float finalRoll = currentRollOffset + totalRotShake.z;
 
         transform.localRotation = Quaternion.Euler(finalPitch, finalYaw, finalRoll);
     }
@@ -563,7 +607,7 @@ public class PlayerLook : MonoBehaviour
             fpPivotWorld = playerBody != null ? playerBody.TransformPoint(fpPivotLocal) : transform.position;
         }
 
-        Vector3 shakeLocalOffset = currentShakePosOffset * (1f - thirdPersonBlend * 0.7f);
+        Vector3 shakeLocalOffset = (currentShakePosOffset * (1f - thirdPersonBlend * 0.7f)) + externalShakePosOffset;
 
         // ThirdPerson hedef noktası: oyuncunun arkasında ve yukarıda (thirdPersonOffset: varsayılan 0, 1.2, -3.2)
         Quaternion yawAndPitchRot = (playerBody != null)

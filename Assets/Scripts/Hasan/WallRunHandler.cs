@@ -595,6 +595,25 @@ public class WallRunHandler : MonoBehaviour
     }
 
     /// <summary>
+    /// Checkpoint'e ışınlanma (Respawn) sırasında aktif duvar koşusu ve zincirleme sayaçlarını sıfırlar.
+    /// </summary>
+    public void ForceResetWallRunState()
+    {
+        hasDetectedWall = false;
+        isWallLeft = false;
+        isWallRight = false;
+        activeWallCollider = null;
+        lastWallCollider = null;
+        wallRunTimer = 0f;
+        sameWallCooldownTimer = 0f;
+        postBranchLockTimer = 0f;
+        chainGraceTimer = 0f;
+        manualDropTimer = 0f;
+        currentWallSpeed = 0f;
+        chainCount = 0;
+    }
+
+    /// <summary>
     /// 1d) Duvara paralel eksenin hangi yönünün oyuncunun anlık mouse bakışına daha yakın olduğunu (dot product) bulur.
     /// </summary>
     private Vector3 CalculateWallForwardDirection(Vector3 wallNormal)

@@ -204,9 +204,10 @@ public class BranchGrabHandler : MonoBehaviour
     private float transferArcHeight;
     private float currentTransferSpeed;
 
-    // CrosshairUI, GrabPromptUI ve Debug HUD için dış erişim özellikleri
+    // CrosshairUI, GrabPromptUI, PlayerVisual ve Debug HUD için dış erişim özellikleri
     public BranchData CurrentBranch => currentBranch;
     public float CurrentBranchT => currentBranchT;
+    public Vector3 CurrentHandWorldPosition => currentHandWorldPos;
     public float SwingAngleRadians => swingAngle;
     public float SwingAngleDegrees => swingAngle * Mathf.Rad2Deg;
     public float SwingAngularVelocity => swingAngularVelocity;
@@ -330,7 +331,10 @@ public class BranchGrabHandler : MonoBehaviour
                 continue;
 
             Vector3 closestPt = branch.GetClosestPointOnBranch(handOrigin);
-            float distSqr = (closestPt - handOrigin).sqrMagnitude;
+            float distSqrLine = (closestPt - handOrigin).sqrMagnitude;
+            Vector3 closestColliderPt = col.ClosestPoint(handOrigin);
+            float distSqrCol = (closestColliderPt - handOrigin).sqrMagnitude;
+            float distSqr = Mathf.Min(distSqrLine, distSqrCol);
 
             if (distSqr <= autoGrabSphereRadius * autoGrabSphereRadius && distSqr < closestDistSqr)
             {
@@ -643,6 +647,30 @@ public class BranchGrabHandler : MonoBehaviour
         motor.ConsumeJumpBuffer();
         motor.SetState(PlayerMotor.PlayerState.Airborne);
         motor.SetVelocity(exitVelocity);
+    }
+
+    /// <summary>
+    /// Checkpoint'e ışınlanma (Respawn) sırasında tüm dal tutunma, sarkaç ve geçiş durumlarını temizler.
+    /// </summary>
+    public void ForceResetBranchState()
+    {
+        currentBranch = null;
+        lastReleasedBranch = null;
+        activeTransferTargetBranch = null;
+        swingAngle = 0f;
+        swingAngularVelocity = 0f;
+        smoothedSwingInput = 0f;
+        swingInputSmoothVelocity = 0f;
+        currentSlideSpeed = 0f;
+        currentTransferSpeed = 0f;
+        regrabCooldownTimer = 0f;
+
+        ClearTransferCandidateState();
+
+        if (motor != null && motor.Look != null)
+        {
+            motor.Look.SetSwingCameraOffsets(0f, 0f);
+        }
     }
 
     private void UpdateBranchTransferInHanging(float dt)

@@ -2,8 +2,9 @@ using UnityEngine;
 
 /// <summary>
 /// CANOPY: The Last Run - Ağaç Dalı Veri ve Geometri Bileşeni.
-/// Her dal objesine eklenir. Dalın başlangıç/bitiş noktalarını, eksenini, uzunluğunu ve
-/// herhangi bir dünya noktasının dal üzerindeki en yakın noktasını / normalize konumunu (t: 0..1) hesaplar.
+/// Her dal objesine eklenir. Dalın başlangıç/bitiş noktalarını, eksenini, uzunluğunu,
+/// doğal dal eğriliğini (kavis/çökme) ve herhangi bir dünya noktasının dal üzerindeki
+/// en yakın noktasını / normalize konumunu (t: 0..1) hesaplar.
 /// </summary>
 [ExecuteAlways]
 public class BranchData : MonoBehaviour
@@ -15,12 +16,18 @@ public class BranchData : MonoBehaviour
     [Tooltip("Dalın bitiş ucunu temsil eden opsiyonel Transform.")]
     [SerializeField] private Transform endPoint;
 
-    [Header("Otomatik Uç Hesaplama Ayarları")]
+    [Header("Otomatik Uç ve Kavis (Tutunma Yüksekliği) Ayarları")]
     [Tooltip("Uç Transform'lar atanmamışsa Collider boyundan içeride bırakılacak güvenlik payı (metre).")]
     [SerializeField] private float autoEndPadding = 0.15f;
 
     [Tooltip("Collider da yoksa varsayılan yerel dal uzunluğu (metre).")]
     [SerializeField] private float fallbackBranchLength = 4f;
+
+    [Tooltip("Dalın orta kısmındaki doğal aşağı eğrilik/kavis miktarı (metre). Varsayılan 0 (tutunma fiziğini değiştirmez).")]
+    [SerializeField] private float branchMidSagOffset = 0f;
+
+    [Tooltip("Dal üzerindeki tutunma hattının genel dikey (Y) yükseklik ofseti (metre). Varsayılan 0.")]
+    [SerializeField] private float grabVerticalOffset = 0f;
 
     [Header("Gizmos Görselleştirme")]
     [Tooltip("Scene görünümünde dal ekseni çizgisinin rengi.")]
@@ -44,7 +51,7 @@ public class BranchData : MonoBehaviour
         get
         {
             RecalculateGeometry();
-            return cachedStartWorld;
+            return cachedStartWorld + Vector3.up * grabVerticalOffset;
         }
     }
 
@@ -54,7 +61,7 @@ public class BranchData : MonoBehaviour
         get
         {
             RecalculateGeometry();
-            return cachedEndWorld;
+            return cachedEndWorld + Vector3.up * grabVerticalOffset;
         }
     }
 
@@ -132,22 +139,27 @@ public class BranchData : MonoBehaviour
     }
 
     /// <summary>
-    /// Verilen dünya pozisyonuna dal ekseni üzerindeki en yakın noktayı döndürür.
+    /// Verilen dünya pozisyonuna dal ekseni üzerindeki en yakın noktayı (eğrilik ve dikey ofset dahil) döndürür.
     /// </summary>
     public Vector3 GetClosestPointOnBranch(Vector3 worldPos)
     {
         float t = GetT(worldPos);
-        return cachedStartWorld + cachedAxis * (t * cachedLength);
+        return GetPointAtT(t);
     }
 
     /// <summary>
     /// 0 ile 1 arasındaki normalize t değerine karşılık gelen dal üzerindeki dünya noktasını döndürür.
+    /// Eğri dallar için parabolik orta kavis (branchMidSagOffset) ve dikey ofset (grabVerticalOffset) içerir.
     /// </summary>
     public Vector3 GetPointAtT(float t)
     {
         RecalculateGeometry();
         float clampedT = Mathf.Clamp01(t);
-        return cachedStartWorld + cachedAxis * (clampedT * cachedLength);
+        Vector3 linearPoint = cachedStartWorld + cachedAxis * (clampedT * cachedLength);
+
+        // Dalın ortasındaki doğal eğrilik (t=0 ve t=1 uçlarında 0, t=0.5 ortasında tam branchMidSagOffset)
+        float curveSag = 4f * clampedT * (1f - clampedT) * branchMidSagOffset;
+        return linearPoint + Vector3.up * (grabVerticalOffset + curveSag);
     }
 
     /// <summary>
@@ -240,18 +252,25 @@ public class BranchData : MonoBehaviour
     {
         RecalculateGeometry();
 
-        // Dal eksen çizgisi
+        // Eğri dal tutunma hattını segmentler halinde çiz
         Gizmos.color = gizmoLineColor;
-        Gizmos.DrawLine(cachedStartWorld, cachedEndWorld);
+        const int segments = 12;
+        Vector3 prevPt = GetPointAtT(0f);
+        for (int i = 1; i <= segments; i++)
+        {
+            float t = (float)i / segments;
+            Vector3 nextPt = GetPointAtT(t);
+            Gizmos.DrawLine(prevPt, nextPt);
+            prevPt = nextPt;
+        }
 
         // Başlangıç ve bitiş uç küreleri
         Gizmos.color = gizmoEndpointColor;
-        Gizmos.DrawSphere(cachedStartWorld, gizmoEndpointRadius);
-        Gizmos.DrawSphere(cachedEndWorld, gizmoEndpointRadius);
+        Gizmos.DrawSphere(GetPointAtT(0f), gizmoEndpointRadius);
+        Gizmos.DrawSphere(GetPointAtT(1f), gizmoEndpointRadius);
 
-        // Orta noktada yön oku/halkası
-        Vector3 midPoint = (cachedStartWorld + cachedEndWorld) * 0.5f;
+        // Orta noktada yön halkası
+        Vector3 midPoint = GetPointAtT(0.5f);
         Gizmos.DrawWireSphere(midPoint, gizmoEndpointRadius * 0.75f);
     }
 }
-

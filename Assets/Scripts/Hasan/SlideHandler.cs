@@ -470,6 +470,33 @@ public class SlideHandler : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Checkpoint'e ışınlanma (Respawn) sırasında kayma durumunu, kapsül boyunu ve sayaçları anında sıfırlar.
+    /// </summary>
+    public void ForceResetSlideState()
+    {
+        sprintDurationTimer = 0f;
+        slideBufferTimer = 0f;
+        slideCooldownTimer = 0f;
+        activeSlideTimer = 0f;
+        currentSlideSpeed = 0f;
+        isCeilingBlocked = false;
+        currentBlockReason = "none";
+
+        if (playerLook != null)
+        {
+            playerLook.SetSlideCameraEffects(0f, 0f, 0f);
+        }
+
+        if (motor != null && motor.Controller != null && baseStandingHeight > 0.1f)
+        {
+            currentControllerHeight = baseStandingHeight;
+            motor.Controller.height = baseStandingHeight;
+            float newCenterY = baseCapsuleBottomY + (baseStandingHeight * 0.5f);
+            motor.Controller.center = new Vector3(baseStandingCenter.x, newCenterY, baseStandingCenter.z);
+        }
+    }
+
     private bool CheckCeilingObstacle()
     {
         if (motor == null || motor.Controller == null)

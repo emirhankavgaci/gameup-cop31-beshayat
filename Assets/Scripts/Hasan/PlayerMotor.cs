@@ -610,6 +610,81 @@ public class PlayerMotor : MonoBehaviour
         jumpBufferTimer = 0f;
     }
 
+    private void OnControllerColliderHit(ControllerColliderHit hit)
+    {
+        if (hit.collider == null)
+            return;
+
+        CactusHazard hazard = hit.collider.GetComponentInParent<CactusHazard>();
+        if (hazard != null)
+        {
+            hazard.HandlePlayerHit(this);
+        }
+    }
+
+    /// <summary>
+    /// Sel yakalanması veya debug respawn durumunda oyuncunun hızını, parkur durumlarını (State)
+    /// sıfırlar ve belirtilen checkpoint konumuna/rotasyonuna güvenli şekilde ışınlar.
+    /// </summary>
+    public void TeleportAndResetState(Vector3 targetPosition, Quaternion targetRotation)
+    {
+        SetCharacterControllerEnabled(false);
+
+        if (branchGrabHandler != null)
+        {
+            branchGrabHandler.ForceResetBranchState();
+        }
+
+        if (wallRunHandler != null)
+        {
+            wallRunHandler.ForceResetWallRunState();
+        }
+
+        if (slideHandler != null)
+        {
+            slideHandler.ForceResetSlideState();
+        }
+
+        velocity = Vector3.zero;
+        moveInputDirection = Vector3.zero;
+        horizontalInput = 0f;
+        verticalInput = 0f;
+        jumpBufferTimer = 0f;
+        coyoteTimer = 0f;
+        isJumpCutApplied = false;
+        isSprinting = false;
+        lastAirborneVerticalVelocity = 0f;
+
+        Vector3 euler = targetRotation.eulerAngles;
+        Quaternion flatBodyRot = Quaternion.Euler(0f, euler.y, 0f);
+        transform.SetPositionAndRotation(targetPosition, flatBodyRot);
+
+        if (playerLook != null)
+        {
+            playerLook.ResetLookState(flatBodyRot);
+        }
+
+        PlayerState prev = currentState;
+        currentState = PlayerState.Grounded;
+        isGrounded = true;
+        wasGroundedLastFrame = true;
+
+        SetCharacterControllerEnabled(true);
+
+        if (prev != currentState)
+        {
+            OnStateChangedCallback?.Invoke(prev, currentState);
+        }
+    }
+
+    /// <summary>
+    /// Oyuncunun yalnızca hızını ve aktif parkur durumunu sıfırlar (konumu değiştirmeden).
+    /// </summary>
+    public void ResetMotorVelocityAndState()
+    {
+        TeleportAndResetState(transform.position, transform.rotation);
+    }
+
     private void OnDrawGizmosSelected()
     {
         CharacterController cc = GetComponent<CharacterController>();

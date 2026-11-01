@@ -80,6 +80,9 @@ public class PlayerVisual : MonoBehaviour
     [Range(0f, 1.5f)]
     [SerializeField] private float swingVisualAngleMultiplier = 0.85f;
 
+    [Tooltip("Dala tutunurken (Hanging/Transferring) sadece görsel maymun modelinin dala tam oturması için eklenecek yukarı yönlü dikey ofset (metre). Fiziksel tutunmayı etkilemez.")]
+    [SerializeField] private float hangingExtraVerticalOffset = 1.45f;
+
     [Tooltip("Slide sırasında CharacterController küçüldüğünde modele eklenecek ekstra dikey ofset (metre).")]
     [SerializeField] private float slideExtraVerticalOffset = -0.08f;
 
@@ -113,6 +116,7 @@ public class PlayerVisual : MonoBehaviour
     private bool hasCalibratedDefaultEyePos;
     private Quaternion currentDynamicRotation = Quaternion.identity;
     private float currentSlideVerticalOffset;
+    private float currentHangingVerticalOffset;
     private float currentSlidePitchOffset;
     private ViewMode currentAppliedViewMode = ViewMode.FirstPerson;
     private int lastSyncedFrame = -1;
@@ -145,6 +149,10 @@ public class PlayerVisual : MonoBehaviour
         // Kameranın animasyonla sallanıp geride kalmaması için takip ağırlığını sıfırla (tam sabit kamera)
         eyeAnimationFollowWeight = 0f;
         hideBodyInFirstPerson = false;
+        if (hangingExtraVerticalOffset < 1.0f)
+        {
+            hangingExtraVerticalOffset = 1.45f;
+        }
 
         ResolveReferences();
 
@@ -451,7 +459,7 @@ public class PlayerVisual : MonoBehaviour
 
         return new Vector3(
             defaultEyeLocalPosInPlayer.x + eyeCameraOffset.x,
-            defaultEyeLocalPosInPlayer.y + currentSlideVerticalOffset + eyeCameraOffset.y,
+            defaultEyeLocalPosInPlayer.y + currentSlideVerticalOffset + currentHangingVerticalOffset + eyeCameraOffset.y,
             defaultEyeLocalPosInPlayer.z + eyeCameraOffset.z
         );
     }
@@ -539,10 +547,17 @@ public class PlayerVisual : MonoBehaviour
         bool isSliding = (motor != null && motor.CurrentState == PlayerMotor.PlayerState.Sliding) ||
                          (slideHandler != null && slideHandler.IsSliding);
 
+        bool isHangingOrTransfer = motor != null &&
+                                   (motor.CurrentState == PlayerMotor.PlayerState.Hanging ||
+                                    motor.CurrentState == PlayerMotor.PlayerState.Transferring);
+
         float targetSlideOffset = isSliding ? slideExtraVerticalOffset : 0f;
         currentSlideVerticalOffset = Mathf.Lerp(currentSlideVerticalOffset, targetSlideOffset, positionSmoothSpeed * dt);
 
-        Vector3 baseLocalPos = CalculateTargetLocalPosition(currentSlideVerticalOffset);
+        float targetHangOffset = isHangingOrTransfer ? hangingExtraVerticalOffset : 0f;
+        currentHangingVerticalOffset = Mathf.Lerp(currentHangingVerticalOffset, targetHangOffset, positionSmoothSpeed * dt);
+
+        Vector3 baseLocalPos = CalculateTargetLocalPosition(currentSlideVerticalOffset + currentHangingVerticalOffset);
         monkeyVisualRoot.localPosition = baseLocalPos;
 
         // FirstPerson modunda yürürken/koşarken animasyon maymunun boynunu/kafasını ileri uzattığında
