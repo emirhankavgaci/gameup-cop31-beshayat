@@ -1,0 +1,776 @@
+fileFormatVersion: 2
+guid: 86f83aa3d4affa74fb1dc969dcfd9c59
+ModelImporter:
+  serializedVersion: 24600
+  internalIDToNameTable: []
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Material.001
+    second: {fileID: 2100000, guid: ceb561fee3d3cea49970370e8260f5fd, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Material.002
+    second: {fileID: 2100000, guid: c4863b7ae9a9e6a4da75ad4c7a27f108, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Material.003
+    second: {fileID: 2100000, guid: fc4067eb2f02f5d43b5313d4c34db5c9, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Material.004
+    second: {fileID: 2100000, guid: fd3018eefe4a57b44b9749a0b77cf208, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Material.005
+    second: {fileID: 2100000, guid: 62dd06a7aa28f4241903ce9fdfaf4ff3, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Material.006
+    second: {fileID: 2100000, guid: 46d5707c8d51cfd43bc3f00aa1962080, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: SFM_L_0
+    second: {fileID: 2100000, guid: cd88e709021e02a4390970c1b1856659, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: SFM_L_1
+    second: {fileID: 2100000, guid: f0bdf962c4bfc1b45966e8917f889047, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: SFM_L_2
+    second: {fileID: 2100000, guid: 9fd6c85950754b84ea2a94ccd994e0a4, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: SFM_M_amanita_2_28
+    second: {fileID: 2100000, guid: 71b874ed79e13f84b9285c357d820d80, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: SFM_M_amanita_cluster_1_27
+    second: {fileID: 2100000, guid: 28d26e75be7ddf446bd075fc203b47cb, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: SFM_M_chanterelle_cluster_3_29
+    second: {fileID: 2100000, guid: acdc4f3644b45844ebd21f09a162911b, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: SFM_M_glow_cluster_5_31
+    second: {fileID: 2100000, guid: 7cf40e0264b40f94a88d6c368ede53a9, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: SFM_M_porcini_6_32
+    second: {fileID: 2100000, guid: 4d5b4a58c1e44da4ba9f50b5d5c98842, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: SFM_M_porcini_cluster_4_30
+    second: {fileID: 2100000, guid: 872314774c7b2e34ca6728b40c923268, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: SFM_R_arch_1_6
+    second: {fileID: 2100000, guid: 90360ca0e7ef6fe4cbf90b9d9986f718, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: SFM_R_boulder_4_7
+    second: {fileID: 2100000, guid: 0c18d8dec6a51f248babd1ec55c9f86b, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: SFM_R_boulder_tall_2_8
+    second: {fileID: 2100000, guid: 647a03ed3a33b444b8b63cdbeec92212, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: SFM_R_cliff_3_5
+    second: {fileID: 2100000, guid: 626a1702f80155240abbb94e2dd9f8ae, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: SFM_R_cliff_corner_1_3
+    second: {fileID: 2100000, guid: b8f99d553f4711b4791324331822920c, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: SFM_R_cliff_tall_2_4
+    second: {fileID: 2100000, guid: 5570aea5080ea4e43a797c61442ce3cc, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: SFM_R_cluster_1_11
+    second: {fileID: 2100000, guid: 52e36c0c18f0b3c41a51d53898bf0f75, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: SFM_R_menhir_3_9
+    second: {fileID: 2100000, guid: cba2fcaeef1b990439b4f8bc14ae0cfc, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: SFM_R_pebble_20_17
+    second: {fileID: 2100000, guid: 0b7ec29a606ac034684c3bd6c5e997cc, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: SFM_R_pebble_21_18
+    second: {fileID: 2100000, guid: d00c77ba3518b254f9a655be43cf30c8, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: SFM_R_pebble_flat_22_19
+    second: {fileID: 2100000, guid: 72e95ea3627091e4999e426df24a2972, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: SFM_R_pebble_flat_23_20
+    second: {fileID: 2100000, guid: de6935108c2e75841ae59b5ad3954cd5, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: SFM_R_rock_24_21
+    second: {fileID: 2100000, guid: 0dc412a80a7b04d49952d2828bf45c5b, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: SFM_R_rock_flat_2_10
+    second: {fileID: 2100000, guid: a8e210772f83bbc48b0df907d9a0a391, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: SFM_R_stepping_10_12
+    second: {fileID: 2100000, guid: 644a90725453f674bb68ed665e5439ca, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: SFM_R_stepping_11_13
+    second: {fileID: 2100000, guid: 83fd930148979be4f96a278a3c014f9d, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: SFM_R_stepping_12_14
+    second: {fileID: 2100000, guid: c4bf86c1d552f1f40aeca196424289f5, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: SFM_R_stepping_13_15
+    second: {fileID: 2100000, guid: 118360382ac41c54ea23e9909dc82e7b, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: SFM_R_stepping_14_16
+    second: {fileID: 2100000, guid: 5df997efebd8f77468e8d999f5ed2a5a, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: SFM_W_branch_2_26
+    second: {fileID: 2100000, guid: 39e1aba157e41734ab6fa421a7374b90, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: SFM_W_branch_pile_1_25
+    second: {fileID: 2100000, guid: b444a2b1c5b3a66458f972a10152a6ca, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: SFM_W_log_3_24
+    second: {fileID: 2100000, guid: 000bbf58b59315340a4b0c9a3f54617b, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: SFM_W_stump_1_22
+    second: {fileID: 2100000, guid: 916e6322a0286184aa3460bbc4222f46, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: SFM_W_stump_broken_2_23
+    second: {fileID: 2100000, guid: a5a873a6f9524eb40b55a0ebec4f53de, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: SF_Earth
+    second: {fileID: 2100000, guid: 1f5bc594d9806d0428f04ed8b76a884e, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: SF_Grass
+    second: {fileID: 2100000, guid: 40f32b29c21d42c40be8697cced02f43, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: SF_Plants
+    second: {fileID: 2100000, guid: 0c0705d7c0c14a14e9c6b76153ff0a43, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: SF_Water
+    second: {fileID: 2100000, guid: 5522a936013134c4da8641f3dcaf0499, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: lowPoly_flor1.003
+    second: {fileID: 2100000, guid: 265db9187d673484b82769172bc4248d, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: lowPoly_flor130
+    second: {fileID: 2100000, guid: b889a65657a65574783144cb6c27f4a4, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: lowPoly_flor130.001
+    second: {fileID: 2100000, guid: 7af3e01a58bcabc48bf385a6d6ac914d, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: lowPoly_flor130.002
+    second: {fileID: 2100000, guid: ecea5d19f25605d47b68b332d39d0470, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: lowPoly_flor17
+    second: {fileID: 2100000, guid: 0bd3ddbd52784ec45ae1a364b8354957, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: lowPoly_flor17.001
+    second: {fileID: 2100000, guid: 8d3fd369ae7a60e459cd6e77c5984ba2, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: lowPoly_flor17.002
+    second: {fileID: 2100000, guid: 63c7206524b11c64eb860261c5c0b606, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: lowPoly_flor17.003
+    second: {fileID: 2100000, guid: 17fad461405028947aa1445c6733e775, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: lowPoly_flor18
+    second: {fileID: 2100000, guid: ec84800e34617f142811fbb4da494149, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: lowPoly_flor18.001
+    second: {fileID: 2100000, guid: bf39e4ea23a54544592224a5c1f2f5af, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: lowPoly_flor18.002
+    second: {fileID: 2100000, guid: ea5230a10fe0c0f46aa00702c4bc8883, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: lowPoly_flor18.003
+    second: {fileID: 2100000, guid: 97f68bdfd7be4e445b6a6068bc19e3e4, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: lowPoly_flor18.004
+    second: {fileID: 2100000, guid: 099d8f4690dee6c40bf16184c1e1b089, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: lowPoly_flor19
+    second: {fileID: 2100000, guid: cfcb13780b526e442ba545ce69ac29ae, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: lowPoly_flor19.001
+    second: {fileID: 2100000, guid: acbe9925be94d8b498b56c6051fcbc46, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: lowPoly_flor20
+    second: {fileID: 2100000, guid: a975f03cf89cc4546adf5ce1f31cf738, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: lowPoly_flor20.001
+    second: {fileID: 2100000, guid: 163c6e0132a99df4eb15da945def9731, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: lowPoly_flor21
+    second: {fileID: 2100000, guid: 6bc08cb066125ff49829ae49853761c2, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: lowPoly_flor21.001
+    second: {fileID: 2100000, guid: a1a65210fa5e49f4a9304f9d732c3d3e, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: lowPoly_flor22
+    second: {fileID: 2100000, guid: 798bfe082ca2e5f42b53b650f7f5938c, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: lowPoly_flor22.001
+    second: {fileID: 2100000, guid: f9234b36e1ad4fd41806bacfdd84a014, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: lowPoly_flor22.002
+    second: {fileID: 2100000, guid: 7a6e8f4b48d0d174baacc541675b7d9c, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: lowPoly_flor22.003
+    second: {fileID: 2100000, guid: f2a2bb727264bf345acaa910930341dd, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: lowPoly_flor22.004
+    second: {fileID: 2100000, guid: eaa1bd2be449b4142b1823af0e3e5035, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: lowPoly_flor22.005
+    second: {fileID: 2100000, guid: 868df8a1f8f10dc4f9a7fe4496b2f2f7, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: lowPoly_flor23
+    second: {fileID: 2100000, guid: c99e393678803c14c9cfe95ea5f9b7a4, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: lowPoly_flor23.001
+    second: {fileID: 2100000, guid: e144ac46a8bca4747bca03c659d1e957, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: lowPoly_flor23.002
+    second: {fileID: 2100000, guid: 33ba24daef0d8394e9514d86b9369e25, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: lowPoly_flor24
+    second: {fileID: 2100000, guid: 7c6f0ca8f6ac7ac46a6763ed2d0a030d, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: lowPoly_flor24.001
+    second: {fileID: 2100000, guid: 96bc2a4c1c7ee03438ec0efc048af6b8, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: lowPoly_flor24.002
+    second: {fileID: 2100000, guid: a51fa941971dfcc45acd4410ec382525, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: lowPoly_flor25
+    second: {fileID: 2100000, guid: 7ca701240a2903b4e9cb73873b067487, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: lowPoly_flor25.001
+    second: {fileID: 2100000, guid: f5b816a9d3438f94db829fb6c6cea22d, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: lowPoly_flor25.002
+    second: {fileID: 2100000, guid: 70cf9161b6b8a6548822483fbb74dcad, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: lowPoly_flor26
+    second: {fileID: 2100000, guid: 8066daa801144264bad6849acdb3a116, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: lowPoly_flor26.001
+    second: {fileID: 2100000, guid: eeebfe9c305748b49a7f1ecf75dd9989, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: lowPoly_flor27
+    second: {fileID: 2100000, guid: d50762d096180dc4294c20dc343a43bf, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: lowPoly_flor27.001
+    second: {fileID: 2100000, guid: f837b53a41075ee42aca0d292f59c206, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: lowPoly_flor27.002
+    second: {fileID: 2100000, guid: 1d27d48de2490714c838d05408bc3f77, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: lowPoly_flor28
+    second: {fileID: 2100000, guid: 728c8d7bd047b06438e662570444336e, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: lowPoly_flor31
+    second: {fileID: 2100000, guid: dbadf083234f48141a5335f12cf164d5, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: lowPoly_flor31.001
+    second: {fileID: 2100000, guid: 73688cb793646e44b954daf85c2b2183, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: lowPoly_flor31.002
+    second: {fileID: 2100000, guid: 8e3640cf3cfccb041886e07405c591c1, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: lowPoly_flor31.003
+    second: {fileID: 2100000, guid: d72682b7032f25f488fb54356e366cb7, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: lowPoly_flor32
+    second: {fileID: 2100000, guid: 67341db3f00c1c54aa8a5f41e03bce8a, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: lowPoly_flor32.001
+    second: {fileID: 2100000, guid: 5b417bd1ead0ef34eb5baac574c952ee, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: lowPoly_flor32.002
+    second: {fileID: 2100000, guid: 2651ce13e0cc03042b830a629279fbc7, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: lowPoly_flor33
+    second: {fileID: 2100000, guid: 59e257c27edb0cf469696474b69d26a6, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: lowPoly_flor33.001
+    second: {fileID: 2100000, guid: 2bfd318ac8c2c2c4aac0d828f7fb141a, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: lowPoly_flor33.002
+    second: {fileID: 2100000, guid: 77da6fd7a2444be47831222d6f441d1f, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: lowPoly_flor34
+    second: {fileID: 2100000, guid: d96c8d0c4ed92454fa565ed13bb18410, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: lowPoly_flor4.006
+    second: {fileID: 2100000, guid: aea304aa3505bb94cbd66012e94caa56, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: lowPoly_flor4.007
+    second: {fileID: 2100000, guid: 7125cd633632eb241b6b9ae8ba6ff6d0, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: lowPoly_flor4.008
+    second: {fileID: 2100000, guid: fcd90324da78f344388ab89b3c3de87a, type: 2}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: SFT_L_0
+    second: {fileID: 2800000, guid: 25a948888137bdf489e80129c6c1d275, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: SFT_L_1
+    second: {fileID: 2800000, guid: 407d594a01727354394bb07815bf3ad4, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: SFT_L_2
+    second: {fileID: 2800000, guid: dc7d8174e872fd64d88303e3b14ab91a, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: SFT_M_amanita_2_28
+    second: {fileID: 2800000, guid: ca68255152c7689479c5d06077b71c2c, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: SFT_M_amanita_cluster_1_27
+    second: {fileID: 2800000, guid: dda7ec5014c25ad4483087be69195fdb, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: SFT_M_chanterelle_cluster_3_29
+    second: {fileID: 2800000, guid: 3cf5ff8ca33ea174d929716ed2b0dd90, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: SFT_M_glow_cluster_5_31
+    second: {fileID: 2800000, guid: 03550d9a1e90e564aaf932f5a86267f0, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: SFT_M_porcini_6_32
+    second: {fileID: 2800000, guid: ccd9f25c5f0d41044b133e353c720060, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: SFT_M_porcini_cluster_4_30
+    second: {fileID: 2800000, guid: 5a80af54ce6307048a32b1bc3e1ebe2f, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: SFT_R_arch_1_6
+    second: {fileID: 2800000, guid: 701252a8fb8e03d4d9f909f274fce323, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: SFT_R_boulder_4_7
+    second: {fileID: 2800000, guid: 23b60e6e46e94074fa6aba99668c56d4, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: SFT_R_boulder_tall_2_8
+    second: {fileID: 2800000, guid: 1498937ed3c448d448555872b003ee02, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: SFT_R_cliff_3_5
+    second: {fileID: 2800000, guid: 3f7cbbb2428428c429512d006d37e9d9, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: SFT_R_cliff_corner_1_3
+    second: {fileID: 2800000, guid: 4d8c81d83220cc042af53296b0949452, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: SFT_R_cliff_tall_2_4
+    second: {fileID: 2800000, guid: f50ffa4f68c80af4c9c67ec2ea389025, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: SFT_R_cluster_1_11
+    second: {fileID: 2800000, guid: c663e19ddde7d3e468d3eb21a35b730c, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: SFT_R_menhir_3_9
+    second: {fileID: 2800000, guid: 51091152effc8ee41904acc3831454c3, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: SFT_R_pebble_20_17
+    second: {fileID: 2800000, guid: 6a23b059f063342449a6856fcc024061, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: SFT_R_pebble_21_18
+    second: {fileID: 2800000, guid: 4511ad33868ac484898ab37ad477f6f2, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: SFT_R_pebble_flat_22_19
+    second: {fileID: 2800000, guid: bb0d3fd73a0524b4e8f94553f314fff0, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: SFT_R_pebble_flat_23_20
+    second: {fileID: 2800000, guid: 29ee1b7b2aa3ae24185536dc34e181a0, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: SFT_R_rock_24_21
+    second: {fileID: 2800000, guid: 0e0b3ec763e7a5b4cae04f33793d7bf8, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: SFT_R_rock_flat_2_10
+    second: {fileID: 2800000, guid: 9f6c959c04705054b8870f8e663618c9, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: SFT_R_stepping_10_12
+    second: {fileID: 2800000, guid: a7e62338ef14642489f661672613a017, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: SFT_R_stepping_11_13
+    second: {fileID: 2800000, guid: 02c65596fe2580a4381d13694bcfa3f3, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: SFT_R_stepping_12_14
+    second: {fileID: 2800000, guid: e9dd5145a98ca624899b02d3a39f9524, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: SFT_R_stepping_13_15
+    second: {fileID: 2800000, guid: f45e3bc05622607458855ac21926943a, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: SFT_R_stepping_14_16
+    second: {fileID: 2800000, guid: f5320396a2ab0bc4ab7962b41c30b7c7, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: SFT_W_branch_2_26
+    second: {fileID: 2800000, guid: 094b4fce383c5e54fb5f8e904aade701, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: SFT_W_branch_pile_1_25
+    second: {fileID: 2800000, guid: 61fe873cbbf9cc648bb5bcff89402656, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: SFT_W_log_3_24
+    second: {fileID: 2800000, guid: 2587b5bb27cad9f4e86ec2a400f9e041, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: SFT_W_stump_1_22
+    second: {fileID: 2800000, guid: acd4819688fb5e141945dbcfc4467a1f, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: SFT_W_stump_broken_2_23
+    second: {fileID: 2800000, guid: de0b7db732694814da6df3b348f81b24, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: T_Terrain_Dirt_BC
+    second: {fileID: 2800000, guid: 4ba898f3862da3c4da13da95512e2d3b, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: T_Terrain_Grass_BC
+    second: {fileID: 2800000, guid: ad50aa3e0d49520468418892170d6f31, type: 3}
+  materials:
+    materialImportMode: 2
+    materialName: 0
+    materialSearch: 1
+    materialLocation: 1
+    searchTexturesGlobally: 0
+  animations:
+    legacyGenerateAnimations: 4
+    bakeSimulation: 0
+    resampleCurves: 1
+    optimizeGameObjects: 0
+    removeConstantScaleCurves: 0
+    motionNodeName: 
+    animationImportErrors: 
+    animationImportWarnings: 
+    animationRetargetingWarnings: 
+    animationDoRetargetingWarnings: 0
+    importAnimatedCustomProperties: 0
+    importConstraints: 0
+    animationCompression: 1
+    animationRotationError: 0.5
+    animationPositionError: 0.5
+    animationScaleError: 0.5
+    animationWrapMode: 0
+    extraExposedTransformPaths: []
+    extraUserProperties: []
+    clipAnimations: []
+    isReadable: 0
+  meshes:
+    lODScreenPercentages: []
+    globalScale: 1
+    meshCompression: 0
+    addColliders: 0
+    useSRGBMaterialColor: 1
+    sortHierarchyByName: 1
+    preBakeConvexCollisionMesh: 0
+    preBakeTriangleCollisionMesh: 0
+    importPhysicalCameras: 1
+    importVisibility: 1
+    importBlendShapes: 1
+    importCameras: 1
+    importLights: 1
+    nodeNameCollisionStrategy: 1
+    fileIdsGeneration: 2
+    swapUVChannels: 0
+    generateSecondaryUV: 0
+    useFileUnits: 1
+    keepQuads: 0
+    weldVertices: 1
+    bakeAxisConversion: 0
+    preserveHierarchy: 0
+    skinWeightsMode: 0
+    maxBonesPerVertex: 4
+    minBoneWeight: 0.001
+    optimizeBones: 1
+    generateMeshLods: 0
+    meshLodGenerationFlags: 0
+    maximumMeshLod: -1
+    importUVs: -1
+    importVertexColors: 1
+    meshOptimizationFlags: -1
+    indexFormat: 0
+    secondaryUVAngleDistortion: 8
+    secondaryUVAreaDistortion: 15.000001
+    secondaryUVHardAngle: 88
+    secondaryUVMarginMethod: 1
+    secondaryUVMinLightmapResolution: 40
+    secondaryUVMinObjectScale: 1
+    secondaryUVPackMargin: 4
+    useFileScale: 1
+    strictVertexDataChecks: 0
+  tangentSpace:
+    normalSmoothAngle: 60
+    normalImportMode: 0
+    tangentImportMode: 3
+    normalCalculationMode: 4
+    legacyComputeAllNormalsFromSmoothingGroupsWhenMeshHasBlendShapes: 0
+    blendShapeNormalImportMode: 1
+    normalSmoothingSource: 0
+    calculateBlendshapeNormalsDeltaFromImportedNormals: 0
+  referencedClips: []
+  importAnimation: 1
+  humanDescription:
+    serializedVersion: 3
+    human: []
+    skeleton: []
+    armTwist: 0.5
+    foreArmTwist: 0.5
+    upperLegTwist: 0.5
+    legTwist: 0.5
+    armStretch: 0.05
+    legStretch: 0.05
+    feetSpacing: 0
+    globalScale: 1
+    rootMotionBoneName: 
+    hasTranslationDoF: 0
+    hasExtraRoot: 0
+    skeletonHasParents: 1
+  lastHumanDescriptionAvatarSource: {instanceID: 0}
+  autoGenerateAvatarMappingIfUnspecified: 1
+  animationType: 2
+  humanoidOversampling: 1
+  avatarSetup: 0
+  addHumanoidExtraRootOnlyWhenUsingAvatar: 1
+  importBlendShapeDeformPercent: 1
+  remapMaterialsIfMaterialImportModeIsNone: 0
+  additionalBone: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
