@@ -493,177 +493,177 @@ ModelImporter:
       type: UnityEngine:Texture2D
       assembly: UnityEngine.CoreModule
       name: SFT_L_0
-    second: {fileID: 2800000, guid: 25a948888137bdf489e80129c6c1d275, type: 3}
+    second: {fileID: 2800000, guid: e574394def3965941a5a7702fb5f3fb5, type: 3}
   - first:
       type: UnityEngine:Texture2D
       assembly: UnityEngine.CoreModule
       name: SFT_L_1
-    second: {fileID: 2800000, guid: 407d594a01727354394bb07815bf3ad4, type: 3}
+    second: {fileID: 2800000, guid: cb42bb153a67ba3489d55256a47eaad2, type: 3}
   - first:
       type: UnityEngine:Texture2D
       assembly: UnityEngine.CoreModule
       name: SFT_L_2
-    second: {fileID: 2800000, guid: dc7d8174e872fd64d88303e3b14ab91a, type: 3}
+    second: {fileID: 2800000, guid: f8c470a34a507554a9b22a6b04a48f64, type: 3}
   - first:
       type: UnityEngine:Texture2D
       assembly: UnityEngine.CoreModule
       name: SFT_M_amanita_2_28
-    second: {fileID: 2800000, guid: ca68255152c7689479c5d06077b71c2c, type: 3}
+    second: {fileID: 2800000, guid: 745614eff297cac4185c1409e6183c95, type: 3}
   - first:
       type: UnityEngine:Texture2D
       assembly: UnityEngine.CoreModule
       name: SFT_M_amanita_cluster_1_27
-    second: {fileID: 2800000, guid: dda7ec5014c25ad4483087be69195fdb, type: 3}
+    second: {fileID: 2800000, guid: 53a6f561337da1749a863e448f9b43d2, type: 3}
   - first:
       type: UnityEngine:Texture2D
       assembly: UnityEngine.CoreModule
       name: SFT_M_chanterelle_cluster_3_29
-    second: {fileID: 2800000, guid: 3cf5ff8ca33ea174d929716ed2b0dd90, type: 3}
+    second: {fileID: 2800000, guid: 8182fda9d6c9e0543a1986034dbd97a0, type: 3}
   - first:
       type: UnityEngine:Texture2D
       assembly: UnityEngine.CoreModule
       name: SFT_M_glow_cluster_5_31
-    second: {fileID: 2800000, guid: 03550d9a1e90e564aaf932f5a86267f0, type: 3}
+    second: {fileID: 2800000, guid: 056ae6ed2d017a74cb28a6b7c4854630, type: 3}
   - first:
       type: UnityEngine:Texture2D
       assembly: UnityEngine.CoreModule
       name: SFT_M_porcini_6_32
-    second: {fileID: 2800000, guid: ccd9f25c5f0d41044b133e353c720060, type: 3}
+    second: {fileID: 2800000, guid: 6680055448151454d80bfcd19109efe2, type: 3}
   - first:
       type: UnityEngine:Texture2D
       assembly: UnityEngine.CoreModule
       name: SFT_M_porcini_cluster_4_30
-    second: {fileID: 2800000, guid: 5a80af54ce6307048a32b1bc3e1ebe2f, type: 3}
+    second: {fileID: 2800000, guid: 189c0e6c885104e449bf845320f6ae75, type: 3}
   - first:
       type: UnityEngine:Texture2D
       assembly: UnityEngine.CoreModule
       name: SFT_R_arch_1_6
-    second: {fileID: 2800000, guid: 701252a8fb8e03d4d9f909f274fce323, type: 3}
+    second: {fileID: 2800000, guid: 4baa5873e618aa44fbf90b3d21435d25, type: 3}
   - first:
       type: UnityEngine:Texture2D
       assembly: UnityEngine.CoreModule
       name: SFT_R_boulder_4_7
-    second: {fileID: 2800000, guid: 23b60e6e46e94074fa6aba99668c56d4, type: 3}
+    second: {fileID: 2800000, guid: 31a2fac8ff967f34bbe3a8524fbeaae7, type: 3}
   - first:
       type: UnityEngine:Texture2D
       assembly: UnityEngine.CoreModule
       name: SFT_R_boulder_tall_2_8
-    second: {fileID: 2800000, guid: 1498937ed3c448d448555872b003ee02, type: 3}
+    second: {fileID: 2800000, guid: 59cf78395a2c07b4182d7c0ca42e4395, type: 3}
   - first:
       type: UnityEngine:Texture2D
       assembly: UnityEngine.CoreModule
       name: SFT_R_cliff_3_5
-    second: {fileID: 2800000, guid: 3f7cbbb2428428c429512d006d37e9d9, type: 3}
+    second: {fileID: 2800000, guid: 0068292eb30349f48ad5b8a9d84c8fb7, type: 3}
   - first:
       type: UnityEngine:Texture2D
       assembly: UnityEngine.CoreModule
       name: SFT_R_cliff_corner_1_3
-    second: {fileID: 2800000, guid: 4d8c81d83220cc042af53296b0949452, type: 3}
+    second: {fileID: 2800000, guid: f134bd56a583a5f47bb5811649365f49, type: 3}
   - first:
       type: UnityEngine:Texture2D
       assembly: UnityEngine.CoreModule
       name: SFT_R_cliff_tall_2_4
-    second: {fileID: 2800000, guid: f50ffa4f68c80af4c9c67ec2ea389025, type: 3}
+    second: {fileID: 2800000, guid: 106bfb7270c01e647a1f0659fa983fc5, type: 3}
   - first:
       type: UnityEngine:Texture2D
       assembly: UnityEngine.CoreModule
       name: SFT_R_cluster_1_11
-    second: {fileID: 2800000, guid: c663e19ddde7d3e468d3eb21a35b730c, type: 3}
+    second: {fileID: 2800000, guid: 3a387ed3626eb0e4e84249799643b5fc, type: 3}
   - first:
       type: UnityEngine:Texture2D
       assembly: UnityEngine.CoreModule
       name: SFT_R_menhir_3_9
-    second: {fileID: 2800000, guid: 51091152effc8ee41904acc3831454c3, type: 3}
+    second: {fileID: 2800000, guid: a093b84b87b793a4a9b63516aa90a90d, type: 3}
   - first:
       type: UnityEngine:Texture2D
       assembly: UnityEngine.CoreModule
       name: SFT_R_pebble_20_17
-    second: {fileID: 2800000, guid: 6a23b059f063342449a6856fcc024061, type: 3}
+    second: {fileID: 2800000, guid: c9547fde76a3931478df41c65f5154da, type: 3}
   - first:
       type: UnityEngine:Texture2D
       assembly: UnityEngine.CoreModule
       name: SFT_R_pebble_21_18
-    second: {fileID: 2800000, guid: 4511ad33868ac484898ab37ad477f6f2, type: 3}
+    second: {fileID: 2800000, guid: ca20542e34580fc469ec7515b0fab767, type: 3}
   - first:
       type: UnityEngine:Texture2D
       assembly: UnityEngine.CoreModule
       name: SFT_R_pebble_flat_22_19
-    second: {fileID: 2800000, guid: bb0d3fd73a0524b4e8f94553f314fff0, type: 3}
+    second: {fileID: 2800000, guid: f33371e5670ab9d479ddd2298f35b2ea, type: 3}
   - first:
       type: UnityEngine:Texture2D
       assembly: UnityEngine.CoreModule
       name: SFT_R_pebble_flat_23_20
-    second: {fileID: 2800000, guid: 29ee1b7b2aa3ae24185536dc34e181a0, type: 3}
+    second: {fileID: 2800000, guid: b996d16c7d7ba094ebbf357261ec5444, type: 3}
   - first:
       type: UnityEngine:Texture2D
       assembly: UnityEngine.CoreModule
       name: SFT_R_rock_24_21
-    second: {fileID: 2800000, guid: 0e0b3ec763e7a5b4cae04f33793d7bf8, type: 3}
+    second: {fileID: 2800000, guid: 13ffb583811ed6f4ab26221957a28de8, type: 3}
   - first:
       type: UnityEngine:Texture2D
       assembly: UnityEngine.CoreModule
       name: SFT_R_rock_flat_2_10
-    second: {fileID: 2800000, guid: 9f6c959c04705054b8870f8e663618c9, type: 3}
+    second: {fileID: 2800000, guid: 2d4cf407cc6977f4a99c585466857f46, type: 3}
   - first:
       type: UnityEngine:Texture2D
       assembly: UnityEngine.CoreModule
       name: SFT_R_stepping_10_12
-    second: {fileID: 2800000, guid: a7e62338ef14642489f661672613a017, type: 3}
+    second: {fileID: 2800000, guid: 4f4bf218a0f8b244c9a1158507e8c015, type: 3}
   - first:
       type: UnityEngine:Texture2D
       assembly: UnityEngine.CoreModule
       name: SFT_R_stepping_11_13
-    second: {fileID: 2800000, guid: 02c65596fe2580a4381d13694bcfa3f3, type: 3}
+    second: {fileID: 2800000, guid: 87eeddbbaa5fa3f408b11a7dc6b8515d, type: 3}
   - first:
       type: UnityEngine:Texture2D
       assembly: UnityEngine.CoreModule
       name: SFT_R_stepping_12_14
-    second: {fileID: 2800000, guid: e9dd5145a98ca624899b02d3a39f9524, type: 3}
+    second: {fileID: 2800000, guid: 9f1879aac79f28345ba7b77313a1dae3, type: 3}
   - first:
       type: UnityEngine:Texture2D
       assembly: UnityEngine.CoreModule
       name: SFT_R_stepping_13_15
-    second: {fileID: 2800000, guid: f45e3bc05622607458855ac21926943a, type: 3}
+    second: {fileID: 2800000, guid: dff678c255572ac43ad536c1f4ff5f0d, type: 3}
   - first:
       type: UnityEngine:Texture2D
       assembly: UnityEngine.CoreModule
       name: SFT_R_stepping_14_16
-    second: {fileID: 2800000, guid: f5320396a2ab0bc4ab7962b41c30b7c7, type: 3}
+    second: {fileID: 2800000, guid: 064d8d0af517bd4499a145a55288f2ae, type: 3}
   - first:
       type: UnityEngine:Texture2D
       assembly: UnityEngine.CoreModule
       name: SFT_W_branch_2_26
-    second: {fileID: 2800000, guid: 094b4fce383c5e54fb5f8e904aade701, type: 3}
+    second: {fileID: 2800000, guid: 0e1e65be109a0134d96fb20fbd70ee39, type: 3}
   - first:
       type: UnityEngine:Texture2D
       assembly: UnityEngine.CoreModule
       name: SFT_W_branch_pile_1_25
-    second: {fileID: 2800000, guid: 61fe873cbbf9cc648bb5bcff89402656, type: 3}
+    second: {fileID: 2800000, guid: 372e087b6ba45494ba37ab14036bda3d, type: 3}
   - first:
       type: UnityEngine:Texture2D
       assembly: UnityEngine.CoreModule
       name: SFT_W_log_3_24
-    second: {fileID: 2800000, guid: 2587b5bb27cad9f4e86ec2a400f9e041, type: 3}
+    second: {fileID: 2800000, guid: f23db5c999c1e3c44879683525979681, type: 3}
   - first:
       type: UnityEngine:Texture2D
       assembly: UnityEngine.CoreModule
       name: SFT_W_stump_1_22
-    second: {fileID: 2800000, guid: acd4819688fb5e141945dbcfc4467a1f, type: 3}
+    second: {fileID: 2800000, guid: 7d354a288f1f79541b11b512d34e0a4c, type: 3}
   - first:
       type: UnityEngine:Texture2D
       assembly: UnityEngine.CoreModule
       name: SFT_W_stump_broken_2_23
-    second: {fileID: 2800000, guid: de0b7db732694814da6df3b348f81b24, type: 3}
+    second: {fileID: 2800000, guid: 4cbf1aea0b8f4564bac14bc76c97a662, type: 3}
   - first:
       type: UnityEngine:Texture2D
       assembly: UnityEngine.CoreModule
       name: T_Terrain_Dirt_BC
-    second: {fileID: 2800000, guid: 4ba898f3862da3c4da13da95512e2d3b, type: 3}
+    second: {fileID: 2800000, guid: d7db8e6ea27bccc459923f88c7ad129d, type: 3}
   - first:
       type: UnityEngine:Texture2D
       assembly: UnityEngine.CoreModule
       name: T_Terrain_Grass_BC
-    second: {fileID: 2800000, guid: ad50aa3e0d49520468418892170d6f31, type: 3}
+    second: {fileID: 2800000, guid: 929fca953ad9b094082a753d85ba95c7, type: 3}
   materials:
     materialImportMode: 2
     materialName: 0

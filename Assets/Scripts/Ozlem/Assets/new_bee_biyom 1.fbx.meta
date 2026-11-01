@@ -1,0 +1,561 @@
+fileFormatVersion: 2
+guid: d69b19d785e491f44aa7146c1ab7a375
+ModelImporter:
+  serializedVersion: 24600
+  internalIDToNameTable: []
+  externalObjects:
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: Normal
+    second: {fileID: 2800000, guid: b6d9a067ab111b64bac8f0f08ba63b41, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: Roughness
+    second: {fileID: 2800000, guid: 1e598d939f3e1e0469f475a33d57c75d, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: SFT_M_amanita_2_28
+    second: {fileID: 2800000, guid: b8fbfefbdcb800f4faa1e12b9762ce5a, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: SFT_M_amanita_cluster_1_27
+    second: {fileID: 2800000, guid: 295ce1354a3929242884ef706652c4a4, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: SFT_M_chanterelle_cluster_3_29
+    second: {fileID: 2800000, guid: af66291e88c1d6140bd83b2e19296302, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: SFT_M_glow_cluster_5_31
+    second: {fileID: 2800000, guid: a2debfe1ca53d7540a7f41cb90f312fe, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: SFT_M_porcini_6_32
+    second: {fileID: 2800000, guid: 1c5b03947dd6a834e89eece8b6ef38f4, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: SFT_M_porcini_cluster_4_30
+    second: {fileID: 2800000, guid: 132a331e653ce44409a50be3cc47ac82, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: SFT_R_arch_1_6
+    second: {fileID: 2800000, guid: e77665be8c41ea44c9492cbab64190d0, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: SFT_R_boulder_4_7
+    second: {fileID: 2800000, guid: 5c80fd8dd4073564bbe3111f54139d35, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: SFT_R_boulder_tall_2_8
+    second: {fileID: 2800000, guid: b6056df6dc427904c889be07ba2b18e4, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: SFT_R_cliff_3_5
+    second: {fileID: 2800000, guid: cb35e8e1da89e444582a734e82819c9a, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: SFT_R_cliff_corner_1_3
+    second: {fileID: 2800000, guid: 155ec66fb3d3cc6409c9c22d8f4c5870, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: SFT_R_cliff_tall_2_4
+    second: {fileID: 2800000, guid: 45b9fa6d4fa4ef44084f7d79ea9a8442, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: SFT_R_cluster_1_11
+    second: {fileID: 2800000, guid: 1a84437879ad3d14bb71200067073d71, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: SFT_R_menhir_3_9
+    second: {fileID: 2800000, guid: e469fa40054b29e44a52e54fdfd3fb62, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: SFT_R_pebble_20_17
+    second: {fileID: 2800000, guid: edf6886a7853e5d4db65bc40a92e7434, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: SFT_R_pebble_flat_22_19
+    second: {fileID: 2800000, guid: 03abd0b4eb1c32649ab3a187178785b0, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: SFT_R_pebble_flat_23_20
+    second: {fileID: 2800000, guid: 878b35e44aa868643af6e25f94d19a0d, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: SFT_R_rock_24_21
+    second: {fileID: 2800000, guid: 26bb9de14f7da4846b6c51b2439b3832, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: SFT_R_rock_flat_2_10
+    second: {fileID: 2800000, guid: 61858266e063416499e3bb7bcd7b5001, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: SFT_R_stepping_10_12
+    second: {fileID: 2800000, guid: d3e72197622b39748b8c99bbebd40128, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: SFT_R_stepping_11_13
+    second: {fileID: 2800000, guid: 3e40c528bdfef724884af5a061cf5be5, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: SFT_R_stepping_12_14
+    second: {fileID: 2800000, guid: 33429d1c0b8f108468669eee262fe9e3, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: SFT_R_stepping_13_15
+    second: {fileID: 2800000, guid: 548b5d0a3544ffe419a407032db6eb31, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: SFT_R_stepping_14_16
+    second: {fileID: 2800000, guid: 8d4e5c94afeaa4f44a4626c3c7bdbe16, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: SFT_W_branch_pile_1_25
+    second: {fileID: 2800000, guid: 6515772ab2ba2244d8646f92fabc3ee7, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: SFT_W_log_3_24
+    second: {fileID: 2800000, guid: 0d4031dc195459c499833be9b030ad5f, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: SFT_W_stump_1_22
+    second: {fileID: 2800000, guid: 5622aff303960c74fa333cc258cf0d53, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: SFT_W_stump_broken_2_23
+    second: {fileID: 2800000, guid: c040a73ebc73c9c4db0b3046a5cf4f8c, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: T_Terrain_Dirt_BC
+    second: {fileID: 2800000, guid: 064108d334136e9419391b38465a30dd, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: T_Terrain_Grass_BC
+    second: {fileID: 2800000, guid: c9fa970c25b633843aa7e5b1135546d2, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: Tree_leaf_displace
+    second: {fileID: 2800000, guid: e8428c39874919b4fb5b898c135fba03, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: flor15
+    second: {fileID: 2800000, guid: 74b08362277b71e4aa0d9f405d3b4dc5, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: flor15-B
+    second: {fileID: 2800000, guid: 4184dc18f3ddfb24d83371875b2311b4, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: flor15-C
+    second: {fileID: 2800000, guid: 23b1b06c2dde3d5409ecfe8e21319786, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: flor17
+    second: {fileID: 2800000, guid: 7171fe0c7e7c1b84bb3ec8de566a8df9, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: flor17-B
+    second: {fileID: 2800000, guid: dee010ba3d925f948bb53fe3865c03cd, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: flor17-C
+    second: {fileID: 2800000, guid: 3f1ddc6f13152294bb45533335a6ac50, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: flor17-D
+    second: {fileID: 2800000, guid: 7f470a4ea76608e4ca7a96561e5678be, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: flor18
+    second: {fileID: 2800000, guid: 31302f4ff5b0aef49bd8091e2932dad6, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: flor18-B
+    second: {fileID: 2800000, guid: 41c64aeae888d9346a30b36b00f460f1, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: flor18-C
+    second: {fileID: 2800000, guid: 3450aaa699841cb4b9f152e7aba74396, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: flor18-D
+    second: {fileID: 2800000, guid: 326bab6a5d3bb8244bb923d0759d5c27, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: flor18-E
+    second: {fileID: 2800000, guid: 1cca62a5c89bc8a4b8bfa6a3d836aaaa, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: flor19
+    second: {fileID: 2800000, guid: 0104ff5785c3a3b45a16174e5fe70591, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: flor19-B
+    second: {fileID: 2800000, guid: 4584c6d42fb142c488cc34c40c52bd1d, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: flor20
+    second: {fileID: 2800000, guid: eb24444fa6fb04e478ad51408d79b709, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: flor20-B
+    second: {fileID: 2800000, guid: 18bb22e45c4da2d449bb18a24e63ac37, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: flor21
+    second: {fileID: 2800000, guid: 7a13a9591e58fa14ca9f9819730b025c, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: flor21-B
+    second: {fileID: 2800000, guid: 0259f4193fc16984eb94538c6dadd630, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: flor22
+    second: {fileID: 2800000, guid: 69025dd19f947a24db078f11e6eafc0d, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: flor22-B
+    second: {fileID: 2800000, guid: 071884742c7df90458aaa4408fbce370, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: flor22-C
+    second: {fileID: 2800000, guid: 3bc46508114cf20489a8e7b7bd74810f, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: flor22-D
+    second: {fileID: 2800000, guid: 7774747c5faf60f43837583126e157ab, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: flor22-E
+    second: {fileID: 2800000, guid: 737b46e114a376448bb643a8f24b508f, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: flor22-F
+    second: {fileID: 2800000, guid: 0ee34fc8575562e44a58bdcbf7d5bd26, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: flor23
+    second: {fileID: 2800000, guid: 042bf2ac00db53e4ca0a75efda3f6a8f, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: flor23-B
+    second: {fileID: 2800000, guid: be823dc8c71f85949bee7e660c67c6f3, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: flor23-C
+    second: {fileID: 2800000, guid: 615475b9c3a36834b9f923e1cec4856e, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: flor24
+    second: {fileID: 2800000, guid: 9cd90afe30010d349a292d42969561dd, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: flor24-B
+    second: {fileID: 2800000, guid: 6ad8335e18a47ca4aac674c4446aa8a5, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: flor24-C
+    second: {fileID: 2800000, guid: 103b0bd255ce4b5458eb04960e92db8b, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: flor25
+    second: {fileID: 2800000, guid: 0a6457c7208b5e949b595ae14e8654e2, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: flor25-B
+    second: {fileID: 2800000, guid: 71b8bd64180b9ef4b9d513da38adf797, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: flor25-C
+    second: {fileID: 2800000, guid: b36e6c55a86d690468f35b43c181e6d2, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: flor26
+    second: {fileID: 2800000, guid: 79a93ea334ae234499bbe2a7b229b085, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: flor26-B
+    second: {fileID: 2800000, guid: 1813c2cc2003fc942b75d8d410001974, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: flor27
+    second: {fileID: 2800000, guid: b197ef51f6a443a4a857e460d862cbd7, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: flor27-B
+    second: {fileID: 2800000, guid: b69d40589c495d546b9d625ff9c4b646, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: flor27-C
+    second: {fileID: 2800000, guid: 5dbc6e72a4b854141a06b019dd19a6b2, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: flor28
+    second: {fileID: 2800000, guid: 10102ea99ee421f4392c6ff6c2ee0931, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: flor29
+    second: {fileID: 2800000, guid: a6334d93272e31c428f0e7f2c8357a9a, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: flor30
+    second: {fileID: 2800000, guid: 607a271f8ba987f4bb41cf1e482400d1, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: flor30-B
+    second: {fileID: 2800000, guid: 6868576ee7d89e64a935b421589ba36e, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: flor30-C
+    second: {fileID: 2800000, guid: ee14ae8ed45d82b4eaf52bbd94774753, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: flor31
+    second: {fileID: 2800000, guid: 265fcf1fc08b4ac48acdbe3a7830d4ad, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: flor31-B
+    second: {fileID: 2800000, guid: 5fbd8cff9d7e0ad48a68dbb9ce47624e, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: flor31-C
+    second: {fileID: 2800000, guid: fe2657e75bffb544da48a463c11e375d, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: flor31-D
+    second: {fileID: 2800000, guid: d8f6df62fb9806e4e86c9c7df37121d0, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: flor32
+    second: {fileID: 2800000, guid: e1157dd5510ceb1419610932a497f87d, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: flor32-B
+    second: {fileID: 2800000, guid: 4ec66ec0a2bcd1c4f9da687e8fe73c16, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: flor32-C
+    second: {fileID: 2800000, guid: 4d5ebb6ba1e74a947bbdd652fad1c5fe, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: flor33
+    second: {fileID: 2800000, guid: 9c2d86cb8bd19cb4cafdea6631b2f3a5, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: flor33-B
+    second: {fileID: 2800000, guid: 3283b2795a277f241950e3f3df4fec8b, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: flor33-C
+    second: {fileID: 2800000, guid: 27f108d3a8afc5c458f0bde09f578a1c, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: flor34
+    second: {fileID: 2800000, guid: 44f6745425f438d4387457ccba520b42, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: tree_body
+    second: {fileID: 2800000, guid: 0eba209b5dce55e429302854bd62a890, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: tree_green
+    second: {fileID: 2800000, guid: d1a50c075ac4d1a419790dd8b3705d47, type: 3}
+  materials:
+    materialImportMode: 2
+    materialName: 0
+    materialSearch: 1
+    materialLocation: 1
+    searchTexturesGlobally: 0
+  animations:
+    legacyGenerateAnimations: 4
+    bakeSimulation: 0
+    resampleCurves: 1
+    optimizeGameObjects: 0
+    removeConstantScaleCurves: 0
+    motionNodeName: 
+    animationImportErrors: 
+    animationImportWarnings: 
+    animationRetargetingWarnings: 
+    animationDoRetargetingWarnings: 0
+    importAnimatedCustomProperties: 0
+    importConstraints: 0
+    animationCompression: 1
+    animationRotationError: 0.5
+    animationPositionError: 0.5
+    animationScaleError: 0.5
+    animationWrapMode: 0
+    extraExposedTransformPaths: []
+    extraUserProperties: []
+    clipAnimations: []
+    isReadable: 0
+  meshes:
+    lODScreenPercentages: []
+    globalScale: 1
+    meshCompression: 0
+    addColliders: 0
+    useSRGBMaterialColor: 1
+    sortHierarchyByName: 1
+    preBakeConvexCollisionMesh: 0
+    preBakeTriangleCollisionMesh: 0
+    importPhysicalCameras: 1
+    importVisibility: 1
+    importBlendShapes: 1
+    importCameras: 1
+    importLights: 1
+    nodeNameCollisionStrategy: 1
+    fileIdsGeneration: 2
+    swapUVChannels: 0
+    generateSecondaryUV: 0
+    useFileUnits: 1
+    keepQuads: 0
+    weldVertices: 1
+    bakeAxisConversion: 0
+    preserveHierarchy: 0
+    skinWeightsMode: 0
+    maxBonesPerVertex: 4
+    minBoneWeight: 0.001
+    optimizeBones: 1
+    generateMeshLods: 0
+    meshLodGenerationFlags: 0
+    maximumMeshLod: -1
+    importUVs: -1
+    importVertexColors: 1
+    meshOptimizationFlags: -1
+    indexFormat: 0
+    secondaryUVAngleDistortion: 8
+    secondaryUVAreaDistortion: 15.000001
+    secondaryUVHardAngle: 88
+    secondaryUVMarginMethod: 1
+    secondaryUVMinLightmapResolution: 40
+    secondaryUVMinObjectScale: 1
+    secondaryUVPackMargin: 4
+    useFileScale: 1
+    strictVertexDataChecks: 0
+  tangentSpace:
+    normalSmoothAngle: 60
+    normalImportMode: 0
+    tangentImportMode: 3
+    normalCalculationMode: 4
+    legacyComputeAllNormalsFromSmoothingGroupsWhenMeshHasBlendShapes: 0
+    blendShapeNormalImportMode: 1
+    normalSmoothingSource: 0
+    calculateBlendshapeNormalsDeltaFromImportedNormals: 0
+  referencedClips: []
+  importAnimation: 1
+  humanDescription:
+    serializedVersion: 3
+    human: []
+    skeleton: []
+    armTwist: 0.5
+    foreArmTwist: 0.5
+    upperLegTwist: 0.5
+    legTwist: 0.5
+    armStretch: 0.05
+    legStretch: 0.05
+    feetSpacing: 0
+    globalScale: 1
+    rootMotionBoneName: 
+    hasTranslationDoF: 0
+    hasExtraRoot: 0
+    skeletonHasParents: 1
+  lastHumanDescriptionAvatarSource: {instanceID: 0}
+  autoGenerateAvatarMappingIfUnspecified: 1
+  animationType: 2
+  humanoidOversampling: 1
+  avatarSetup: 0
+  addHumanoidExtraRootOnlyWhenUsingAvatar: 1
+  importBlendShapeDeformPercent: 1
+  remapMaterialsIfMaterialImportModeIsNone: 0
+  additionalBone: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
