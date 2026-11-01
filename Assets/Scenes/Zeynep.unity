@@ -4823,7 +4823,7 @@ AudioSource:
   OutputAudioMixerGroup: {fileID: 0}
   m_audioClip: {fileID: 0}
   m_Resource: {fileID: 0}
-  m_PlayOnAwake: 1
+  m_PlayOnAwake: 0
   m_Volume: 1
   m_Pitch: 1
   Loop: 0
@@ -4927,6 +4927,7 @@ MonoBehaviour:
   friendFeed: {fileID: 8300000, guid: bf5e9e4afb147d9478433b1950c34e67, type: 3}
   mudStep: {fileID: 8300000, guid: 9e971e838f0989f4b95e79821ab7e9e4, type: 3}
   taskComplete: {fileID: 8300000, guid: d71ccd1abd041f9408a2c9c701d9f6de, type: 3}
+  seedPlant: {fileID: 8300000, guid: cb1e694be397877478c32d447b126436, type: 3}
 --- !u!4 &601517020
 Transform:
   m_ObjectHideFlags: 0
@@ -6801,6 +6802,8 @@ MonoBehaviour:
   minWaterHeight: -1
   maxWaterHeight: 1
   waterRiseSpeed: 0.5
+  waterRiseSound: {fileID: 8300000, guid: a799d1fb4b8b21c43956992b7e6cd0f0, type: 3}
+  waterVolume: 1
 --- !u!4 &837763654
 Transform:
   m_ObjectHideFlags: 0
@@ -15466,8 +15469,8 @@ SceneRoots:
   m_Roots:
   - {fileID: 410087041}
   - {fileID: 832575519}
-  - {fileID: 699320409}
   - {fileID: 601517020}
+  - {fileID: 699320409}
   - {fileID: 837763654}
   - {fileID: 356116989}
   - {fileID: 330585546}

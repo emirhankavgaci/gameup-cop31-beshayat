@@ -521,18 +521,26 @@ public class FrogController : MonoBehaviour
         rb.MovePosition(nextPosition);
     }
 
+
     private void OnTriggerEnter(Collider other)
     {
         if (other.CompareTag("Mud"))
         {
-            isInMud = true;
-
-            if (enableDebugLogs)
+            if (!isInMud)
             {
-                Debug.Log("Kurbaða çamura girdi!", this);
+                isInMud = true;
+
+                // Çamura ilk giriþte ses çal.
+                AudioManager.Instance?.PlayMudStep();
+
+                if (enableDebugLogs)
+                {
+                    Debug.Log("Kurbaða çamura girdi!", this);
+                }
             }
         }
     }
+
 
     private void OnTriggerExit(Collider other)
     {
