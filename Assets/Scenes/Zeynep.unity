@@ -978,6 +978,7 @@ GameObject:
   - component: {fileID: 682838361}
   - component: {fileID: 682838362}
   - component: {fileID: 682838363}
+  - component: {fileID: 682838364}
   m_Layer: 0
   m_Name: Frog
   m_TagString: Untagged
@@ -1007,11 +1008,11 @@ Rigidbody:
     m_Bits: 0
   m_ImplicitCom: 1
   m_ImplicitTensor: 1
-  m_UseGravity: 0
+  m_UseGravity: 1
   m_IsKinematic: 0
-  m_Interpolate: 0
-  m_Constraints: 112
-  m_CollisionDetection: 0
+  m_Interpolate: 1
+  m_Constraints: 80
+  m_CollisionDetection: 1
 --- !u!136 &682838353
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -1101,7 +1102,7 @@ Transform:
   m_GameObject: {fileID: 682838351}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 1.17, z: -7.53}
+  m_LocalPosition: {x: 0, y: 0.98, z: -7.53}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -1302,6 +1303,20 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::FrogSeedPlanter
   plantingRange: 3
   showPlantingHint: 1
+--- !u!114 &682838364
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 682838351}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ad5c86733c2e1f44bf0aa7acd674681, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MudDashHint
+  mudTag: Mud
+  hintText: Camurdasin! Hizlanmak icin SHIFT'e bas!
 --- !u!1 &699320407
 GameObject:
   m_ObjectHideFlags: 0
@@ -1313,6 +1328,7 @@ GameObject:
   - component: {fileID: 699320409}
   - component: {fileID: 699320408}
   - component: {fileID: 699320410}
+  - component: {fileID: 699320411}
   m_Layer: 0
   m_Name: PondManager
   m_TagString: Untagged
@@ -1364,6 +1380,21 @@ MonoBehaviour:
   pondHealthManager: {fileID: 699320408}
   frogCroak: {fileID: 682838361}
   foodCollector: {fileID: 682838359}
+--- !u!114 &699320411
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 699320407}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 88da54bbab046764aa424121111dd0a3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::FrogObjectiveUI
+  requiredFrogs: 3
+  requiredSeeds: 3
+  showObjectives: 1
 --- !u!1 &724444333
 GameObject:
   m_ObjectHideFlags: 0
