@@ -24,7 +24,7 @@ public class WaterLevelController : MonoBehaviour
     [SerializeField] private float damMaxWaterOffset = -0.15f; // Baraj üst sınırından ne kadar aşağıda kalacağı
 
     [Header("Karakterin Suyun Üstünde Kalması")]
-    [SerializeField] private bool solidWaterSurface = false; // True ise karakter ve eşyalar suyun içinden düşmez, üstünde durur
+    [SerializeField] private bool solidWaterSurface = true; // True ise karakter ve eşyalar suyun içinden düşmez, üstünde durur
     [SerializeField] private float waterSpeedMultiplier = 0.75f; // Oyuncu suyun üzerindeyken hız çarpanı
 
     [Header("Su Akış Efekti (Texture Offset)")]
@@ -107,6 +107,14 @@ public class WaterLevelController : MonoBehaviour
         OnWaterLevelRatioChanged?.Invoke(1f);
     }
 
+    private void OnDestroy()
+    {
+        // Sahne yeniden yüklendiğinde silinmiş UI Image referanslarına çağrı gitmesini engelle
+        OnWaterLevelRatioChanged = null;
+        OnRiverDriedOut = null;
+        OnRiverSaved = null;
+    }
+
     private void Update()
     {
         // 1. Su dokusunu (texture) akış hızına göre kaydır
@@ -165,12 +173,12 @@ public class WaterLevelController : MonoBehaviour
 
     private void UpdateWaterUI(float ratio)
     {
-        if (waterBarSlider != null)
+        if (waterBarSlider != null && waterBarSlider.gameObject != null)
         {
             waterBarSlider.value = waterBarSlider.maxValue > 1.5f ? ratio * maxWaterAmount : ratio;
         }
 
-        if (waterBarFillImage != null)
+        if (waterBarFillImage != null && waterBarFillImage.gameObject != null)
         {
             waterBarFillImage.fillAmount = ratio;
         }

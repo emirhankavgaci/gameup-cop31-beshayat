@@ -53,6 +53,16 @@ public class TrashPickup3D : MonoBehaviour
     public static event Action<TrashPickup3D> OnTrashPickedUp;
     public static event Action<TrashPickup3D> OnTrashDropped;
 
+    /// <summary>
+    /// Sahne yeniden başlatıldığında (Restart) eski sahnedeki silinmiş UI Image referanslarının
+    /// MissingReferenceException fırlatmasını önlemek için static eventleri temizler.
+    /// </summary>
+    public static void ResetStaticEvents()
+    {
+        OnTrashPickedUp = null;
+        OnTrashDropped = null;
+    }
+
     private void Awake()
     {
         itemRb = GetComponent<Rigidbody>();
