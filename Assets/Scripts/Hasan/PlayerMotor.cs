@@ -195,6 +195,9 @@ public class PlayerMotor : MonoBehaviour
             slideHandler = GetComponent<SlideHandler>();
         if (playerVisual == null)
             playerVisual = GetComponentInChildren<PlayerVisual>();
+
+        if (GetComponent<PlayerAudioHandler>() == null)
+            gameObject.AddComponent<PlayerAudioHandler>();
     }
 
     private void Update()

@@ -86,19 +86,22 @@ public class FloodChaser : MonoBehaviour
     [Tooltip("Sel uğultu/dalga sesini çalan AudioSource bileşeni (opsiyonel).")]
     [SerializeField] private AudioSource floodAudioSource;
 
+    [Tooltip("Sel uğultu/dalga ses klibi (selsound.mp3).")]
+    [SerializeField] private AudioClip floodAudioClip;
+
     [Tooltip("Sesin maksimum yüksekliğe (1.0) ulaştığı mesafe (varsayılan 0 m).")]
     [SerializeField] private float audioNearDistance = 0f;
 
-    [Tooltip("Sesin minimum yüksekliğe (0.1) düştüğü mesafe (varsayılan 60 m).")]
-    [SerializeField] private float audioFarDistance = 60f;
+    [Tooltip("Sesin minimum yüksekliğe düştüğü mesafe (varsayılan 50 m).")]
+    [SerializeField] private float audioFarDistance = 50f;
 
     [Tooltip("Mesafe 0 iken sel ses yüksekliği (varsayılan 1.0).")]
     [Range(0f, 1f)]
     [SerializeField] private float maxAudioVolume = 1.0f;
 
-    [Tooltip("Mesafe >= 60 m iken sel ses yüksekliği (varsayılan 0.1).")]
+    [Tooltip("Mesafe >= 50 m iken sel ses yüksekliği (varsayılan 0.05).")]
     [Range(0f, 1f)]
-    [SerializeField] private float minAudioVolume = 0.1f;
+    [SerializeField] private float minAudioVolume = 0.05f;
 
     [Header("Olaylar (Events)")]
     [Tooltip("Oyuncu sele yakalandığında tetiklenen UnityEvent.")]
@@ -182,6 +185,23 @@ public class FloodChaser : MonoBehaviour
         if (floodAudioSource == null)
         {
             floodAudioSource = GetComponent<AudioSource>();
+        }
+
+#if UNITY_EDITOR
+        if (floodAudioClip == null)
+        {
+            floodAudioClip = UnityEditor.AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/Hasan/gamejamses/selsound.mp3");
+        }
+#endif
+
+        if (floodAudioSource != null)
+        {
+            if (floodAudioClip != null && floodAudioSource.clip == null)
+            {
+                floodAudioSource.clip = floodAudioClip;
+            }
+            floodAudioSource.loop = true;
+            floodAudioSource.playOnAwake = false;
         }
 
         fallbackStartPos = transform.position;
@@ -513,6 +533,14 @@ public class FloodChaser : MonoBehaviour
 
         if (floodAudioSource != null)
         {
+            if (floodAudioSource.clip == null && floodAudioClip != null)
+            {
+                floodAudioSource.clip = floodAudioClip;
+            }
+
+            // absDistance: sel ile oyuncu arasındaki anlık mesafe (m)
+            // Sel yaklaştıkça (mesafe azaldıkça) ses artar (maxAudioVolume = 1.0f)
+            // Sel uzaklaştıkça ses azalır (minAudioVolume = 0.05f)
             float t = Mathf.InverseLerp(audioNearDistance, Mathf.Max(audioNearDistance + 1f, audioFarDistance), absDistance);
             float targetVolume = Mathf.Lerp(maxAudioVolume, minAudioVolume, t);
             if (isFloodStopped)
@@ -735,4 +763,24 @@ public class FloodChaser : MonoBehaviour
 
         Gizmos.matrix = oldMatrix;
     }
+
+#if UNITY_EDITOR
+    private void OnValidate()
+    {
+        if (floodAudioClip == null)
+        {
+            floodAudioClip = UnityEditor.AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/Hasan/gamejamses/selsound.mp3");
+        }
+
+        if (floodAudioSource == null)
+        {
+            floodAudioSource = GetComponent<AudioSource>();
+        }
+
+        if (floodAudioSource != null && floodAudioClip != null && floodAudioSource.clip == null)
+        {
+            floodAudioSource.clip = floodAudioClip;
+        }
+    }
+#endif
 }

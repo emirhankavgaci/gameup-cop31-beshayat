@@ -84,6 +84,11 @@ public class GameFlowManager : MonoBehaviour
     public bool IsLevelCompleted => isLevelCompleted;
     public float RespawnFloodDistance => respawnFloodDistance;
 
+    /// <summary>
+    /// Oyuncu sele yakalandığında veya bir engele çarpıp öldüğünde tetiklenir (Ses ve efektler için).
+    /// </summary>
+    public event System.Action OnPlayerDied;
+
     private void Awake()
     {
         EndingActive = false;
@@ -149,6 +154,7 @@ public class GameFlowManager : MonoBehaviour
             return;
 
         deathCount++;
+        OnPlayerDied?.Invoke();
         StartCoroutine(RespawnSequenceCoroutine());
     }
 
@@ -162,6 +168,7 @@ public class GameFlowManager : MonoBehaviour
             return;
 
         deathCount++;
+        OnPlayerDied?.Invoke();
 
         if (cameraShake != null)
         {

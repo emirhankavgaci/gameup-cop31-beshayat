@@ -60,6 +60,9 @@ public class FinishTrigger : MonoBehaviour
         onFinishReachedEvent?.Invoke();
         OnFinishReached?.Invoke();
 
+        // FinishTrigger tetiklendiğinde maymun boğulma ölüm sesini (whenmonkeydie.mp3) çal
+        PlayerAudioHandler.Instance?.PlayWhenMonkeyDieSound();
+
         if (endingSequence == null)
         {
             endingSequence = FindObjectOfType<EndingSequence>();

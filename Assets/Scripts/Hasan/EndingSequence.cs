@@ -402,6 +402,8 @@ public class EndingSequence : MonoBehaviour
             playerLook.SetDrowningCameraState(true, drownTargetFov, fovTransitionSpeed);
         }
 
+        PlayerAudioHandler.Instance?.PlayWhenMonkeyDieSound();
+        PlayerAudioHandler.Instance?.PlayDrowningSound();
         SetupUnderwaterAudioFilter();
         EnsureAndPlayBubbleParticles();
     }
