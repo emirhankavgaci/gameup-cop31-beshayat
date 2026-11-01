@@ -11,7 +11,6 @@ GameObject:
   - component: {fileID: 72060339222446098}
   - component: {fileID: 2653584575996148709}
   - component: {fileID: 5775383108590038352}
-  - component: {fileID: 7140622003002057139}
   m_Layer: 0
   m_Name: HardRock_01
   m_TagString: Untagged
@@ -91,24 +90,3 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!65 &7140622003002057139
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7866673302496040995}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 0.006454489, y: 0.007652993, z: 0.01168017}
-  m_Center: {x: 0.0007404195, y: -0.00088636327, z: 0.005576084}
