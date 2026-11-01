@@ -6,13 +6,10 @@ public class BeeMovement : MonoBehaviour
 {
     [Header("Movement")]
     [SerializeField] private float moveSpeed = 2f;
-    [SerializeField] private float stoppingDistance = 0.5f;
-
-    [SerializeField] private Camera mainCamera;
+    [SerializeField] private float sprintMultiplier = 1.8f;
 
     private Rigidbody rb;
-    private Vector3 targetPosition;
-    private bool hasTarget;
+    private Vector3 moveDirection;
 
     private void Awake()
     {
@@ -23,51 +20,28 @@ public class BeeMovement : MonoBehaviour
 
         rb.constraints = RigidbodyConstraints.FreezePositionY |
                          RigidbodyConstraints.FreezeRotation;
-
-        if (mainCamera == null)
-            mainCamera = Camera.main;
     }
 
     private void Update()
     {
-        if (mainCamera == null)
-            return;
+        float x = Input.GetAxisRaw("Horizontal");
+        float z = Input.GetAxisRaw("Vertical");
 
-        Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
-
-        Plane groundPlane = new Plane(
-            Vector3.up,
-            new Vector3(0f, transform.position.y, 0f)
-        );
-
-        if (groundPlane.Raycast(ray, out float distance))
-        {
-            targetPosition = ray.GetPoint(distance);
-            hasTarget = true;
-        }
+        moveDirection = new Vector3(x, 0f, z).normalized;
     }
 
     private void FixedUpdate()
     {
-        if (!hasTarget)
-            return;
+        float currentSpeed = moveSpeed;
 
-        Vector3 target = new Vector3(
-            targetPosition.x,
-            rb.position.y,
-            targetPosition.z
-        );
+        if (Input.GetKey(KeyCode.LeftShift) ||
+            Input.GetKey(KeyCode.RightShift))
+        {
+            currentSpeed *= sprintMultiplier;
+        }
 
-        if (Vector3.Distance(rb.position, target) <= stoppingDistance)
-            return;
-
-        Vector3 direction = (target - rb.position).normalized;
-
-        Vector3 nextPosition = Vector3.MoveTowards(
-            rb.position,
-            target - direction * stoppingDistance,
-            moveSpeed * Time.fixedDeltaTime
-        );
+        Vector3 nextPosition = rb.position +
+            moveDirection * currentSpeed * Time.fixedDeltaTime;
 
         rb.MovePosition(nextPosition);
     }

@@ -929,6 +929,8 @@ MonoBehaviour:
   nectarCollectEffect: {fileID: 1227962838067734819, guid: 00a0ed3f36b90fe488cd68593f123376, type: 3}
   pollenSpreadEffect: {fileID: 1227962838067734819, guid: 3b5156ed9431efc49892abebac57eb0b, type: 3}
   collectParticleLifetime: 0.35
+  pollenDepositEffect: {fileID: 1227962838067734819, guid: 00a0ed3f36b90fe488cd68593f123376, type: 3}
+  depositParticleLifetime: 0.5
   currentNectar: 0
   capacity: 15
 --- !u!114 &1500667582
@@ -944,8 +946,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BeeMovement
   moveSpeed: 3
-  stoppingDistance: 2
-  mainCamera: {fileID: 330585545}
+  sprintMultiplier: 1.8
 --- !u!1 &1760561485
 GameObject:
   m_ObjectHideFlags: 0

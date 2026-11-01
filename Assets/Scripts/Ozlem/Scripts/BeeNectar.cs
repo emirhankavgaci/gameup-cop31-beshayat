@@ -25,6 +25,10 @@ public class BeeNectar : MonoBehaviour
     [SerializeField] private ParticleSystem pollenSpreadEffect;
     [SerializeField] private float collectParticleLifetime = 0.35f;
 
+    [Header("Hive Effect")]
+    [SerializeField] private ParticleSystem pollenDepositEffect;
+    [SerializeField] private float depositParticleLifetime = 0.5f;
+
     [SerializeField] private int currentNectar;
     [SerializeField] private int capacity;
 
@@ -56,7 +60,11 @@ public class BeeNectar : MonoBehaviour
 
         int depositedAmount = hive.StorePollen(currentNectar);
 
-        currentNectar -= depositedAmount;
+        if (depositedAmount > 0)
+        {
+            PlayDepositEffect(hive.transform.position);
+            currentNectar -= depositedAmount;
+        }
 
         if (currentNectar <= 0)
         {
@@ -213,6 +221,38 @@ public class BeeNectar : MonoBehaviour
         Destroy(
             effect.gameObject,
             main.duration + main.startLifetime.constantMax + 0.2f
+        );
+    }
+
+    private void PlayDepositEffect(Vector3 hivePosition)
+    {
+        if (pollenDepositEffect == null)
+            return;
+
+        Vector3 direction = hivePosition - transform.position;
+        float distance = direction.magnitude;
+
+        if (distance <= 0.001f)
+            return;
+
+        ParticleSystem effect = Instantiate(
+            pollenDepositEffect,
+            transform.position,
+            Quaternion.LookRotation(direction)
+        );
+
+        ParticleSystem.MainModule main = effect.main;
+
+        main.simulationSpace = ParticleSystemSimulationSpace.World;
+        main.startSpeed = distance / depositParticleLifetime;
+        main.startLifetime = depositParticleLifetime;
+        main.loop = false;
+
+        effect.Play();
+
+        Destroy(
+            effect.gameObject,
+            main.duration + depositParticleLifetime + 0.2f
         );
     }
 
