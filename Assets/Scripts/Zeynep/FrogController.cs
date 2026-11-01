@@ -17,6 +17,18 @@ public class FrogController : MonoBehaviour
     [Header("Mud")]
     [SerializeField] private float mudSpeedMultiplier = 0.4f;
 
+    [Header("Ground Following")]
+    [SerializeField] private LayerMask groundLayer;
+    [SerializeField] private float groundCheckHeight = 3f;
+    [SerializeField] private float groundCheckDistance = 8f;
+    [SerializeField] private float groundOffset = 0.8f;
+    [SerializeField] private float groundFollowSpeed = 20f;
+
+    [Header("Jump")]
+    [SerializeField] private float jumpHeight = 1.3f;
+    [SerializeField] private float jumpDuration = 0.8f;
+    [SerializeField] private float jumpCooldown = 0.15f;
+
     [Header("Animation")]
     [SerializeField] private Animator animator;
 
@@ -33,7 +45,6 @@ public class FrogController : MonoBehaviour
     private float turnInput;
 
     private Vector3 dashDirection;
-
     private float dashTimer;
     private float cooldownTimer;
 
@@ -45,6 +56,14 @@ public class FrogController : MonoBehaviour
 
     private bool isTurningToFly;
     private Quaternion flyTargetRotation;
+
+    private bool isJumping;
+    private bool jumpRequested;
+    private float jumpTimer;
+    private float jumpCooldownTimer;
+    private float jumpStartY;
+    private float jumpGroundY;
+    private float jumpLastHeight;
 
     private static readonly int IsMovingHash =
         Animator.StringToHash("IsMoving");
@@ -60,6 +79,9 @@ public class FrogController : MonoBehaviour
         rb = GetComponent<Rigidbody>();
 
         rb.useGravity = false;
+        rb.isKinematic = true;
+
+        rb.interpolation = RigidbodyInterpolation.Interpolate;
 
         rb.constraints =
             RigidbodyConstraints.FreezeRotationX |
@@ -88,6 +110,7 @@ public class FrogController : MonoBehaviour
     {
         HandleMovementInput();
         HandleDash();
+        HandleJumpInput();
         HandleAttack();
         UpdateAnimator();
     }
@@ -96,13 +119,9 @@ public class FrogController : MonoBehaviour
     {
         float vertical = Input.GetAxisRaw("Vertical");
 
-        // W ile ileri hareket.
         moveInput = Mathf.Max(0f, vertical);
-
-        // A / D ile kendi etrafýnda dönüþ.
         turnInput = Input.GetAxisRaw("Horizontal");
 
-        // S'ye ilk basýldýðýnda 180 derece dönüþ baþlat.
         if (Input.GetKeyDown(KeyCode.S)
             && !isTurningBack
             && !isDashing)
@@ -110,13 +129,11 @@ public class FrogController : MonoBehaviour
             StartBackTurn();
         }
 
-        // Dönüþ sýrasýnda hareket etme.
         if (isTurningBack)
         {
             moveInput = 0f;
             turnInput = 0f;
         }
-        // S basýlý tutuluyorsa dönüþten sonra ileri git.
         else if (Input.GetKey(KeyCode.S))
         {
             moveInput = 1f;
@@ -169,6 +186,68 @@ public class FrogController : MonoBehaviour
         cooldownTimer = dashCooldown;
     }
 
+    private void HandleJumpInput()
+    {
+        if (jumpCooldownTimer > 0f)
+        {
+            jumpCooldownTimer = Mathf.Max(
+                0f,
+                jumpCooldownTimer - Time.deltaTime
+            );
+        }
+
+        if (Input.GetKeyDown(KeyCode.Space)
+            && !isJumping
+            && !isTurningBack
+            && jumpCooldownTimer <= 0f)
+        {
+            jumpRequested = true;
+        }
+    }
+
+    private void StartJump()
+    {
+        if (!TryGetGroundHeight(rb.position, out float groundY))
+            return;
+
+        // Yalnýzca zemine yakýnken zýplanabilir.
+        if (Mathf.Abs(rb.position.y - groundY) > 0.2f)
+            return;
+
+        isJumping = true;
+        jumpTimer = 0f;
+
+        jumpStartY = rb.position.y;
+        jumpGroundY = groundY;
+        jumpLastHeight = 0f;
+
+        if (enableDebugLogs)
+            Debug.Log("Kurbaða zýpladý!", this);
+    }
+
+    private bool TryGetGroundHeight(
+        Vector3 position,
+        out float groundY)
+    {
+        Vector3 rayOrigin =
+            position + Vector3.up * groundCheckHeight;
+
+        if (Physics.Raycast(
+            rayOrigin,
+            Vector3.down,
+            out RaycastHit hit,
+            groundCheckDistance,
+            groundLayer,
+            QueryTriggerInteraction.Ignore))
+        {
+            groundY = hit.point.y + groundOffset;
+            return true;
+        }
+
+        groundY = position.y;
+        return false;
+    }
+
     private void HandleAttack()
     {
         if (!Input.GetMouseButtonDown(0))
@@ -177,7 +256,8 @@ public class FrogController : MonoBehaviour
         if (attackCamera == null || isTurningBack)
             return;
 
-        Ray ray = attackCamera.ScreenPointToRay(Input.mousePosition);
+        Ray ray =
+            attackCamera.ScreenPointToRay(Input.mousePosition);
 
         if (!Physics.Raycast(ray, out RaycastHit hit))
             return;
@@ -223,10 +303,16 @@ public class FrogController : MonoBehaviour
         animator.SetBool(IsDashingHash, isDashing);
     }
 
-
     private void FixedUpdate()
     {
-        // S ile 180 derece dönüþ.
+        if (jumpRequested)
+        {
+            jumpRequested = false;
+
+            if (!isJumping)
+                StartJump();
+        }
+
         if (isTurningBack)
         {
             Quaternion targetRotation =
@@ -241,18 +327,19 @@ public class FrogController : MonoBehaviour
 
             rb.MoveRotation(newRotation);
 
-            // Hedef dönüþ tamamlandý mý?
-            if (Quaternion.Angle(newRotation, targetRotation) < 0.5f)
+            if (Quaternion.Angle(
+                newRotation,
+                targetRotation) < 0.5f)
             {
                 rb.MoveRotation(targetRotation);
                 isTurningBack = false;
             }
 
-            // Dönüþ sýrasýnda hareket etmiyoruz.
+            // Dönüþ sýrasýnda da zýplama devam edebilir.
+            MoveFrog(Vector3.zero, 0f);
             return;
         }
 
-        // Sineðe yumuþak dönüþ.
         if (isTurningToFly)
         {
             if (Mathf.Abs(turnInput) > 0.01f || isDashing)
@@ -270,11 +357,14 @@ public class FrogController : MonoBehaviour
 
                 rb.MoveRotation(newRotation);
 
-                if (Quaternion.Angle(newRotation, flyTargetRotation) < 0.5f)
+                if (Quaternion.Angle(
+                    newRotation,
+                    flyTargetRotation) < 0.5f)
+                {
                     isTurningToFly = false;
+                }
             }
         }
-        // A / D ile kendi etrafýnda dön.
         else if (!isDashing && Mathf.Abs(turnInput) > 0.01f)
         {
             float rotationAmount =
@@ -287,7 +377,6 @@ public class FrogController : MonoBehaviour
             rb.MoveRotation(targetRotation);
         }
 
-        // W veya S ile baktýðý yöne ilerle.
         Vector3 direction =
             isDashing
                 ? dashDirection
@@ -299,13 +388,73 @@ public class FrogController : MonoBehaviour
         if (isInMud)
             speed *= mudSpeedMultiplier;
 
-        rb.MovePosition(
-            rb.position +
-            direction * speed * Time.fixedDeltaTime
-        );
+        MoveFrog(direction, speed);
     }
 
+    private void MoveFrog(Vector3 direction, float speed)
+    {
+        float dt = Time.fixedDeltaTime;
 
+        Vector3 nextPosition =
+            rb.position + direction * speed * dt;
+
+        if (TryGetGroundHeight(
+            nextPosition,
+            out float targetGroundY))
+        {
+            if (isJumping)
+            {
+                jumpGroundY = targetGroundY;
+            }
+            else
+            {
+                nextPosition.y = Mathf.MoveTowards(
+                    rb.position.y,
+                    targetGroundY,
+                    groundFollowSpeed * dt
+                );
+            }
+        }
+
+        if (isJumping)
+        {
+            jumpTimer += dt;
+
+            float progress = Mathf.Clamp01(
+                jumpTimer / Mathf.Max(0.01f, jumpDuration)
+            );
+
+            // 0 -> 1 -> 0 þeklinde zýplama yayý.
+            float jumpHeightNow =
+                Mathf.Sin(progress * Mathf.PI) * jumpHeight;
+
+            // Zýplama yüksekliðini baþlangýç konumuna
+            // göre uygula; zemin yükselirse iniþi de takip et.
+            float baseY = Mathf.MoveTowards(
+                rb.position.y - jumpLastHeight,
+                jumpGroundY,
+                groundFollowSpeed * dt
+            );
+
+            nextPosition.y = baseY + jumpHeightNow;
+            jumpLastHeight = jumpHeightNow;
+
+            if (progress >= 1f)
+            {
+                isJumping = false;
+                jumpLastHeight = 0f;
+                jumpCooldownTimer = jumpCooldown;
+
+                nextPosition.y = Mathf.MoveTowards(
+                    nextPosition.y,
+                    jumpGroundY,
+                    groundFollowSpeed * dt
+                );
+            }
+        }
+
+        rb.MovePosition(nextPosition);
+    }
 
     private void OnTriggerEnter(Collider other)
     {
@@ -315,10 +464,7 @@ public class FrogController : MonoBehaviour
 
             if (enableDebugLogs)
             {
-                Debug.Log(
-                    "Kurbaða çamura girdi!",
-                    this
-                );
+                Debug.Log("Kurbaða çamura girdi!", this);
             }
         }
     }
@@ -331,10 +477,7 @@ public class FrogController : MonoBehaviour
 
             if (enableDebugLogs)
             {
-                Debug.Log(
-                    "Kurbaða çamurdan çýktý!",
-                    this
-                );
+                Debug.Log("Kurbaða çamurdan çýktý!", this);
             }
         }
     }
