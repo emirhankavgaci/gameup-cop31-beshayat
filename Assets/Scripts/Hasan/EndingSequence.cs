@@ -249,6 +249,8 @@ public class EndingSequence : MonoBehaviour
         EnterDrowningPhase();
 
         float startFogDensity = RenderSettings.fogDensity;
+        float startFogStartDist = RenderSettings.fogStartDistance;
+        float startFogEndDist = RenderSettings.fogEndDistance;
         Color startFogColor = RenderSettings.fogColor;
         RenderSettings.fog = true;
 
@@ -265,9 +267,15 @@ public class EndingSequence : MonoBehaviour
             float overlayAlpha = Mathf.SmoothStep(0f, underwaterOverlayColor.a, fastAtmosphereT);
             SetImageColorAndAlpha(underwaterOverlayImage, underwaterOverlayColor, overlayAlpha);
 
-            // Sis yoğunluğu ve rengi su altı tonuna geçer
+            // Sis yoğunluğu, mesafesi ve rengi su altı tonuna geçer
             RenderSettings.fogColor = Color.Lerp(startFogColor, underwaterFogColor, fastAtmosphereT);
             RenderSettings.fogDensity = Mathf.Lerp(startFogDensity, underwaterFogDensity, fastAtmosphereT);
+            RenderSettings.fogStartDistance = Mathf.Lerp(startFogStartDist, 0.5f, fastAtmosphereT);
+            RenderSettings.fogEndDistance = Mathf.Lerp(startFogEndDist, 12f, fastAtmosphereT);
+            if (playerLook != null && playerLook.TargetCamera != null)
+            {
+                playerLook.TargetCamera.backgroundColor = RenderSettings.fogColor;
+            }
 
             // Ses boğuklaşır (AudioLowPassFilter) ve kısılır
             if (runtimeLowPassFilter != null)
