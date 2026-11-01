@@ -39,6 +39,11 @@ public class FrogController : MonoBehaviour
     [Header("Debug")]
     [SerializeField] private bool enableDebugLogs = true;
 
+    [Header("Obstacle Detection")]
+    [SerializeField] private LayerMask obstacleLayer;
+    [SerializeField] private CapsuleCollider frogCollider;
+    [SerializeField] private float obstacleSkin = 0.05f;
+
     private Rigidbody rb;
 
     private float moveInput;
@@ -290,6 +295,62 @@ public class FrogController : MonoBehaviour
         }
     }
 
+
+    private Vector3 CheckObstacle(Vector3 movement)
+    {
+        if (movement.sqrMagnitude < 0.000001f)
+            return movement;
+
+        if (frogCollider == null)
+            return movement;
+
+        Vector3 center = transform.TransformPoint(
+            frogCollider.center
+        );
+
+        Vector3 scale = transform.lossyScale;
+
+        float radius = frogCollider.radius *
+            Mathf.Max(Mathf.Abs(scale.x), Mathf.Abs(scale.z));
+
+        float height = Mathf.Max(
+            frogCollider.height * Mathf.Abs(scale.y),
+            radius * 2f
+        );
+
+        float halfSegment = height * 0.5f - radius;
+
+        Vector3 bottom =
+            center - Vector3.up * halfSegment;
+
+        Vector3 top =
+            center + Vector3.up * halfSegment;
+
+        Vector3 direction = movement.normalized;
+        float distance = movement.magnitude;
+
+        if (Physics.CapsuleCast(
+            bottom,
+            top,
+            radius,
+            direction,
+            out RaycastHit hit,
+            distance + obstacleSkin,
+            obstacleLayer,
+            QueryTriggerInteraction.Ignore))
+        {
+            float allowedDistance = Mathf.Max(
+                0f,
+                hit.distance - obstacleSkin
+            );
+
+            return direction *
+                Mathf.Min(distance, allowedDistance);
+        }
+
+        return movement;
+    }
+
     private void UpdateAnimator()
     {
         if (animator == null)
@@ -395,8 +456,12 @@ public class FrogController : MonoBehaviour
     {
         float dt = Time.fixedDeltaTime;
 
-        Vector3 nextPosition =
-            rb.position + direction * speed * dt;
+        Vector3 movement = direction * speed * dt;
+
+        // Önümüzde engel varsa hareket mesafesini sýnýrla.
+        movement = CheckObstacle(movement);
+
+        Vector3 nextPosition = rb.position + movement;
 
         if (TryGetGroundHeight(
             nextPosition,
