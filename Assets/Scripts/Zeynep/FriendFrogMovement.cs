@@ -11,6 +11,14 @@ public class FriendFrogMovement : MonoBehaviour
     [SerializeField] private float jumpDuration = 0.6f;
     [SerializeField] private float rotationSpeed = 360f;
 
+    [Header("Ground Following")]
+    [SerializeField] private LayerMask groundLayer;
+    [SerializeField] private float rayStartHeight = 5f;
+    [SerializeField] private float rayDistance = 15f;
+    [SerializeField] private float groundOffset = 0.15f;
+    [SerializeField] private bool alignToSlope = true;
+    [SerializeField] private float slopeRotationSpeed = 8f;
+
     [Header("Waiting")]
     [SerializeField] private float minWaitTime = 2f;
     [SerializeField] private float maxWaitTime = 5f;
@@ -27,8 +35,6 @@ public class FriendFrogMovement : MonoBehaviour
 
     private void Awake()
     {
-        startingPosition = transform.position;
-
         if (friendFrog == null)
             friendFrog = GetComponent<FriendFrog>();
 
@@ -44,7 +50,59 @@ public class FriendFrogMovement : MonoBehaviour
 
     private void Start()
     {
+        // Baþlangýçta kurbaðayý zemine oturt.
+        SnapToGround();
+
+        startingPosition = transform.position;
+
         StartCoroutine(WanderRoutine());
+    }
+
+    private bool TryGetGround(
+        Vector3 position,
+        out RaycastHit hit)
+    {
+        Vector3 origin =
+            position + Vector3.up * rayStartHeight;
+
+        return Physics.Raycast(
+            origin,
+            Vector3.down,
+            out hit,
+            rayDistance,
+            groundLayer,
+            QueryTriggerInteraction.Ignore
+        );
+    }
+
+    private void SnapToGround()
+    {
+        if (!TryGetGround(transform.position, out RaycastHit hit))
+        {
+            Debug.LogWarning(
+                "FriendFrog: Zemin bulunamadý!",
+                this
+            );
+            return;
+        }
+
+        Vector3 position = transform.position;
+        position.y = hit.point.y + groundOffset;
+        transform.position = position;
+
+        if (alignToSlope)
+        {
+            Vector3 forward = Vector3.ProjectOnPlane(
+                transform.forward,
+                hit.normal
+            );
+
+            if (forward.sqrMagnitude > 0.001f)
+            {
+                transform.rotation =
+                    Quaternion.LookRotation(forward, hit.normal);
+            }
+        }
     }
 
     private IEnumerator WanderRoutine()
@@ -103,11 +161,8 @@ public class FriendFrogMovement : MonoBehaviour
                     wanderRadius
                 );
 
-            target = new Vector3(
-                startingPosition.x + limitedOffset.x,
-                start.y,
-                startingPosition.z + limitedOffset.z
-            );
+            target.x = startingPosition.x + limitedOffset.x;
+            target.z = startingPosition.z + limitedOffset.z;
         }
 
         Vector3 direction = target - start;
@@ -116,10 +171,15 @@ public class FriendFrogMovement : MonoBehaviour
         if (direction.sqrMagnitude < 0.001f)
             yield break;
 
+        // Hedefte zemin yoksa zýplama.
+        if (!TryGetGround(target, out RaycastHit targetHit))
+            yield break;
+
+        target.y = targetHit.point.y + groundOffset;
+
         Quaternion targetRotation =
             Quaternion.LookRotation(direction.normalized);
 
-        // Zýplama boyunca run animasyonu oynar.
         SetMoving(true);
 
         float elapsed = 0f;
@@ -129,23 +189,38 @@ public class FriendFrogMovement : MonoBehaviour
             elapsed += Time.deltaTime;
 
             float progress = Mathf.Clamp01(
-                elapsed / jumpDuration
+                elapsed / Mathf.Max(0.01f, jumpDuration)
             );
 
-            // Yatay hareket
+            // Yatay konumu hesapla.
             Vector3 position = Vector3.Lerp(
                 start,
                 target,
                 progress
             );
 
-            // Yay þeklinde zýplama
-            position.y += Mathf.Sin(progress * Mathf.PI)
-                          * jumpHeight;
+            // Her karede bulunduðu yerdeki zemini ölç.
+            if (TryGetGround(position, out RaycastHit groundHit))
+            {
+                position.y =
+                    groundHit.point.y + groundOffset;
+            }
+            else
+            {
+                position.y = Mathf.Lerp(
+                    start.y,
+                    target.y,
+                    progress
+                );
+            }
+
+            // Zeminden yukarý doðru zýplama yayý.
+            position.y +=
+                Mathf.Sin(progress * Mathf.PI) * jumpHeight;
 
             transform.position = position;
 
-            // Hareket yönüne yumuþak dönüþ
+            // Hareket yönüne dön.
             transform.rotation = Quaternion.RotateTowards(
                 transform.rotation,
                 targetRotation,
@@ -155,9 +230,35 @@ public class FriendFrogMovement : MonoBehaviour
             yield return null;
         }
 
+        // Hedefe tam olarak yerleþ.
         transform.position = target;
 
-        // Yere inince stand animasyonuna döner.
+        // Zeminin eðimine uyum saðla.
+        if (alignToSlope)
+        {
+            Vector3 forward = Vector3.ProjectOnPlane(
+                transform.forward,
+                targetHit.normal
+            );
+
+            if (forward.sqrMagnitude > 0.001f)
+            {
+                Quaternion slopeRotation =
+                    Quaternion.LookRotation(
+                        forward,
+                        targetHit.normal
+                    );
+
+                transform.rotation = Quaternion.Slerp(
+                    transform.rotation,
+                    slopeRotation,
+                    Mathf.Clamp01(
+                        slopeRotationSpeed * Time.deltaTime
+                    )
+                );
+            }
+        }
+
         SetMoving(false);
     }
 
