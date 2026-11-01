@@ -3,7 +3,7 @@ using UnityEngine;
 
 /// <summary>
 /// Unity 6 (6000.x) uyumlu, 5 Blok x 4 İçerik (Toplam 20 Parça) Baraj İnşa Kontrolcüsü.
-/// Oyuncu ağzında Çöp (+5 su) veya Dal (+10 su) ile baraj alanına girdiğinde parçayı otomatik yerleştirir.
+/// Oyuncu ağzında Çöp (+5 su) veya Dal (+10 su) ile baraj alanına girdiğinde parçayı yatay açıyla otomatik yerleştirir.
 /// </summary>
 [RequireComponent(typeof(BoxCollider))]
 public class DamBuilderController3D : MonoBehaviour
@@ -17,8 +17,9 @@ public class DamBuilderController3D : MonoBehaviour
     [SerializeField] private WaterLevelController waterController;
     [SerializeField] private Transform[] blockVisuals; // Opsiyonel: Her 4 parçada bir aktifleşecek 5 hazır baraj bloğu objesi
 
-    [Header("Otomatik Dizilim ve Başlangıç Offseti (Spot Light'tan Ayırmak İçin)")]
-    [SerializeField] private Vector3 buildStartOffset = new Vector3(-5f, 0f, 0f); // Barajın Dam objesine göre başlayacağı offset (örn. 5 birim sol: X = -5)
+    [Header("Otomatik Dizilim, Offset ve Yatay Rotasyon Ayarı")]
+    [SerializeField] private Vector3 buildStartOffset = new Vector3(-5f, 0f, 0f); // Barajın Dam objesine göre başlayacağı offset
+    [SerializeField] private Vector3 placedItemLocalRotation = new Vector3(0f, 0f, 90f); // Parçaların dik değil YATAY durması için açı (Z = 90 veya X = 90)
     [SerializeField] private float blockSpacingX = 1.2f; // 5 bloğun yan yana (X ekseni) aralığı
     [SerializeField] private float itemLayerSpacingY = 0.25f; // Her bloktaki 4 parçanın üst üste (Y ekseni) aralığı
 
@@ -115,7 +116,9 @@ public class DamBuilderController3D : MonoBehaviour
             0f
         );
 
-        item.LockIntoDam(transform, slotLocalPos, Quaternion.identity);
+        // Parçanın dik çubuk gibi değil, yatay kütük/baraj duvarı gibi yerleşmesi için placedItemLocalRotation uygula
+        Quaternion horizontalRotation = Quaternion.Euler(placedItemLocalRotation);
+        item.LockIntoDam(transform, slotLocalPos, horizontalRotation);
         ApplyRenderQueueToHierarchy(item.transform, damRenderQueue);
 
         currentPlacedItems++;

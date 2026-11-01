@@ -161,8 +161,8 @@ MonoBehaviour:
   customDrainReduction: -1
   interactionPromptUI: {fileID: 0}
   pickupTriggerRadius: 1.4
-  holdLocalPosition: {x: 0, y: 0, z: 0.5}
-  holdLocalRotation: {x: 0, y: 0, z: 0}
+  holdLocalPosition: {x: 0, y: 0, z: 0}
+  holdLocalRotation: {x: 0, y: 0, z: 90}
   fallRespawnY: -15
   itemRenderQueue: 2010
 --- !u!1001 &64119510098225598
