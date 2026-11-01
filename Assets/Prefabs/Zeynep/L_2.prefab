@@ -124,6 +124,7 @@ GameObject:
   - component: {fileID: 33880412078702227}
   - component: {fileID: 2723861192061736248}
   - component: {fileID: 5766121899197706788}
+  - component: {fileID: 3811895711224295091}
   m_Layer: 3
   m_Name: L_2
   m_TagString: Untagged
@@ -140,7 +141,7 @@ Transform:
   m_GameObject: {fileID: 6287173401186176295}
   serializedVersion: 2
   m_LocalRotation: {x: -0.5657204, y: 0.42421743, z: 0.42421734, w: 0.5657205}
-  m_LocalPosition: {x: -14.36, y: -0.01, z: 21.15}
+  m_LocalPosition: {x: 13.0107, y: 0.149, z: -7.97447}
   m_LocalScale: {x: 113.09118, y: 113.09118, z: 113.091156}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -227,6 +228,24 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: 4928919458962430497, guid: cd02bf0993bdccb43a86973061249caf, type: 3}
+--- !u!114 &3811895711224295091
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6287173401186176295}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0cfa0ef40692ead47b96e3b596ec6a51, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::LilyPadFloat
+  waterTransform: {fileID: 0}
+  surfaceOffset: 0.05
+  followSpeed: 3
+  enableBobbing: 0
+  bobHeight: 0.025
+  bobSpeed: 1.5
 --- !u!1 &6921251250512578171
 GameObject:
   m_ObjectHideFlags: 0
