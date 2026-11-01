@@ -23,9 +23,11 @@ public class WaterLevelController : MonoBehaviour
     [SerializeField] private Transform damCeilingReference; // Atanırsa su yüksekliği asla bu noktanın üstüne çıkmaz
     [SerializeField] private float damMaxWaterOffset = -0.15f; // Baraj üst sınırından ne kadar aşağıda kalacağı
 
-    [Header("Karakterin Suyun Üstünde Kalması")]
-    [SerializeField] private bool solidWaterSurface = true; // True ise karakter ve eşyalar suyun içinden düşmez, üstünde durur
-    [SerializeField] private float waterSpeedMultiplier = 0.75f; // Oyuncu suyun üzerindeyken hız çarpanı
+    [Header("Suyun Karakteri ve Barajı İçine Alması & Katman Ayarı")]
+    [SerializeField] private bool solidWaterSurface = false; // False: Su karakteri ve barajı içine alır (isTrigger = true)
+    [SerializeField] private bool renderBehindPlayerAndDam = true; // True: Su dokusu karakterin ve barajın altında çizilir, onları kapatmaz
+    [SerializeField] private int waterRenderQueue = 2005; // Zemin (2000) üstünde, Karakter ve Baraj (2010) altında çizilir
+    [SerializeField] private float waterSpeedMultiplier = 0.75f; // Oyuncu suyun içindeyken hız çarpanı
 
     [Header("Su Akış Efekti (Texture Offset)")]
     [SerializeField] private Vector2 flowSpeed = new Vector2(0f, 0.5f);
@@ -71,13 +73,27 @@ public class WaterLevelController : MonoBehaviour
     private void Awake()
     {
         boxCollider = GetComponent<BoxCollider>();
-        // Karakterin suyun altına düşmemesi ve suyun üstünde yürümesi için katı yüzey seçeneği
+        // solidWaterSurface false olduğunda isTrigger = true olur; böylece su karakteri ve barajı içine alır
         boxCollider.isTrigger = !solidWaterSurface;
 
         rend = GetComponent<Renderer>();
         if (rend != null && rend.material != null)
         {
             currentTextureOffset = rend.material.mainTextureOffset;
+
+            // Suyun zemini örtmesi ama karakter ve barajın (RenderQueue 2010) görünümünü kapatmaması için ZWrite kapatılır
+            if (renderBehindPlayerAndDam)
+            {
+                Material[] mats = rend.materials;
+                for (int i = 0; i < mats.Length; i++)
+                {
+                    if (mats[i] != null)
+                    {
+                        mats[i].SetInt("_ZWrite", 0);
+                        mats[i].renderQueue = waterRenderQueue;
+                    }
+                }
+            }
         }
     }
 

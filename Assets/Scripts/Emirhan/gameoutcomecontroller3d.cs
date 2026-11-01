@@ -31,7 +31,7 @@ public class GameOutcomeController3D : MonoBehaviour
         "WASD: Movement  |  Shift: Run  |  Space: Jump  |  Mouse: Look Around  |  Left Mouse Button (Hold): Carry";
 
     [Header("Kısayol Ayarları")]
-    [SerializeField] private bool allowRKeyToRestartOnEnd = true;
+    [SerializeField] private bool allowRKeyToRestart = true;
 
     private bool isGameEnded = false;
     private bool isReloadingScene = false;
@@ -124,8 +124,8 @@ public class GameOutcomeController3D : MonoBehaviour
     {
         if (isReloadingScene) return;
 
-        // Oyun bittiğinde 'R' tuşuna basarak hızlıca yeniden başlatabilme (Game Jam demoları için pratik)
-        if (isGameEnded && allowRKeyToRestartOnEnd && Keyboard.current != null)
+        // 'R' tuşuna basarak her an (veya oyun bittiğinde) sahneyi hızlıca yeniden başlatabilme
+        if (allowRKeyToRestart && Keyboard.current != null)
         {
             if (Keyboard.current.rKey.wasPressedThisFrame)
             {
@@ -143,7 +143,7 @@ public class GameOutcomeController3D : MonoBehaviour
             waterBarSlider.value = waterBarSlider.maxValue > 1.5f ? ratio * 100f : ratio;
         }
 
-        if (waterBarFillImage != null && waterBarFillImage.gameObject != null)  
+        if (waterBarFillImage != null && waterBarFillImage.gameObject != null)
         {
             waterBarFillImage.fillAmount = ratio;
         }

@@ -151,6 +151,7 @@ public class WallRunHandler : MonoBehaviour
     // Debug HUD ve dış erişim özellikleri
     public bool IsWallRight => isWallRight;
     public bool IsWallLeft => isWallLeft;
+    public Vector3 ActiveWallNormal => activeWallNormal;
     public float WallRunTimer => wallRunTimer;
     public int ChainCount => chainCount;
     public string ActiveWallName => (motor != null && motor.CurrentState == PlayerMotor.PlayerState.WallRunning && activeWallCollider != null)
@@ -591,6 +592,25 @@ public class WallRunHandler : MonoBehaviour
         lastWallCollider = null;
         chainCount = 0;
         chainGraceTimer = 0f;
+    }
+
+    /// <summary>
+    /// Checkpoint'e ışınlanma (Respawn) sırasında aktif duvar koşusu ve zincirleme sayaçlarını sıfırlar.
+    /// </summary>
+    public void ForceResetWallRunState()
+    {
+        hasDetectedWall = false;
+        isWallLeft = false;
+        isWallRight = false;
+        activeWallCollider = null;
+        lastWallCollider = null;
+        wallRunTimer = 0f;
+        sameWallCooldownTimer = 0f;
+        postBranchLockTimer = 0f;
+        chainGraceTimer = 0f;
+        manualDropTimer = 0f;
+        currentWallSpeed = 0f;
+        chainCount = 0;
     }
 
     /// <summary>

@@ -37,6 +37,10 @@ public class CrosshairUI : MonoBehaviour
     [Range(0.1f, 1f)]
     [SerializeField] private float normalOpacity = 0.80f;
 
+    [Tooltip("Üçüncü şahıs (ThirdPerson) modunda noktanın soluklaşma çarpanı (varsayılan 0.55).")]
+    [Range(0.1f, 1f)]
+    [SerializeField] private float thirdPersonOpacityMultiplier = 0.55f;
+
     [Tooltip("Hedef dal menzildeyken noktanın alacağı renk (varsayılan açık yeşil).")]
     [SerializeField] private Color targetBranchColor = new Color(0.40f, 1f, 0.55f, 1f);
 
@@ -61,11 +65,13 @@ public class CrosshairUI : MonoBehaviour
     private RectTransform imageRectTransform;
     private bool isVisible = true;
     private bool isTargetHighlighted;
+    private bool isThirdPersonDimmed;
     private float currentSize;
     private Color currentColor;
     private Texture2D fallbackWhiteTex;
 
     public bool IsVisible => isVisible;
+    public bool IsThirdPersonDimmed => isThirdPersonDimmed;
 
     private void Awake()
     {
@@ -151,6 +157,10 @@ public class CrosshairUI : MonoBehaviour
         float desiredSize = isTargetHighlighted ? (baseSize * targetScaleMultiplier) : baseSize;
         Color baseTargetCol = isTargetHighlighted ? targetBranchColor : normalColor;
         float desiredAlpha = isTargetHighlighted ? targetBranchOpacity : normalOpacity;
+        if (isThirdPersonDimmed)
+        {
+            desiredAlpha *= thirdPersonOpacityMultiplier;
+        }
         Color desiredColor = new Color(baseTargetCol.r, baseTargetCol.g, baseTargetCol.b, desiredAlpha);
 
         float dt = Time.deltaTime;
@@ -162,6 +172,14 @@ public class CrosshairUI : MonoBehaviour
             imageRectTransform.sizeDelta = new Vector2(currentSize, currentSize);
             crosshairImage.color = currentColor;
         }
+    }
+
+    /// <summary>
+    /// Üçüncü şahıs (ThirdPerson) moduna geçildiğinde crosshair noktasını hafif soluklaştırır.
+    /// </summary>
+    public void SetThirdPersonDimmed(bool dimmed)
+    {
+        isThirdPersonDimmed = dimmed;
     }
 
     /// <summary>

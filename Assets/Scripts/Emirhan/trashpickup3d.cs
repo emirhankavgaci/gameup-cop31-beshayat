@@ -28,9 +28,15 @@ public class TrashPickup3D : MonoBehaviour
     [SerializeField] private Vector3 holdLocalPosition = new Vector3(0f, 0f, 0.5f);
     [SerializeField] private Vector3 holdLocalRotation = Vector3.zero;
 
+    [Header("Adadan Düşme Koruması ve Su Üstü Katman")]
+    [SerializeField] private float fallRespawnY = -15f;
+    [SerializeField] private int itemRenderQueue = 2010; // Suyun (2005) eşyaları ve barajı kapatmaması için üst katman
+
     private Collider physicsCollider;
     private SphereCollider pickupTriggerCollider;
     private Rigidbody itemRb;
+    private Vector3 initialSpawnPosition;
+    private Quaternion initialSpawnRotation;
     private bool isCarried = false;
 
     public bool IsCarried => isCarried;
@@ -65,9 +71,26 @@ public class TrashPickup3D : MonoBehaviour
 
     private void Awake()
     {
+        initialSpawnPosition = transform.position;
+        initialSpawnRotation = transform.rotation;
+
         itemRb = GetComponent<Rigidbody>();
         itemRb.useGravity = true;
         itemRb.isKinematic = false;
+
+        // Suyun (2005) dal/çöp ve baraj parçalarını kapatmaması için materyali üst katmana (2010) al
+        Renderer[] renderers = GetComponentsInChildren<Renderer>(true);
+        for (int i = 0; i < renderers.Length; i++)
+        {
+            Material[] mats = renderers[i].materials;
+            for (int m = 0; m < mats.Length; m++)
+            {
+                if (mats[m] != null)
+                {
+                    mats[m].renderQueue = itemRenderQueue;
+                }
+            }
+        }
 
         // 1. Ana Collider'ı katı (isTrigger = false) yap ki yerçekimiyle düşerken zemine çarpıp dursun
         Collider[] existingColliders = GetComponents<Collider>();
@@ -100,6 +123,21 @@ public class TrashPickup3D : MonoBehaviour
         if (interactionPromptUI != null)
         {
             interactionPromptUI.SetActive(false);
+        }
+    }
+
+    private void Update()
+    {
+        // Nesne adadan aşağı yuvarlanırsa oyunun kilitlenmemesi için başlangıç noktasına geri koy
+        if (!isCarried && transform.position.y < fallRespawnY)
+        {
+            if (itemRb != null && !itemRb.isKinematic)
+            {
+                itemRb.linearVelocity = Vector3.zero;
+                itemRb.angularVelocity = Vector3.zero;
+            }
+            transform.position = initialSpawnPosition + Vector3.up * 0.2f;
+            transform.rotation = initialSpawnRotation;
         }
     }
 

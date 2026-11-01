@@ -1,25 +1,27 @@
+using System;
 using UnityEngine;
 
 /// <summary>
 /// CANOPY: The Last Run - Ana Karakter Hareket ve State Machine Yöneticisi.
 /// Durumlar: Grounded, Airborne, WallRunning, Hanging, Transferring, Sliding.
 /// Hanging ve Transferring durumlarında CharacterController devre dışı bırakılır ve pozisyon doğrudan yönetilir.
+/// Animasyon sürücüsü (MonkeyAnimationDriver) için OnJump, OnLand ve OnStateChanged event'lerini barındırır.
 /// </summary>
 [RequireComponent(typeof(CharacterController))]
 public class PlayerMotor : MonoBehaviour
 {
     public enum PlayerState
     {
-        Grounded,
-        Airborne,
-        WallRunning,
-        Hanging,
-        Transferring,
-        Sliding
+        Grounded = 0,
+        Airborne = 1,
+        WallRunning = 2,
+        Hanging = 3,
+        Transferring = 4,
+        Sliding = 5
     }
 
     [Header("Bileşen Referansları")]
-    [Tooltip("Karakterin bakış, FOV ve kamera roll/pitch/height offset işlemlerini yöneten bileşen.")]
+    [Tooltip("Karakterin bakış, ViewMode, FOV ve kamera roll/pitch/height offset işlemlerini yöneten bileşen.")]
     [SerializeField] private PlayerLook playerLook;
 
     [Tooltip("Duvar koşusu (Wall Run) algılama ve fizik işlemlerini yöneten bileşen.")]
@@ -30,6 +32,9 @@ public class PlayerMotor : MonoBehaviour
 
     [Tooltip("C tuşu ile kayma (Slide) ve tavan engel kontrolü yöneticisi.")]
     [SerializeField] private SlideHandler slideHandler;
+
+    [Tooltip("Maymun 3B modelinin görsel hizalama ve gölge modunu yöneten bileşen (opsiyonel).")]
+    [SerializeField] private PlayerVisual playerVisual;
 
     [Header("Temel Hareket Hızları")]
     [Tooltip("Normal yürüme hızı (m/s).")]
@@ -99,6 +104,11 @@ public class PlayerMotor : MonoBehaviour
     [Tooltip("Zıplama tuşu.")]
     [SerializeField] private KeyCode jumpKey = KeyCode.Space;
 
+    // Animasyon, ses ve efekt bağlantıları için C# Event'leri
+    public event Action OnJumpCallback;
+    public event Action<float> OnLandCallback;
+    public event Action<PlayerState, PlayerState> OnStateChangedCallback;
+
     // Dahili çalışma değişkenleri
     private CharacterController controller;
     private PlayerState currentState = PlayerState.Grounded;
@@ -110,22 +120,25 @@ public class PlayerMotor : MonoBehaviour
     private float coyoteTimer;
     private float jumpBufferTimer;
     private bool isJumpCutApplied;
+    private float lastAirborneVerticalVelocity;
 
     // Girdi önbelleği
     private float horizontalInput;
     private float verticalInput;
     private Vector3 moveInputDirection;
 
-    // Dışarıdan erişilebilir salt-okunur özellikler
+    // Dışarıdan erişilebilir salt-okunur özellikler (Animasyon ve Debug HUD için)
     public CharacterController Controller => controller;
     public PlayerLook Look => playerLook;
     public WallRunHandler WallRun => wallRunHandler;
     public BranchGrabHandler BranchGrab => branchGrabHandler;
     public SlideHandler Slide => slideHandler;
+    public PlayerVisual Visual => playerVisual;
     public PlayerState CurrentState => currentState;
     public Vector3 Velocity => velocity;
     public Vector3 HorizontalVelocity => new Vector3(velocity.x, 0f, velocity.z);
     public float HorizontalSpeed => new Vector3(velocity.x, 0f, velocity.z).magnitude;
+    public float VerticalSpeed => velocity.y;
     public bool IsGrounded => isGrounded;
     public bool IsSprinting => isSprinting;
     public Vector3 GroundNormal => groundNormal;
@@ -149,6 +162,8 @@ public class PlayerMotor : MonoBehaviour
             branchGrabHandler = GetComponent<BranchGrabHandler>();
         if (slideHandler == null)
             slideHandler = GetComponent<SlideHandler>();
+        if (playerVisual == null)
+            playerVisual = GetComponentInChildren<PlayerVisual>();
     }
 
     private void Update()
@@ -189,7 +204,7 @@ public class PlayerMotor : MonoBehaviour
         // 5. Durum makinesini (State Machine) çalıştır
         UpdateStateMachine(dt);
 
-        // 6. Kamera efektlerini (FOV, Roll/Pitch/Height Offset ve Headbob) güncelle
+        // 6. Kamera efektlerini (FOV, Roll/Pitch/Height Offset, ViewMode ve Headbob) güncelle
         if (playerLook != null)
         {
             float targetWallTilt = (currentState == PlayerState.WallRunning && wallRunHandler != null)
@@ -217,6 +232,11 @@ public class PlayerMotor : MonoBehaviour
                 targetWallTilt,
                 dt
             );
+        }
+
+        if (!isGrounded)
+        {
+            lastAirborneVerticalVelocity = velocity.y;
         }
 
         wasGroundedLastFrame = isGrounded;
@@ -291,9 +311,15 @@ public class PlayerMotor : MonoBehaviour
                 isGrounded = true;
                 groundNormal = hitInfo.normal;
 
-                if (!wasGroundedLastFrame && wallRunHandler != null)
+                if (!wasGroundedLastFrame)
                 {
-                    wallRunHandler.ResetLastWallOnGrounded();
+                    if (wallRunHandler != null)
+                    {
+                        wallRunHandler.ResetLastWallOnGrounded();
+                    }
+
+                    // Yere iniş event'ini tetikle (MonkeyAnimationDriver LandTrigger için kullanır)
+                    OnLandCallback?.Invoke(lastAirborneVerticalVelocity);
                 }
 
                 return;
@@ -415,7 +441,7 @@ public class PlayerMotor : MonoBehaviour
             return;
         }
 
-        // 8 yönlü yeni Wall Run başlangıç kontrolü (zincirleme dahil)
+        // 8 yönlü Wall Run başlangıç kontrolü (zincirleme dahil)
         if (wallRunHandler != null && wallRunHandler.CanStartWallRun())
         {
             wallRunHandler.StartWallRun();
@@ -479,6 +505,8 @@ public class PlayerMotor : MonoBehaviour
         isJumpCutApplied = false;
 
         SetState(PlayerState.Airborne);
+        OnJumpCallback?.Invoke();
+
         if (controller.enabled)
         {
             controller.Move(velocity * Time.deltaTime);
@@ -499,6 +527,8 @@ public class PlayerMotor : MonoBehaviour
         isJumpCutApplied = false;
 
         SetState(PlayerState.Airborne);
+        OnJumpCallback?.Invoke();
+
         if (controller.enabled)
         {
             controller.Move(velocity * Time.deltaTime);
@@ -535,6 +565,8 @@ public class PlayerMotor : MonoBehaviour
                 wallRunHandler.TriggerPostBranchCooldown();
             }
         }
+
+        OnStateChangedCallback?.Invoke(previousState, newState);
     }
 
     public void SetCharacterControllerEnabled(bool shouldEnable)
@@ -576,6 +608,81 @@ public class PlayerMotor : MonoBehaviour
     public void ConsumeJumpBuffer()
     {
         jumpBufferTimer = 0f;
+    }
+
+    private void OnControllerColliderHit(ControllerColliderHit hit)
+    {
+        if (hit.collider == null)
+            return;
+
+        CactusHazard hazard = hit.collider.GetComponentInParent<CactusHazard>();
+        if (hazard != null)
+        {
+            hazard.HandlePlayerHit(this);
+        }
+    }
+
+    /// <summary>
+    /// Sel yakalanması veya debug respawn durumunda oyuncunun hızını, parkur durumlarını (State)
+    /// sıfırlar ve belirtilen checkpoint konumuna/rotasyonuna güvenli şekilde ışınlar.
+    /// </summary>
+    public void TeleportAndResetState(Vector3 targetPosition, Quaternion targetRotation)
+    {
+        SetCharacterControllerEnabled(false);
+
+        if (branchGrabHandler != null)
+        {
+            branchGrabHandler.ForceResetBranchState();
+        }
+
+        if (wallRunHandler != null)
+        {
+            wallRunHandler.ForceResetWallRunState();
+        }
+
+        if (slideHandler != null)
+        {
+            slideHandler.ForceResetSlideState();
+        }
+
+        velocity = Vector3.zero;
+        moveInputDirection = Vector3.zero;
+        horizontalInput = 0f;
+        verticalInput = 0f;
+        jumpBufferTimer = 0f;
+        coyoteTimer = 0f;
+        isJumpCutApplied = false;
+        isSprinting = false;
+        lastAirborneVerticalVelocity = 0f;
+
+        Vector3 euler = targetRotation.eulerAngles;
+        Quaternion flatBodyRot = Quaternion.Euler(0f, euler.y, 0f);
+        transform.SetPositionAndRotation(targetPosition, flatBodyRot);
+
+        if (playerLook != null)
+        {
+            playerLook.ResetLookState(flatBodyRot);
+        }
+
+        PlayerState prev = currentState;
+        currentState = PlayerState.Grounded;
+        isGrounded = true;
+        wasGroundedLastFrame = true;
+
+        SetCharacterControllerEnabled(true);
+
+        if (prev != currentState)
+        {
+            OnStateChangedCallback?.Invoke(prev, currentState);
+        }
+    }
+
+    /// <summary>
+    /// Oyuncunun yalnızca hızını ve aktif parkur durumunu sıfırlar (konumu değiştirmeden).
+    /// </summary>
+    public void ResetMotorVelocityAndState()
+    {
+        TeleportAndResetState(transform.position, transform.rotation);
     }
 
     private void OnDrawGizmosSelected()

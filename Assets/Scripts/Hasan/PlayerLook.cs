@@ -1,9 +1,20 @@
+using System;
 using UnityEngine;
 
 /// <summary>
-/// CANOPY: The Last Run - Birinci Şahıs Kamera, Mouse Look, Dinamik FOV,
-/// Wall Run / Sarkaç / Slide Roll & Pitch Offset, Kamera Yükseklik Ofseti (Slide) ve Head Bob Yöneticisi.
-/// Wall Jump ve Wall Run sırasında gecikmesiz (anlık) kamera yönü okuması sağlar.
+/// Kamera bakış modu: Birinci Şahıs (FirstPerson) veya Üçüncü Şahıs (ThirdPerson).
+/// </summary>
+public enum ViewMode
+{
+    FirstPerson = 0,
+    ThirdPerson = 1
+}
+
+/// <summary>
+/// CANOPY: The Last Run - Birinci ve Üçüncü Şahıs Kamera, Sabit "Eye" Kamera Konumlandırma,
+/// Hafif Gerçekçi Kamera Sarsıntısı (Camera Shake), Mouse Look ve Dinamik FOV Yöneticisi.
+/// Dünya uzayında (World Space) Lerp gecikmesi KULLANMAZ; böylece yürürken/koşarken kamera asla geride kalmaz
+/// ve maymunun içine girmez.
 /// </summary>
 public class PlayerLook : MonoBehaviour
 {
@@ -11,8 +22,46 @@ public class PlayerLook : MonoBehaviour
     [Tooltip("Yatay eksende (Y) döndürülecek oyuncu ana gövdesi.")]
     [SerializeField] private Transform playerBody;
 
-    [Tooltip("Kontrol edilecek birinci şahıs Camera bileşeni.")]
+    [Tooltip("Kontrol edilecek Camera bileşeni.")]
     [SerializeField] private Camera targetCamera;
+
+    [Tooltip("Maymun modelinin 'Eye' kamera noktasını ve görünürlüğünü yöneten PlayerVisual bileşeni.")]
+    [SerializeField] private PlayerVisual playerVisual;
+
+    [Tooltip("Zıplama ve yere iniş sarsıntısı için PlayerMotor bileşeni (boşsa otomatik bulunur).")]
+    [SerializeField] private PlayerMotor playerMotor;
+
+    [Tooltip("Üçüncü şahıs modunda soluklaştırılacak CrosshairUI bileşeni (boşsa otomatik bulunur).")]
+    [SerializeField] private CrosshairUI crosshairUI;
+
+    [Header("Sabit Eye (Göz) Kamera Bağlantısı")]
+    [Tooltip("FirstPerson modunda kamerayı Monkey_B1 'Eye' yüksekliğinde tamamen SABİT tutar (gecikme/lag olmaz).")]
+    [SerializeField] private bool attachCameraToEyeMesh = true;
+
+    [Header("Bakış Modu (FirstPerson / ThirdPerson) Ayarları")]
+    [Tooltip("Başlangıç ve aktif kamera bakış modu (varsayılan FirstPerson).")]
+    [SerializeField] private ViewMode currentViewMode = ViewMode.FirstPerson;
+
+    [Tooltip("V tuşu ile FirstPerson / ThirdPerson geçişine izin ver (debug amaçlı kapatılabilir).")]
+    [SerializeField] private bool allowViewToggle = true;
+
+    [Tooltip("Bakış modu değiştirme kısayol tuşu (varsayılan V).")]
+    [SerializeField] private KeyCode viewToggleKey = KeyCode.V;
+
+    [Tooltip("Üçüncü şahıs modunda kameranın oyuncuya göre yerel ofseti (varsayılan: 0, 1.2, -3.2).")]
+    [SerializeField] private Vector3 thirdPersonOffset = new Vector3(0f, 1.2f, -3.2f);
+
+    [Tooltip("FirstPerson ve ThirdPerson arasındaki yumuşak geçiş süresi (varsayılan ~0.25 sn).")]
+    [SerializeField] private float viewTransitionDuration = 0.25f;
+
+    [Tooltip("Üçüncü şahıs kamerasının duvar/dal içine girmesini önleyen SphereCast yarıçapı (metre).")]
+    [SerializeField] private float thirdPersonCollisionRadius = 0.22f;
+
+    [Tooltip("Üçüncü şahıs kamerasının çarpıştığı yüzeyden bırakacağı güvenlik payı (metre).")]
+    [SerializeField] private float thirdPersonWallPadding = 0.12f;
+
+    [Tooltip("Üçüncü şahıs kamera çarpışma kontrolünde dikkate alınacak katmanlar.")]
+    [SerializeField] private LayerMask thirdPersonCollisionMask = ~0;
 
     [Header("Mouse Look Ayarları")]
     [Tooltip("Fare yatay ve dikey dönüş hassasiyeti.")]
@@ -54,24 +103,36 @@ public class PlayerLook : MonoBehaviour
     [Tooltip("Slide sırasında kamera yükseklik ofsetinin yumuşak geçiş hızı.")]
     [SerializeField] private float heightOffsetLerpSpeed = 14f;
 
-    [Header("Hafif Kamera Sarsıntısı (Head Bob)")]
-    [Tooltip("Yürürken ve koşarken hafif kamera salınımını açar/kapatır.")]
+    [Header("Hafif ve Dengeli Kamera Sarsıntısı (Camera Shake)")]
+    [Tooltip("Hareket ederken hafif ve gerçekçi kamera sarsıntısını açar/kapatır.")]
     [SerializeField] private bool enableHeadBob = true;
 
-    [Tooltip("Yürürken head bob frekansı.")]
+    [Tooltip("Yürürken adım frekansı.")]
     [SerializeField] private float walkBobFrequency = 11f;
 
-    [Tooltip("Sprint atarken head bob frekansı.")]
+    [Tooltip("Sprint atarken adım frekansı.")]
     [SerializeField] private float sprintBobFrequency = 15f;
 
-    [Tooltip("Dikey head bob genliği (çok hafif kalması için küçük değer).")]
-    [SerializeField] private float bobVerticalAmplitude = 0.035f;
+    [Tooltip("Hareket ederken çok hafif dikey sarsıntı genliği (metre). Kamera sabitliğini bozmaz.")]
+    [SerializeField] private float bobVerticalAmplitude = 0.012f;
 
-    [Tooltip("Yatay head bob genliği (çok hafif kalması için küçük değer).")]
-    [SerializeField] private float bobHorizontalAmplitude = 0.02f;
+    [Tooltip("Hareket ederken çok hafif yatay sarsıntı genliği (metre).")]
+    [SerializeField] private float bobHorizontalAmplitude = 0.008f;
 
-    [Tooltip("Durduğunda kameranın merkeze dönüş yumuşaklığı.")]
-    [SerializeField] private float bobResetSpeed = 10f;
+    [Tooltip("Hareket ederken kameraya uygulanan hafif açısal sarsıntı (derece).")]
+    [SerializeField] private float movementRotationShakeDegrees = 0.35f;
+
+    [Tooltip("Organik Perlin gürültü sarsıntısının frekansı.")]
+    [SerializeField] private float perlinShakeFrequency = 8f;
+
+    [Tooltip("Zıplama ve yere iniş anındaki darbe sarsıntısı çarpanı.")]
+    [SerializeField] private float impactShakeIntensity = 0.55f;
+
+    [Tooltip("Durduğunda sarsıntının merkeze dönüş yumuşaklığı.")]
+    [SerializeField] private float bobResetSpeed = 14f;
+
+    // Olaylar
+    public event Action<ViewMode> OnViewModeChanged;
 
     // Dahili değişkenler
     private float pitchAngle;
@@ -84,12 +145,22 @@ public class PlayerLook : MonoBehaviour
     private float targetCameraHeightOffset;
     private float currentCameraHeightOffset;
     private float headBobTimer;
+    private float perlinSeedTime;
+    private float impactTrauma;
+    private Vector3 currentShakePosOffset;
+    private Vector3 currentShakeRotEuler;
+    private Vector3 externalShakePosOffset;
+    private Vector3 externalShakeRotEuler;
     private Vector3 initialPivotLocalPos;
-    private Vector3 initialCameraLocalPos;
+    private float thirdPersonBlend;
+    private float thirdPersonBlendVelocity;
     private bool allowMouseInput = true;
     private int lastMouseProcessedFrame = -1;
 
+    // Dış erişim özellikleri
     public Camera TargetCamera => targetCamera;
+    public ViewMode CurrentViewMode => currentViewMode;
+    public bool AllowViewToggle => allowViewToggle;
     public float CurrentRollOffset => currentRollOffset;
     public float CurrentPitchOffset => currentPitchOffset;
     public float CurrentCameraHeightOffset => currentCameraHeightOffset;
@@ -102,16 +173,55 @@ public class PlayerLook : MonoBehaviour
         if (playerBody == null && transform.parent != null)
             playerBody = transform.parent;
 
+        if (playerMotor == null && playerBody != null)
+            playerMotor = playerBody.GetComponent<PlayerMotor>();
+
+        if (playerVisual == null && playerBody != null)
+            playerVisual = playerBody.GetComponentInChildren<PlayerVisual>();
+
+        if (crosshairUI == null)
+            crosshairUI = FindObjectOfType<CrosshairUI>();
+
         initialPivotLocalPos = transform.localPosition;
+
+        // Sahnedeki eski yüksek shake değerleri serialize edilmişse kameranın sabit kalması için makul sınırlara çek
+        if (bobVerticalAmplitude > 0.02f) bobVerticalAmplitude = 0.012f;
+        if (bobHorizontalAmplitude > 0.015f) bobHorizontalAmplitude = 0.008f;
+        if (movementRotationShakeDegrees > 0.55f) movementRotationShakeDegrees = 0.35f;
+        if (impactShakeIntensity > 0.8f) impactShakeIntensity = 0.55f;
 
         if (targetCamera != null)
         {
             targetCamera.fieldOfView = baseFieldOfView;
-            initialCameraLocalPos = targetCamera.transform.localPosition;
+            // Yakın kırpma düzlemini küçült ki gövdeye yakınken kesilme olmasın
+            targetCamera.nearClipPlane = 0.03f;
         }
-        else
+
+        thirdPersonBlend = (currentViewMode == ViewMode.ThirdPerson) ? 1f : 0f;
+        ApplyViewModeState(currentViewMode);
+    }
+
+    private void OnEnable()
+    {
+        if (playerMotor == null && playerBody != null)
+            playerMotor = playerBody.GetComponent<PlayerMotor>();
+
+        if (playerMotor != null)
         {
-            initialCameraLocalPos = transform.localPosition;
+            playerMotor.OnJumpCallback -= HandlePlayerJumpShake;
+            playerMotor.OnJumpCallback += HandlePlayerJumpShake;
+
+            playerMotor.OnLandCallback -= HandlePlayerLandShake;
+            playerMotor.OnLandCallback += HandlePlayerLandShake;
+        }
+    }
+
+    private void OnDisable()
+    {
+        if (playerMotor != null)
+        {
+            playerMotor.OnJumpCallback -= HandlePlayerJumpShake;
+            playerMotor.OnLandCallback -= HandlePlayerLandShake;
         }
     }
 
@@ -126,16 +236,127 @@ public class PlayerLook : MonoBehaviour
 
     private void Update()
     {
+        if (allowViewToggle && Input.GetKeyDown(viewToggleKey))
+        {
+            ToggleViewMode();
+        }
+
         if (allowMouseInput)
         {
             ProcessMouseLookForCurrentFrame();
         }
     }
 
+    private void LateUpdate()
+    {
+        // Animator kemikleri güncelledikten sonra önce PlayerVisual'ı senkronize et,
+        // ardından kamerayı gecikmesiz (lag olmadan) yerleştir.
+        float dt = Time.deltaTime;
+        if (playerVisual != null)
+        {
+            playerVisual.SyncVisualForCurrentFrame(dt);
+        }
+
+        UpdateCameraViewPosition(dt);
+        ApplyCameraRotation();
+    }
+
+    private void HandlePlayerJumpShake()
+    {
+        AddCameraShakeImpulse(0.35f);
+    }
+
+    private void HandlePlayerLandShake(float landingVerticalSpeed)
+    {
+        float fallStrength = Mathf.InverseLerp(2f, 18f, Mathf.Abs(landingVerticalSpeed));
+        AddCameraShakeImpulse(Mathf.Clamp(0.25f + fallStrength * 0.55f, 0.25f, 0.85f));
+    }
+
     /// <summary>
-    /// Bu karedeki fare hareketini henüz işlenmemişse anında işler; böylece PlayerMotor veya WallRunHandler
-    /// Update sırası ne olursa olsun Space basıldığı karedeki en güncel bakış yönünü sıfır gecikmeyle okur.
+    /// Zıplama, yere iniş veya dala tutunma anında kameraya hafif darbe sarsıntısı ekler.
     /// </summary>
+    public void AddCameraShakeImpulse(float normalizedImpulse)
+    {
+        impactTrauma = Mathf.Clamp01(impactTrauma + normalizedImpulse);
+    }
+
+    /// <summary>
+    /// CameraShake gibi harici bileşenlerin PlayerLook ile çakışmadan ek pozisyon ve açısal sarsıntı
+    /// ofseti uygulamasını sağlar.
+    /// </summary>
+    public void SetExternalShakeOffset(Vector3 positionOffset, Vector3 rotationEulerOffset)
+    {
+        externalShakePosOffset = positionOffset;
+        externalShakeRotEuler = rotationEulerOffset;
+    }
+
+    /// <summary>
+    /// Checkpoint'e ışınlanma (Respawn) sırasında kameranın dikey bakış açısını ve tüm geçici ofsetlerini sıfırlar.
+    /// </summary>
+    public void ResetLookState(Quaternion targetBodyRotation)
+    {
+        pitchAngle = 0f;
+        currentRollOffset = 0f;
+        currentPitchOffset = 0f;
+        targetSwingPitchOffset = 0f;
+        targetSwingRollOffset = 0f;
+        targetSlideRollOffset = 0f;
+        targetSlideFovBoost = 0f;
+        targetCameraHeightOffset = 0f;
+        currentCameraHeightOffset = 0f;
+        impactTrauma = 0f;
+        currentShakePosOffset = Vector3.zero;
+        currentShakeRotEuler = Vector3.zero;
+        externalShakePosOffset = Vector3.zero;
+        externalShakeRotEuler = Vector3.zero;
+        allowMouseInput = true;
+
+        if (playerBody != null)
+        {
+            Vector3 euler = targetBodyRotation.eulerAngles;
+            playerBody.rotation = Quaternion.Euler(0f, euler.y, 0f);
+        }
+
+        ApplyCameraRotation();
+    }
+
+    public void ToggleViewMode()
+    {
+        ViewMode nextMode = (currentViewMode == ViewMode.FirstPerson)
+            ? ViewMode.ThirdPerson
+            : ViewMode.FirstPerson;
+
+        SetViewMode(nextMode);
+    }
+
+    public void SetViewMode(ViewMode newMode)
+    {
+        if (currentViewMode == newMode)
+            return;
+
+        currentViewMode = newMode;
+        ApplyViewModeState(currentViewMode);
+        OnViewModeChanged?.Invoke(currentViewMode);
+    }
+
+    private void ApplyViewModeState(ViewMode mode)
+    {
+        if (playerVisual == null && playerBody != null)
+        {
+            playerVisual = playerBody.GetComponentInChildren<PlayerVisual>();
+        }
+
+        if (playerVisual != null)
+        {
+            playerVisual.SetViewMode(mode);
+        }
+
+        if (crosshairUI != null)
+        {
+            crosshairUI.SetThirdPersonDimmed(mode == ViewMode.ThirdPerson);
+        }
+    }
+
     public void ProcessMouseLookForCurrentFrame()
     {
         if (!allowMouseInput || lastMouseProcessedFrame == Time.frameCount)
@@ -157,9 +378,6 @@ public class PlayerLook : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// O karedeki fare girişini anında uygulayarak kameranın gecikmesiz 3B ileri vektörünü döndürür.
-    /// </summary>
     public Vector3 GetInstantCameraForward()
     {
         ProcessMouseLookForCurrentFrame();
@@ -168,9 +386,6 @@ public class PlayerLook : MonoBehaviour
         return transform.forward;
     }
 
-    /// <summary>
-    /// O karedeki fare girişini anında uygulayarak kameranın yatay düzlemdeki (Y=0) birim bakış yönünü döndürür.
-    /// </summary>
     public Vector3 GetInstantHorizontalLookDirection()
     {
         Vector3 camFwd = GetInstantCameraForward();
@@ -190,18 +405,12 @@ public class PlayerLook : MonoBehaviour
         return Vector3.forward;
     }
 
-    /// <summary>
-    /// Sarkaç sallanması sırasında kameraya eklenecek geçici pitch ve roll offset hedeflerini belirler.
-    /// </summary>
     public void SetSwingCameraOffsets(float pitchOffsetDeg, float rollOffsetDeg)
     {
         targetSwingPitchOffset = pitchOffsetDeg;
         targetSwingRollOffset = rollOffsetDeg;
     }
 
-    /// <summary>
-    /// Slide sırasında kameranın dikey yükseklik ofsetini (alçalma miktarı), roll açısını ve FOV artışını belirler.
-    /// </summary>
     public void SetSlideCameraEffects(float heightOffset, float rollOffsetDeg, float fovBoostDeg)
     {
         targetCameraHeightOffset = heightOffset;
@@ -245,18 +454,18 @@ public class PlayerLook : MonoBehaviour
 
     public void UpdateCameraEffects(float effectiveSpeed, bool isGroundedWalking, bool isSprinting, float wallRunTiltTarget, float dt)
     {
-        // 1. Roll ve Pitch Offset yumuşak geçişi (Wall Run + Sarkaç + Slide)
+        // 1. Hafif Hareket ve Parkur Kamera Sarsıntısını hesapla
+        UpdateMovementAndImpactShake(effectiveSpeed, isGroundedWalking, isSprinting, dt);
+
+        // 2. Roll ve Pitch Offset yumuşak geçişi (Wall Run + Sarkaç + Slide)
         float combinedRollTarget = wallRunTiltTarget + targetSwingRollOffset + targetSlideRollOffset;
         currentRollOffset = Mathf.Lerp(currentRollOffset, combinedRollTarget, offsetLerpSpeed * dt);
         currentPitchOffset = Mathf.Lerp(currentPitchOffset, targetSwingPitchOffset, offsetLerpSpeed * dt);
 
-        ApplyCameraRotation();
-
-        // 2. Kamera Yükseklik Ofseti (Slide sırasında yumuşakça alçalma ve kalkma)
+        // 3. Kamera Yükseklik Ofseti (Slide sırasında yumuşakça alçalma ve kalkma)
         currentCameraHeightOffset = Mathf.Lerp(currentCameraHeightOffset, targetCameraHeightOffset, heightOffsetLerpSpeed * dt);
-        transform.localPosition = initialPivotLocalPos + new Vector3(0f, currentCameraHeightOffset, 0f);
 
-        // 3. Dinamik FOV (90 temel; hız/sallanma ile en fazla +6, slide ile +4 derece)
+        // 4. Dinamik FOV (90 temel; hız/sallanma ile en fazla +6, slide ile +4 derece)
         if (targetCamera != null)
         {
             float targetFov = baseFieldOfView;
@@ -276,40 +485,187 @@ public class PlayerLook : MonoBehaviour
 
             targetCamera.fieldOfView = Mathf.Lerp(targetCamera.fieldOfView, targetFov, fovLerpSpeed * dt);
         }
-
-        // 4. Opsiyonel ve çok hafif Head Bob
-        UpdateHeadBob(effectiveSpeed, isGroundedWalking, isSprinting, dt);
     }
 
     private void ApplyCameraRotation()
     {
-        float finalPitch = Mathf.Clamp(pitchAngle + currentPitchOffset, minVerticalAngle, maxVerticalAngle);
-        transform.localRotation = Quaternion.Euler(finalPitch, 0f, currentRollOffset);
+        float shakeWeight = 1f - thirdPersonBlend * 0.6f;
+        Vector3 totalRotShake = (currentShakeRotEuler * shakeWeight) + externalShakeRotEuler;
+
+        float finalPitch = Mathf.Clamp(
+            pitchAngle + currentPitchOffset + totalRotShake.x,
+            minVerticalAngle,
+            maxVerticalAngle
+        );
+        float finalYaw = totalRotShake.y;
+        float finalRoll = currentRollOffset + totalRotShake.z;
+
+        transform.localRotation = Quaternion.Euler(finalPitch, finalYaw, finalRoll);
     }
 
-    private void UpdateHeadBob(float horizontalSpeed, bool isGroundedWalking, bool isSprinting, float dt)
+    private void UpdateMovementAndImpactShake(float effectiveSpeed, bool isGroundedWalking, bool isSprinting, float dt)
     {
-        Transform camTransform = targetCamera != null ? targetCamera.transform : transform;
-
-        bool sameTransform = (camTransform == transform);
-        Vector3 baseLocalPos = sameTransform
-            ? (initialPivotLocalPos + new Vector3(0f, currentCameraHeightOffset, 0f))
-            : initialCameraLocalPos;
-
-        if (!enableHeadBob || !isGroundedWalking || horizontalSpeed < 1.5f)
+        if (!enableHeadBob)
         {
-            headBobTimer = 0f;
-            camTransform.localPosition = Vector3.Lerp(camTransform.localPosition, baseLocalPos, bobResetSpeed * dt);
+            currentShakePosOffset = Vector3.Lerp(currentShakePosOffset, Vector3.zero, bobResetSpeed * dt);
+            currentShakeRotEuler = Vector3.Lerp(currentShakeRotEuler, Vector3.zero, bobResetSpeed * dt);
+            impactTrauma = 0f;
             return;
         }
 
-        float frequency = isSprinting ? sprintBobFrequency : walkBobFrequency;
-        headBobTimer += dt * frequency;
+        if (impactTrauma > 0f)
+        {
+            impactTrauma = Mathf.Max(0f, impactTrauma - dt * 3.5f);
+        }
 
-        float bobOffsetY = Mathf.Sin(headBobTimer) * bobVerticalAmplitude;
-        float bobOffsetX = Mathf.Cos(headBobTimer * 0.5f) * bobHorizontalAmplitude;
+        perlinSeedTime += dt * perlinShakeFrequency * (isSprinting ? 1.25f : 1.0f);
+        float noiseX = (Mathf.PerlinNoise(perlinSeedTime, 13.7f) - 0.5f) * 2f;
+        float noiseY = (Mathf.PerlinNoise(29.3f, perlinSeedTime) - 0.5f) * 2f;
+        float noiseZ = (Mathf.PerlinNoise(perlinSeedTime * 0.8f, 71.1f) - 0.5f) * 2f;
 
-        Vector3 targetPos = baseLocalPos + new Vector3(bobOffsetX, bobOffsetY, 0f);
-        camTransform.localPosition = Vector3.Lerp(camTransform.localPosition, targetPos, bobResetSpeed * dt);
+        bool isWallRunning = playerMotor != null && playerMotor.CurrentState == PlayerMotor.PlayerState.WallRunning;
+        bool isHanging = playerMotor != null && playerMotor.CurrentState == PlayerMotor.PlayerState.Hanging;
+        bool isMovingActively = (isGroundedWalking || isWallRunning || isHanging) && effectiveSpeed > 0.8f;
+
+        Vector3 targetPosShake = Vector3.zero;
+        Vector3 targetRotShake = Vector3.zero;
+
+        if (isMovingActively)
+        {
+            float speedFactor = Mathf.Clamp(effectiveSpeed / 8.5f, 0.35f, 1.35f);
+            float frequency = isSprinting ? sprintBobFrequency : walkBobFrequency;
+            if (isWallRunning) frequency *= 1.1f;
+
+            headBobTimer += dt * frequency;
+
+            float bobY = Mathf.Sin(headBobTimer) * bobVerticalAmplitude * speedFactor;
+            float bobX = Mathf.Cos(headBobTimer * 0.5f) * bobHorizontalAmplitude * speedFactor;
+
+            targetPosShake = new Vector3(
+                bobX,
+                bobY,
+                0f // İleri-geri (Z) pozisyon sarsıntısı yapılmaz ki kamera asla geriye düşmesin
+            );
+
+            float rotMag = movementRotationShakeDegrees * speedFactor;
+            float stepPitch = Mathf.Sin(headBobTimer) * rotMag * 0.55f;
+            float stepRoll = Mathf.Cos(headBobTimer * 0.5f) * rotMag * 0.70f;
+
+            targetRotShake = new Vector3(
+                stepPitch + noiseY * rotMag * 0.35f,
+                noiseX * rotMag * 0.25f,
+                stepRoll + noiseZ * rotMag * 0.35f
+            );
+        }
+        else
+        {
+            headBobTimer = 0f;
+        }
+
+        if (impactTrauma > 0.001f)
+        {
+            float traumaSq = impactTrauma * impactTrauma;
+            targetPosShake.y -= traumaSq * 0.06f * impactShakeIntensity;
+            targetRotShake.x += traumaSq * 1.8f * impactShakeIntensity;
+            targetRotShake.z += noiseZ * traumaSq * 1.2f * impactShakeIntensity;
+        }
+
+        float smoothRate = isMovingActively ? 18f : bobResetSpeed;
+        currentShakePosOffset = Vector3.Lerp(currentShakePosOffset, targetPosShake, smoothRate * dt);
+        currentShakeRotEuler = Vector3.Lerp(currentShakeRotEuler, targetRotShake, smoothRate * dt);
+    }
+
+    private void UpdateCameraViewPosition(float dt)
+    {
+        float targetBlend = (currentViewMode == ViewMode.ThirdPerson) ? 1f : 0f;
+        float smoothTime = Mathf.Max(0.05f, viewTransitionDuration * 0.5f);
+        thirdPersonBlend = Mathf.SmoothDamp(thirdPersonBlend, targetBlend, ref thirdPersonBlendVelocity, smoothTime, Mathf.Infinity, dt);
+
+        if (playerVisual == null && playerBody != null)
+        {
+            playerVisual = playerBody.GetComponentInChildren<PlayerVisual>();
+        }
+
+        // FirstPerson kamera konumunu Player yerel uzayında (Local Space) TAM SABİT olarak al (Dünya uzayında Lerp gecikmesi YOK!)
+        Vector3 fpPivotWorld;
+        if (attachCameraToEyeMesh && playerVisual != null)
+        {
+            Vector3 eyeTargetWorld = playerVisual.GetEyeCameraWorldPosition(out bool foundEye);
+            if (foundEye)
+            {
+                fpPivotWorld = eyeTargetWorld + (playerBody != null ? playerBody.up * currentCameraHeightOffset : Vector3.up * currentCameraHeightOffset);
+            }
+            else
+            {
+                Vector3 fpPivotLocal = initialPivotLocalPos + new Vector3(0f, currentCameraHeightOffset, 0f);
+                fpPivotWorld = playerBody != null ? playerBody.TransformPoint(fpPivotLocal) : transform.position;
+            }
+        }
+        else
+        {
+            Vector3 fpPivotLocal = initialPivotLocalPos + new Vector3(0f, currentCameraHeightOffset, 0f);
+            fpPivotWorld = playerBody != null ? playerBody.TransformPoint(fpPivotLocal) : transform.position;
+        }
+
+        Vector3 shakeLocalOffset = (currentShakePosOffset * (1f - thirdPersonBlend * 0.7f)) + externalShakePosOffset;
+
+        // ThirdPerson hedef noktası: oyuncunun arkasında ve yukarıda (thirdPersonOffset: varsayılan 0, 1.2, -3.2)
+        Quaternion yawAndPitchRot = (playerBody != null)
+            ? playerBody.rotation * Quaternion.Euler(pitchAngle + currentPitchOffset, 0f, 0f)
+            : transform.rotation;
+
+        Vector3 tpDesiredOffsetWorld =
+            (playerBody != null ? playerBody.up : Vector3.up) * thirdPersonOffset.y +
+            (yawAndPitchRot * new Vector3(thirdPersonOffset.x, 0f, thirdPersonOffset.z));
+
+        Vector3 tpDesiredWorld = fpPivotWorld + tpDesiredOffsetWorld;
+
+        if (thirdPersonBlend > 0.001f)
+        {
+            Vector3 castVector = tpDesiredWorld - fpPivotWorld;
+            float castDistance = castVector.magnitude;
+            if (castDistance > 0.01f)
+            {
+                Vector3 castDir = castVector / castDistance;
+                if (Physics.SphereCast(
+                    fpPivotWorld,
+                    thirdPersonCollisionRadius,
+                    castDir,
+                    out RaycastHit hit,
+                    castDistance,
+                    thirdPersonCollisionMask,
+                    QueryTriggerInteraction.Ignore))
+                {
+                    if (playerBody == null || !hit.transform.IsChildOf(playerBody))
+                    {
+                        float safeDist = Mathf.Max(0.15f, hit.distance - thirdPersonWallPadding);
+                        tpDesiredWorld = fpPivotWorld + castDir * safeDist;
+                    }
+                }
+            }
+        }
+
+        Vector3 finalWorldPos = Vector3.Lerp(fpPivotWorld, tpDesiredWorld, thirdPersonBlend);
+        Transform camTransform = targetCamera != null ? targetCamera.transform : transform;
+
+        if (camTransform == transform)
+        {
+            if (transform.parent != null)
+            {
+                transform.localPosition = transform.parent.InverseTransformPoint(finalWorldPos) + shakeLocalOffset;
+            }
+            else
+            {
+                transform.position = finalWorldPos + transform.TransformVector(shakeLocalOffset);
+            }
+        }
+        else
+        {
+            if (transform.parent != null)
+            {
+                transform.localPosition = transform.parent.InverseTransformPoint(fpPivotWorld);
+            }
+            camTransform.position = finalWorldPos + transform.TransformVector(shakeLocalOffset);
+        }
     }
 }

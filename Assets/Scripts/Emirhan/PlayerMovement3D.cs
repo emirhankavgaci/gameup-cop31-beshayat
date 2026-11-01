@@ -29,6 +29,10 @@ public class PlayerMovement3D : MonoBehaviour
     [SerializeField] private float maxPitch = 65f;
     [SerializeField] private bool lockCursorOnStart = true;
 
+    [Header("Fall Safety & Water Layer Priority")]
+    [SerializeField] private float fallRespawnY = -15f;
+    [SerializeField] private int playerRenderQueue = 2010; // Suyun (2005) karakteri kapatmaması için üst katman
+
     private Rigidbody rb;
     private CapsuleCollider capsuleCollider;
     private Vector3 moveDirection;
@@ -41,6 +45,9 @@ public class PlayerMovement3D : MonoBehaviour
     private float defaultSprintSpeed;
     private float yaw;
     private float pitch = 15f;
+
+    private Vector3 initialSpawnPosition;
+    private Vector3 lastSafeGroundedPosition;
 
     /// <summary>
     /// Karakterin baktığı yön (kuyruk darbesi, fidan/dal yerleştirme veya ateş etme hesapları için).
@@ -70,10 +77,27 @@ public class PlayerMovement3D : MonoBehaviour
         defaultMoveSpeed = moveSpeed;
         defaultSprintSpeed = sprintSpeed;
 
+        initialSpawnPosition = transform.position;
+        lastSafeGroundedPosition = transform.position;
+
         // Karakterin fiziksel çarpışmalarda devrilmesini ve fizik motoru yüzünden dönmesini engelle
         rb.constraints = RigidbodyConstraints.FreezeRotation;
 
         yaw = transform.eulerAngles.y;
+
+        // Suyun karakterin görünümünü kapatmaması için karakterin materyallerini üst katmana (2010) al
+        Renderer[] renderers = GetComponentsInChildren<Renderer>(true);
+        for (int i = 0; i < renderers.Length; i++)
+        {
+            Material[] mats = renderers[i].materials;
+            for (int m = 0; m < mats.Length; m++)
+            {
+                if (mats[m] != null)
+                {
+                    mats[m].renderQueue = playerRenderQueue;
+                }
+            }
+        }
 
         // Kamera atanmadıysa sahnedeki Main Camera'yı otomatik bul
         if (cameraTransform == null && Camera.main != null)
@@ -96,18 +120,39 @@ public class PlayerMovement3D : MonoBehaviour
 
     private void Update()
     {
-        // 1. Mouse ile karakteri sağa-sola döndür, kameranın dikey bakış açısını güncelle
-        HandleMouseLook();
-
-        // Zemin kontrolü
+        // Zemin kontrolü ve son güvenli pozisyonu kaydetme
         isGrounded = CheckGrounded();
+        if (isGrounded && transform.position.y > fallRespawnY + 2f)
+        {
+            lastSafeGroundedPosition = transform.position;
+        }
 
+        // Adadan aşağı düşerse son güvenli noktaya geri ışınla
+        if (transform.position.y < fallRespawnY)
+        {
+            rb.linearVelocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+            Vector3 safePos = lastSafeGroundedPosition.y > fallRespawnY + 1f ? lastSafeGroundedPosition : initialSpawnPosition;
+            transform.position = safePos + Vector3.up * 0.5f;
+            return;
+        }
+
+        // Oyun bittiğinde veya hareket kapatıldığında kameranın dönmesini ve yürümeyi durdur
         if (!canMove)
         {
             moveDirection = Vector3.zero;
             isSprinting = false;
             jumpRequested = false;
             return;
+        }
+
+        // Build içinde ESC ile imleci serbest bırakma / tekrar tıklayınca kilitleme
+        HandleCursorLockToggle();
+
+        // 1. Mouse ile karakteri sağa-sola döndür, kameranın dikey bakış açısını güncelle
+        if (Cursor.lockState == CursorLockMode.Locked)
+        {
+            HandleMouseLook();
         }
 
         // 2. WASD tuşlarıyla karakterin baktığı yöne göre İleri/Geri ve Sağ/Sol (Strafe) hareket et
@@ -161,6 +206,20 @@ public class PlayerMovement3D : MonoBehaviour
 
         cameraTransform.position = pivotPosition - (camRotation * Vector3.forward * cameraDistance);
         cameraTransform.rotation = camRotation;
+    }
+
+    private void HandleCursorLockToggle()
+    {
+        if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
+        {
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+        }
+        else if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame && Cursor.lockState != CursorLockMode.Locked)
+        {
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
+        }
     }
 
     /// <summary>
