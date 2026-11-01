@@ -5,7 +5,13 @@ using UnityEngine.Events;
 /// <summary>
 /// CANOPY: The Last Run - "Maymun Simülatörü" Dal Tutunma, Dal Boyunca Kayma, Gerçek Sarkaç Sallanması,
 /// Savrularak Fırlama (Perfect Release destekli) ve Sallanırken de Çalışan Parabolik Dallar Arası Geçiş Yöneticisi.
-/// W ve S yalnızca sarkaç torku uygular (S ile bırakma kaldırılmıştır); dal yalnızca Space veya Left Ctrl ile bırakılır.
+///
+/// Kamera Bakış Kuralı (Bug Fix 3):
+/// - Hiçbir dal veya geçiş sistemi PlayerLook.basePitch değerine doğrudan yazmaz!
+/// - Sallanırken sadece SetSwingOffset(pitch, roll), geçiş (Transferring) sırasında ise sadece
+///   SetTransferLookOffset(pitch) (en fazla ±15 derece) kullanılır.
+/// - Daldan her çıkış yolunda (Space fırlama, Left Ctrl bırakma, Transfer bitişi/iptali) state değişmeden önce
+///   ResetCameraOffsets() çağrılır; böylece fırlama sonrası kamera asla aşağı bakışta kalmaz.
 /// </summary>
 public class BranchGrabHandler : MonoBehaviour
 {
@@ -16,6 +22,8 @@ public class BranchGrabHandler : MonoBehaviour
         LeftCtrl,
         Transfer
     }
+
+    private const float MAX_TRANSFER_PITCH_OFFSET_DEG = 15f;
 
     [Header("Temel Referanslar")]
     [Tooltip("Merkezi karakter hareket ve state machine yöneticisi.")]
@@ -198,13 +206,14 @@ public class BranchGrabHandler : MonoBehaviour
     private Vector3 transferStartBodyPos;
     private Vector3 transferEndHandPos;
     private Vector3 transferEndBodyPos;
+    private Quaternion preTransferBodyRotation = Quaternion.identity;
     private float transferTargetT;
     private float transferTotalDuration;
     private float transferElapsed;
     private float transferArcHeight;
     private float currentTransferSpeed;
 
-    // CrosshairUI, GrabPromptUI, PlayerVisual ve Debug HUD için dış erişim özellikleri
+    // Dış erişim özellikleri
     public BranchData CurrentBranch => currentBranch;
     public float CurrentBranchT => currentBranchT;
     public Vector3 CurrentHandWorldPosition => currentHandWorldPos;
@@ -216,18 +225,10 @@ public class BranchGrabHandler : MonoBehaviour
     public float CurrentTransferSpeed => currentTransferSpeed;
     public BranchReleaseReason LastReleaseReason => lastReleaseReason;
 
-    /// <summary>Menzilde geçilebilecek geçerli bir dal olup olmadığını döndürür (W/S basılı değilken).</summary>
     public bool HasTransferTarget => currentTransferTarget != null && !isTransferBlockedBySwingInput;
-
-    /// <summary>Şu an seçili olan hedef geçiş dalını döndürür.</summary>
     public BranchData CurrentTransferTarget => currentTransferTarget;
-
-    /// <summary>Eski isimlendirmeyle uyumluluk için CurrentTransferTarget referansı.</summary>
     public BranchData CandidateTransferBranch => currentTransferTarget;
-
-    /// <summary>Hedef dal üzerindeki en yakın geçiş noktasının dünya koordinatını döndürür.</summary>
     public Vector3 CurrentTransferTargetPoint => currentTransferTargetPoint;
-
     public float CandidateTransferDistance => candidateTransferDistance;
     public float CandidateTransferScore => candidateTransferScore;
     public bool IsTransferBlockedBySwingInput => isTransferBlockedBySwingInput;
@@ -264,8 +265,6 @@ public class BranchGrabHandler : MonoBehaviour
             regrabCooldownTimer -= dt;
         }
 
-        // Havadayken de CrosshairUI'ın hedef dal gördüğünde büyüyüp yeşillenebilmesi için
-        // Hanging ve Transferring dışındayken pasif hedef taraması yap
         if (motor != null &&
             motor.CurrentState != PlayerMotor.PlayerState.Hanging &&
             motor.CurrentState != PlayerMotor.PlayerState.Transferring)
@@ -293,10 +292,12 @@ public class BranchGrabHandler : MonoBehaviour
         if (motor == null || motor.IsGrounded)
             return false;
 
-        if (motor.CurrentState == PlayerMotor.PlayerState.Sliding)
+        if (motor.CurrentState == PlayerMotor.PlayerState.Sliding ||
+            motor.CurrentState == PlayerMotor.PlayerState.Drowning)
+        {
             return false;
+        }
 
-        // Left Ctrl basılıysa oyuncu bilerek tutunmadan geçmek istiyordur
         if (Input.GetKey(grabCancelAndDropKey))
             return false;
 
@@ -375,6 +376,12 @@ public class BranchGrabHandler : MonoBehaviour
         {
             swingAngle = 0f;
             swingAngularVelocity = Mathf.Clamp(transferArrivalAngularVelocity, -maxEntryAngularVelocity, maxEntryAngularVelocity);
+
+            // Geçiş tamamlandığında transferPitchOffset'i sıfırla (cameraOffsetResetTime içinde SmoothDamp ile döner)
+            if (motor != null && motor.Look != null)
+            {
+                motor.Look.SetTransferLookOffset(0f);
+            }
         }
         else
         {
@@ -385,17 +392,13 @@ public class BranchGrabHandler : MonoBehaviour
         }
 
         motor.SetVelocity(Vector3.zero);
-        motor.ConsumeJumpBuffer();
+        motor.ConsumeAllJumpInputs();
         motor.SetState(PlayerMotor.PlayerState.Hanging);
 
         onBranchGrabbed?.Invoke(currentBranch);
         OnBranchGrabbedCallback?.Invoke(currentBranch);
     }
 
-    /// <summary>
-    /// Hanging durumundaki 3 alt modeli (1: Kayma, 2: Sarkaç, 3: Fırlama) ve Dallar Arası Geçişi yürütür.
-    /// Dal YALNIZCA Left Ctrl (Drop) veya Space (Launch) ile bırakılır; S tuşu asla bırakma yapmaz!
-    /// </summary>
     public void UpdateHangingState(float dt)
     {
         if (currentBranch == null)
@@ -404,27 +407,27 @@ public class BranchGrabHandler : MonoBehaviour
             return;
         }
 
-        // 0. Dalı bırakıp düşme: SADECE Left Ctrl tuşu ile! (S tuşu ile bırakma tamamen kaldırılmıştır)
+        // 0. Dalı bırakıp düşme: SADECE Left Ctrl tuşu ile
         if (Input.GetKeyDown(grabCancelAndDropKey))
         {
             DropFromBranch(BranchReleaseReason.LeftCtrl);
             return;
         }
 
-        // 1. Savrularak Fırlama: SADECE Space tuşu ile!
-        if (Input.GetKeyDown(swingLaunchKey))
+        // 1. Savrularak Fırlama: Space tuşu ile (PlayerMotor.JumpPressedThisFrame üzerinden tek noktadan okunur)
+        if (motor.JumpPressedThisFrame || Input.GetKeyDown(swingLaunchKey))
         {
             ExecuteSwingLaunch();
             return;
         }
 
-        // 2. ALT MODEL 1: Dal boyunca kayma (A / D) -> Uçlarda (t=0 veya 1) asla bırakma yapmaz
+        // 2. Dal boyunca kayma (A / D)
         UpdateBranchSliding(dt);
 
-        // 3. ALT MODEL 2: Sarkaç sallanması (W / S) -> Yumuşatılmış tork ve yumuşak açı sınırı
+        // 3. Sarkaç sallanması (W / S)
         UpdatePendulumSwing(dt);
 
-        // 4. El noktasını dal çizgisi üzerindeki hedef noktaya 0.1 sn içinde SmoothDamp ile oturt, sonra kilitle
+        // 4. El noktasını dal çizgisi üzerindeki hedef noktaya 0.1 sn içinde SmoothDamp ile oturt
         Vector3 idealBranchHandPoint = currentBranch.GetPointAtT(currentBranchT);
         handSnapTimer += dt;
 
@@ -444,14 +447,14 @@ public class BranchGrabHandler : MonoBehaviour
             currentHandWorldPos = idealBranchHandPoint;
         }
 
-        // 5. Gövde pozisyonunu sarkaç denkleminden doğrudan hesapla ve transform.position'a uygula
+        // 5. Gövde pozisyonunu sarkaç denkleminden hesapla
         Vector3 pendulumOffset = (Mathf.Sin(swingAngle) * swingForwardDir + (-Mathf.Cos(swingAngle)) * Vector3.up) * pendulumLength;
         transform.position = currentHandWorldPos + pendulumOffset;
 
-        // 6. Sallanırken kamera pitch ve hafif roll offsetlerini yumuşakça güncelle
+        // 6. Sallanırken sadece kamera swing offsetlerini güncelle (basePitch asla değişmez!)
         UpdateSwingCameraFeedback();
 
-        // 7. Dallar Arası Geçiş (E Tuşu): Sallanma sırasında da aktiftir!
+        // 7. Dallar Arası Geçiş (E Tuşu)
         UpdateBranchTransferInHanging(dt);
 
         if (HasTransferTarget && Input.GetKeyDown(branchTransferKey))
@@ -460,9 +463,6 @@ public class BranchGrabHandler : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Alt Model 1: A/D ile dal ekseninde kayma. t değeri 0..1 arasında clamp'lenir ve uçlarda asla dal bırakılmaz.
-    /// </summary>
     private void UpdateBranchSliding(float dt)
     {
         float adInput = motor.HorizontalInput;
@@ -493,13 +493,6 @@ public class BranchGrabHandler : MonoBehaviour
         currentBranchT = nextT;
     }
 
-    /// <summary>
-    /// Alt Model 2: Gerçek sarkaç sallanması.
-    /// - W ve S aynı anda basılıysa tork sıfır olur (birbirini iptal eder).
-    /// - Tork girişi swingInputSmoothing (0.08 sn) ile yumuşatılır.
-    /// - Sarkaç hızı ters yöndeyken bile torkun yönü değişmez (oyuncu hep bastığı yöne iter, fizik sonucu söner veya büyür).
-    /// - Maksimum açıya (80 derece) yaklaşırken son 10 derecede yumuşak fren uygulanır ve sınırda swingLimitBounce (0.2) ile hafif seker.
-    /// </summary>
     private void UpdatePendulumSwing(float dt)
     {
         if (cameraTransform != null && Mathf.Abs(swingAngle) < 0.2f && Mathf.Abs(swingAngularVelocity) < 0.8f)
@@ -511,8 +504,6 @@ public class BranchGrabHandler : MonoBehaviour
             }
         }
 
-        // W ve S tuşlarını doğrudan oku: İkisi aynı anda basılıysa birbirini iptal eder (0),
-        // W'den S'e geçişte hedef yön anında değişir.
         bool holdingW = Input.GetKey(KeyCode.W);
         bool holdingS = Input.GetKey(KeyCode.S);
         float rawWsInput = 0f;
@@ -523,7 +514,6 @@ public class BranchGrabHandler : MonoBehaviour
         else if (!holdingW && !holdingS)
             rawWsInput = motor.VerticalInput;
 
-        // 0.08 sn yumuşatma (swingInputSmoothing) ile W-S geçişlerinde sert sıçramayı önle
         smoothedSwingInput = Mathf.SmoothDamp(
             smoothedSwingInput,
             rawWsInput,
@@ -538,8 +528,6 @@ public class BranchGrabHandler : MonoBehaviour
 
         if (Mathf.Abs(smoothedSwingInput) > 0.005f)
         {
-            // Oyuncu sarkaç hız yönüyle aynı yöne basıyorsa rezonans çarpanı uygulanır;
-            // ters yöne basıyorsa tork yönü DEĞİŞMEZ (smoothedSwingInput işareti korunur), böylece fiziksel olarak karşı kuvvet uygular ve sönümler!
             bool isPumpingInVelocityDir = (smoothedSwingInput * swingAngularVelocity) > 0f;
             float multiplier = isPumpingInVelocityDir ? resonanceTorqueMultiplier : 1.0f;
             inputTorqueAccel = (smoothedSwingInput * swingInputTorque * multiplier) / Mathf.Max(0.2f, pendulumLength);
@@ -553,7 +541,6 @@ public class BranchGrabHandler : MonoBehaviour
         float angularAccel = gravityRestoreAccel + inputTorqueAccel + dampingAccel;
         swingAngularVelocity += angularAccel * dt;
 
-        // Maksimum açı sınırına yaklaşırken (son 10 derece) dışa doğru giden açısal hıza yumuşak fren uygula
         float maxAngleRad = maxSwingAngleDegrees * Mathf.Deg2Rad;
         float brakeZoneRad = Mathf.Max(1f, limitSoftBrakeZoneDegrees) * Mathf.Deg2Rad;
         float absAngle = Mathf.Abs(swingAngle);
@@ -571,7 +558,6 @@ public class BranchGrabHandler : MonoBehaviour
 
         swingAngle += swingAngularVelocity * dt;
 
-        // Sınırda açıyı clamp'le ve açısal hızı hafifçe geri sektir (swingLimitBounce = 0.2), asla dalı bırakma!
         if (swingAngle > maxAngleRad)
         {
             swingAngle = maxAngleRad;
@@ -592,15 +578,15 @@ public class BranchGrabHandler : MonoBehaviour
 
     private void ExecuteSwingLaunch()
     {
+        // Fırlama anında sarkaç eğimi yüzünden kameranın aşağı sapmış olmaması için
+        // yatay fırlama yönünü doğrudan PlayerLook'un saf yatay bakış yönünden al
+        Vector3 camFlatForward = (motor != null && motor.Look != null)
+            ? motor.Look.GetInstantHorizontalLookDirection()
+            : transform.forward;
+
         Vector3 tangentDir = (Mathf.Cos(swingAngle) * swingForwardDir + Mathf.Sin(swingAngle) * Vector3.up).normalized;
         float tangentialSpeed = swingAngularVelocity * pendulumLength * tangentialVelocityLaunchScale;
         Vector3 tangentialVelocity = tangentDir * tangentialSpeed;
-
-        Transform refTransform = cameraTransform != null ? cameraTransform : transform;
-        Vector3 camFlatForward = new Vector3(refTransform.forward.x, 0f, refTransform.forward.z);
-        if (camFlatForward.sqrMagnitude < 0.001f)
-            camFlatForward = transform.forward;
-        camFlatForward.Normalize();
 
         Vector3 baseLaunchVelocity =
             tangentialVelocity +
@@ -636,22 +622,27 @@ public class BranchGrabHandler : MonoBehaviour
         regrabCooldownTimer = regrabCooldownDuration;
 
         currentBranch = null;
+        activeTransferTargetBranch = null;
         swingAngle = 0f;
         swingAngularVelocity = 0f;
         smoothedSwingInput = 0f;
         swingInputSmoothVelocity = 0f;
         currentSlideSpeed = 0f;
+        currentTransferSpeed = 0f;
 
         ClearTransferCandidateState();
 
-        motor.ConsumeJumpBuffer();
+        // State değişmeden ÖNCE kamera swing ve transfer offsetlerini sıfırla (basePitch korunur!)
+        if (motor != null && motor.Look != null)
+        {
+            motor.Look.ResetCameraOffsets();
+        }
+
+        motor.ConsumeAllJumpInputs();
         motor.SetState(PlayerMotor.PlayerState.Airborne);
         motor.SetVelocity(exitVelocity);
     }
 
-    /// <summary>
-    /// Checkpoint'e ışınlanma (Respawn) sırasında tüm dal tutunma, sarkaç ve geçiş durumlarını temizler.
-    /// </summary>
     public void ForceResetBranchState()
     {
         currentBranch = null;
@@ -669,7 +660,7 @@ public class BranchGrabHandler : MonoBehaviour
 
         if (motor != null && motor.Look != null)
         {
-            motor.Look.SetSwingCameraOffsets(0f, 0f);
+            motor.Look.ResetCameraOffsets();
         }
     }
 
@@ -800,6 +791,9 @@ public class BranchGrabHandler : MonoBehaviour
         lastReleaseReason = BranchReleaseReason.Transfer;
         activeTransferTargetBranch = targetBranch;
 
+        // Fırlatma öncesi oyuncunun yatay bakış rotasyonunu kaydet ki geçiş sonunda yumuşakça geri dönsün
+        preTransferBodyRotation = Quaternion.Euler(0f, transform.eulerAngles.y, 0f);
+
         swingAngle = 0f;
         swingAngularVelocity = 0f;
         smoothedSwingInput = 0f;
@@ -820,9 +814,10 @@ public class BranchGrabHandler : MonoBehaviour
 
         ClearTransferCandidateState();
 
+        // Geçiş başlarken swing offset'lerini sıfırla (basePitch'e dokunulmaz)
         if (motor.Look != null)
         {
-            motor.Look.SetSwingCameraOffsets(0f, 0f);
+            motor.Look.SetSwingOffset(0f, 0f);
         }
 
         motor.SetVelocity(Vector3.zero);
@@ -833,7 +828,23 @@ public class BranchGrabHandler : MonoBehaviour
     {
         if (activeTransferTargetBranch == null)
         {
+            if (motor != null && motor.Look != null)
+            {
+                motor.Look.ResetCameraOffsets();
+            }
             DropFromBranch(BranchReleaseReason.Transfer);
+            return;
+        }
+
+        // Geçiş sırasında Left Ctrl basılırsa geçişi iptal et ve offsetleri sıfırlayarak düş
+        if (Input.GetKeyDown(grabCancelAndDropKey))
+        {
+            activeTransferTargetBranch = null;
+            if (motor != null && motor.Look != null)
+            {
+                motor.Look.ResetCameraOffsets();
+            }
+            DropFromBranch(BranchReleaseReason.LeftCtrl);
             return;
         }
 
@@ -853,13 +864,39 @@ public class BranchGrabHandler : MonoBehaviour
 
         currentTransferSpeed = dt > 0.0001f ? (transform.position - previousPos).magnitude / dt : 0f;
 
+        // Bug Fix 3: Geçiş sırasında basePitch'e ASLA yazılmaz!
+        // Sadece transferPitchOffset (en fazla ±15 derece) kullanılır ve varışa yaklaşırken (t -> 1) sıfıra iner.
         if (motor.Look != null)
         {
-            motor.Look.SmoothLookAtWorldPoint(transferEndHandPos, transferCameraTurnSpeed, dt);
+            Vector3 toTarget = transferEndHandPos - motor.Look.transform.position;
+            if (toTarget.sqrMagnitude > 0.01f)
+            {
+                // Yatayda geçişin ilk yarısında hedef dala hafif yönelip ikinci yarısında fırlatma öncesi bakış yönüne dön
+                Vector3 flatToTarget = new Vector3(toTarget.x, 0f, toTarget.z);
+                if (flatToTarget.sqrMagnitude > 0.001f)
+                {
+                    Quaternion lookAtTargetYaw = Quaternion.LookRotation(flatToTarget.normalized, Vector3.up);
+                    float yawWeight = Mathf.Sin(t * Mathf.PI) * 0.45f;
+                    Quaternion desiredBodyRot = Quaternion.Slerp(preTransferBodyRotation, lookAtTargetYaw, yawWeight);
+                    transform.rotation = Quaternion.Slerp(transform.rotation, desiredBodyRot, transferCameraTurnSpeed * dt);
+                }
+
+                // Dikeyde sadece transferPitchOffset kullan (±15 derece sınırı) ve geçiş sonunda 0'a sönümle
+                Vector3 localDir = transform.InverseTransformDirection(toTarget.normalized);
+                float rawRelativePitch = -Mathf.Asin(Mathf.Clamp(localDir.y, -1f, 1f)) * Mathf.Rad2Deg - motor.Look.BasePitch;
+                float clampedOffset = Mathf.Clamp(rawRelativePitch, -MAX_TRANSFER_PITCH_OFFSET_DEG, MAX_TRANSFER_PITCH_OFFSET_DEG);
+                float envelope = Mathf.Sin(t * Mathf.PI); // Başta 0, ortada 1, varışta (t=1) tekrar 0!
+                motor.Look.SetTransferLookOffset(clampedOffset * envelope);
+            }
         }
 
         if (t >= 1f)
         {
+            if (motor.Look != null)
+            {
+                motor.Look.ResetCameraOffsets();
+            }
+
             Vector3 arrivalDirection = (transferEndBodyPos - transferStartBodyPos).normalized;
             BranchData arrivedBranch = activeTransferTargetBranch;
             activeTransferTargetBranch = null;
@@ -880,7 +917,7 @@ public class BranchGrabHandler : MonoBehaviour
         float pitchOffset = -normalizedSwing * maxSwingCameraPitchOffset;
         float rollOffset = (currentSlideSpeed / Mathf.Max(0.1f, branchSlideSpeed)) * maxSwingCameraRollOffset;
 
-        motor.Look.SetSwingCameraOffsets(pitchOffset, rollOffset);
+        motor.Look.SetSwingOffset(pitchOffset, rollOffset);
     }
 
     private Vector3 ComputeSwingForwardDirection(Vector3 branchAxis, Vector3 entryVelocity)

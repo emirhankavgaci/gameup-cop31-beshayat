@@ -12,12 +12,20 @@ public enum ViewMode
 
 /// <summary>
 /// CANOPY: The Last Run - Birinci ve Üçüncü Şahıs Kamera, Sabit "Eye" Kamera Konumlandırma,
-/// Hafif Gerçekçi Kamera Sarsıntısı (Camera Shake), Mouse Look ve Dinamik FOV Yöneticisi.
-/// Dünya uzayında (World Space) Lerp gecikmesi KULLANMAZ; böylece yürürken/koşarken kamera asla geride kalmaz
-/// ve maymunun içine girmez.
+/// Ayrı Offset Mimarisi (Bug Fix 3), Mouse Look ve Dinamik FOV Yöneticisi.
+///
+/// Ayrı Offset Sistemi (Bug Fix 3):
+/// - basePitch YALNIZCA mouse Y girdisi ile değişir ve [-89, +89] arasında clamp'lenir.
+/// - transform.localEulerAngles ile geri okuma ASLA yapılmaz (0-360 sarma hatasını önler).
+/// - swingPitchOffset, swingRollOffset, transferPitchOffset (±15° sınırı), slideRollOffset ve wallRunRollOffset
+///   tamamen ayrı float alanlarda tutulur.
+/// - Dal bırakıldığında ResetCameraOffsets() çağrılır ve tüm sarkaç/geçiş offsetleri cameraOffsetResetTime
+///   (varsayılan 0.25 sn) içinde SmoothDamp ile sıfıra döner.
 /// </summary>
 public class PlayerLook : MonoBehaviour
 {
+    private const float MAX_TRANSFER_LOOK_OFFSET_DEG = 15f;
+
     [Header("Referanslar")]
     [Tooltip("Yatay eksende (Y) döndürülecek oyuncu ana gövdesi.")]
     [SerializeField] private Transform playerBody;
@@ -96,8 +104,11 @@ public class PlayerLook : MonoBehaviour
     [Tooltip("FOV değişimlerinin yumuşatma hızı.")]
     [SerializeField] private float fovLerpSpeed = 10f;
 
-    [Header("Sarkaç, Wall Run ve Slide Kamera Offset Ayarları")]
-    [Tooltip("Kamera yatış (roll/tilt) ve sarkaç pitch offset açılarının yumuşak geçiş hızı.")]
+    [Header("Ayrı Kamera Offset Sistemi (Sarkaç, Transfer, Wall Run, Slide)")]
+    [Tooltip("Dal bırakıldığında tüm swing ve transfer kamera offsetlerinin SmoothDamp ile sıfıra dönme süresi (varsayılan 0.25 sn).")]
+    [SerializeField] private float cameraOffsetResetTime = 0.25f;
+
+    [Tooltip("Aktif sarkaç, wall run ve slide sırasında kamera offsetlerinin hedefe yaklaşma hızı.")]
     [SerializeField] private float offsetLerpSpeed = 12f;
 
     [Tooltip("Slide sırasında kamera yükseklik ofsetinin yumuşak geçiş hızı.")]
@@ -134,16 +145,30 @@ public class PlayerLook : MonoBehaviour
     // Olaylar
     public event Action<ViewMode> OnViewModeChanged;
 
-    // Dahili değişkenler
-    private float pitchAngle;
-    private float currentRollOffset;
-    private float currentPitchOffset;
+    // BUG FIX 3: Tamamen ayrı tutulan kamera açı ve offset alanları
+    private float basePitch; // SADECE mouse Y ile değişir!
+    private float swingPitchOffset;
+    private float swingRollOffset;
+    private float transferPitchOffset;
+    private float slideRollOffset;
+    private float wallRunRollOffset;
+
+    // Hedef offsetler ve SmoothDamp hızları
     private float targetSwingPitchOffset;
     private float targetSwingRollOffset;
+    private float targetTransferPitchOffset;
     private float targetSlideRollOffset;
     private float targetSlideFovBoost;
     private float targetCameraHeightOffset;
     private float currentCameraHeightOffset;
+
+    private float swingPitchSmoothVel;
+    private float swingRollSmoothVel;
+    private float transferPitchSmoothVel;
+    private float slideRollSmoothVel;
+    private float wallRunRollSmoothVel;
+
+    // Kamera sarsıntısı ve genel durum değişkenleri
     private float headBobTimer;
     private float perlinSeedTime;
     private float impactTrauma;
@@ -157,13 +182,33 @@ public class PlayerLook : MonoBehaviour
     private bool allowMouseInput = true;
     private int lastMouseProcessedFrame = -1;
 
-    // Dış erişim özellikleri
+    // Boğulma (Drowning) kamera durumu
+    private bool isDrowningCameraActive;
+    private float drowningTargetFov = 75f;
+    private float drowningFovTransitionSpeed = 5f;
+    private float drowningSwayTimer;
+    private float currentDrownPitchSway;
+    private float currentDrownRollSway;
+
+    // Dış erişim ve Debug HUD özellikleri
     public Camera TargetCamera => targetCamera;
     public ViewMode CurrentViewMode => currentViewMode;
     public bool AllowViewToggle => allowViewToggle;
-    public float CurrentRollOffset => currentRollOffset;
-    public float CurrentPitchOffset => currentPitchOffset;
+    public float BasePitch => basePitch;
+    public float SwingPitchOffset => swingPitchOffset;
+    public float SwingRollOffset => swingRollOffset;
+    public float TransferPitchOffset => transferPitchOffset;
+    public float SlideRollOffset => slideRollOffset;
+    public float WallRunRollOffset => wallRunRollOffset;
+    public float TotalPitchOffset => swingPitchOffset + transferPitchOffset + currentDrownPitchSway;
+    public float TotalRollOffset => wallRunRollOffset + swingRollOffset + slideRollOffset + currentDrownRollSway;
+    public float CurrentPitchOffset => TotalPitchOffset;
+    public float CurrentRollOffset => TotalRollOffset;
     public float CurrentCameraHeightOffset => currentCameraHeightOffset;
+    public bool AreOffsetsReset =>
+        Mathf.Abs(swingPitchOffset) < 0.05f &&
+        Mathf.Abs(swingRollOffset) < 0.05f &&
+        Mathf.Abs(transferPitchOffset) < 0.05f;
 
     private void Awake()
     {
@@ -184,7 +229,6 @@ public class PlayerLook : MonoBehaviour
 
         initialPivotLocalPos = transform.localPosition;
 
-        // Sahnedeki eski yüksek shake değerleri serialize edilmişse kameranın sabit kalması için makul sınırlara çek
         if (bobVerticalAmplitude > 0.02f) bobVerticalAmplitude = 0.012f;
         if (bobHorizontalAmplitude > 0.015f) bobHorizontalAmplitude = 0.008f;
         if (movementRotationShakeDegrees > 0.55f) movementRotationShakeDegrees = 0.35f;
@@ -193,7 +237,6 @@ public class PlayerLook : MonoBehaviour
         if (targetCamera != null)
         {
             targetCamera.fieldOfView = baseFieldOfView;
-            // Yakın kırpma düzlemini küçült ki gövdeye yakınken kesilme olmasın
             targetCamera.nearClipPlane = 0.03f;
         }
 
@@ -249,8 +292,6 @@ public class PlayerLook : MonoBehaviour
 
     private void LateUpdate()
     {
-        // Animator kemikleri güncelledikten sonra önce PlayerVisual'ı senkronize et,
-        // ardından kamerayı gecikmesiz (lag olmadan) yerleştir.
         float dt = Time.deltaTime;
         if (playerVisual != null)
         {
@@ -272,18 +313,11 @@ public class PlayerLook : MonoBehaviour
         AddCameraShakeImpulse(Mathf.Clamp(0.25f + fallStrength * 0.55f, 0.25f, 0.85f));
     }
 
-    /// <summary>
-    /// Zıplama, yere iniş veya dala tutunma anında kameraya hafif darbe sarsıntısı ekler.
-    /// </summary>
     public void AddCameraShakeImpulse(float normalizedImpulse)
     {
         impactTrauma = Mathf.Clamp01(impactTrauma + normalizedImpulse);
     }
 
-    /// <summary>
-    /// CameraShake gibi harici bileşenlerin PlayerLook ile çakışmadan ek pozisyon ve açısal sarsıntı
-    /// ofseti uygulamasını sağlar.
-    /// </summary>
     public void SetExternalShakeOffset(Vector3 positionOffset, Vector3 rotationEulerOffset)
     {
         externalShakePosOffset = positionOffset;
@@ -291,25 +325,46 @@ public class PlayerLook : MonoBehaviour
     }
 
     /// <summary>
-    /// Checkpoint'e ışınlanma (Respawn) sırasında kameranın dikey bakış açısını ve tüm geçici ofsetlerini sıfırlar.
+    /// Checkpoint'e ışınlanma (Respawn) sırasında kameranın basePitch açısını ve tüm geçici ofsetlerini sıfırlar.
     /// </summary>
     public void ResetLookState(Quaternion targetBodyRotation)
     {
-        pitchAngle = 0f;
-        currentRollOffset = 0f;
-        currentPitchOffset = 0f;
+        basePitch = 0f;
+        swingPitchOffset = 0f;
+        swingRollOffset = 0f;
+        transferPitchOffset = 0f;
+        slideRollOffset = 0f;
+        wallRunRollOffset = 0f;
+
         targetSwingPitchOffset = 0f;
         targetSwingRollOffset = 0f;
+        targetTransferPitchOffset = 0f;
         targetSlideRollOffset = 0f;
         targetSlideFovBoost = 0f;
         targetCameraHeightOffset = 0f;
         currentCameraHeightOffset = 0f;
+
+        swingPitchSmoothVel = 0f;
+        swingRollSmoothVel = 0f;
+        transferPitchSmoothVel = 0f;
+        slideRollSmoothVel = 0f;
+        wallRunRollSmoothVel = 0f;
+
         impactTrauma = 0f;
         currentShakePosOffset = Vector3.zero;
         currentShakeRotEuler = Vector3.zero;
         externalShakePosOffset = Vector3.zero;
         externalShakeRotEuler = Vector3.zero;
         allowMouseInput = true;
+        isDrowningCameraActive = false;
+        drowningSwayTimer = 0f;
+        currentDrownPitchSway = 0f;
+        currentDrownRollSway = 0f;
+
+        if (targetCamera != null)
+        {
+            targetCamera.fieldOfView = baseFieldOfView;
+        }
 
         if (playerBody != null)
         {
@@ -357,6 +412,10 @@ public class PlayerLook : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Yalnızca Mouse X (playerBody yaw) ve Mouse Y (basePitch) girdisini işler.
+    /// Hiçbir harici sistem basePitch'i değiştiremez.
+    /// </summary>
     public void ProcessMouseLookForCurrentFrame()
     {
         if (!allowMouseInput || lastMouseProcessedFrame == Time.frameCount)
@@ -367,8 +426,8 @@ public class PlayerLook : MonoBehaviour
         float mouseX = Input.GetAxisRaw("Mouse X") * mouseSensitivity;
         float mouseY = Input.GetAxisRaw("Mouse Y") * mouseSensitivity;
 
-        pitchAngle -= mouseY;
-        pitchAngle = Mathf.Clamp(pitchAngle, minVerticalAngle, maxVerticalAngle);
+        basePitch -= mouseY;
+        basePitch = Mathf.Clamp(basePitch, minVerticalAngle, maxVerticalAngle);
 
         ApplyCameraRotation();
 
@@ -388,13 +447,7 @@ public class PlayerLook : MonoBehaviour
 
     public Vector3 GetInstantHorizontalLookDirection()
     {
-        Vector3 camFwd = GetInstantCameraForward();
-        Vector3 flatFwd = new Vector3(camFwd.x, 0f, camFwd.z);
-        if (flatFwd.sqrMagnitude > 0.0001f)
-        {
-            return flatFwd.normalized;
-        }
-
+        ProcessMouseLookForCurrentFrame();
         if (playerBody != null)
         {
             Vector3 bodyFlat = new Vector3(playerBody.forward.x, 0f, playerBody.forward.z);
@@ -402,13 +455,51 @@ public class PlayerLook : MonoBehaviour
                 return bodyFlat.normalized;
         }
 
+        Vector3 camFwd = targetCamera != null ? targetCamera.transform.forward : transform.forward;
+        Vector3 flatFwd = new Vector3(camFwd.x, 0f, camFwd.z);
+        if (flatFwd.sqrMagnitude > 0.0001f)
+        {
+            return flatFwd.normalized;
+        }
+
         return Vector3.forward;
     }
 
-    public void SetSwingCameraOffsets(float pitchOffsetDeg, float rollOffsetDeg)
+    /// <summary>
+    /// Sarkaç (Hanging) sırasında pitch ve roll offset hedeflerini ayarlar (basePitch'e dokunmaz).
+    /// </summary>
+    public void SetSwingOffset(float pitchOffsetDeg, float rollOffsetDeg)
     {
         targetSwingPitchOffset = pitchOffsetDeg;
         targetSwingRollOffset = rollOffsetDeg;
+    }
+
+    /// <summary>
+    /// Geriye dönük uyumluluk için SetSwingOffset çağrısı.
+    /// </summary>
+    public void SetSwingCameraOffsets(float pitchOffsetDeg, float rollOffsetDeg)
+    {
+        SetSwingOffset(pitchOffsetDeg, rollOffsetDeg);
+    }
+
+    /// <summary>
+    /// Dallar arası geçiş (Transferring) sırasında yalnızca transferPitchOffset'i ayarlar (en fazla ±15 derece).
+    /// basePitch değerine ASLA yazmaz!
+    /// </summary>
+    public void SetTransferLookOffset(float pitchOffsetDeg)
+    {
+        targetTransferPitchOffset = Mathf.Clamp(pitchOffsetDeg, -MAX_TRANSFER_LOOK_OFFSET_DEG, MAX_TRANSFER_LOOK_OFFSET_DEG);
+    }
+
+    /// <summary>
+    /// Dal bırakıldığında (Space fırlama, Left Ctrl bırakma, Transfer bitişi/iptali) tüm sarkaç ve geçiş
+    /// hedef offsetlerini sıfırlar; mevcut offsetler cameraOffsetResetTime (0.25 sn) içinde SmoothDamp ile sıfıra döner.
+    /// </summary>
+    public void ResetCameraOffsets()
+    {
+        targetSwingPitchOffset = 0f;
+        targetSwingRollOffset = 0f;
+        targetTransferPitchOffset = 0f;
     }
 
     public void SetSlideCameraEffects(float heightOffset, float rollOffsetDeg, float fovBoostDeg)
@@ -428,6 +519,26 @@ public class PlayerLook : MonoBehaviour
         allowMouseInput = enabledInput;
     }
 
+    public void SetDrowningCameraState(bool active, float targetFov = 75f, float fovSpeed = 4.5f)
+    {
+        isDrowningCameraActive = active;
+        drowningTargetFov = targetFov;
+        drowningFovTransitionSpeed = Mathf.Max(0.5f, fovSpeed);
+        allowMouseInput = !active;
+        if (!active)
+        {
+            currentDrownPitchSway = 0f;
+            currentDrownRollSway = 0f;
+            if (targetCamera != null)
+            {
+                targetCamera.fieldOfView = baseFieldOfView;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Geriye dönük uyumluluk için korunmuştur; artık basePitch'e yazmaz, yalnızca transferPitchOffset kullanır.
+    /// </summary>
     public void SmoothLookAtWorldPoint(Vector3 targetWorldPoint, float turnSpeed, float dt)
     {
         if (playerBody == null)
@@ -437,19 +548,9 @@ public class PlayerLook : MonoBehaviour
         if (toTarget.sqrMagnitude < 0.01f)
             return;
 
-        Vector3 flatDir = new Vector3(toTarget.x, 0f, toTarget.z);
-        if (flatDir.sqrMagnitude > 0.001f)
-        {
-            Quaternion targetBodyRot = Quaternion.LookRotation(flatDir.normalized, Vector3.up);
-            playerBody.rotation = Quaternion.Slerp(playerBody.rotation, targetBodyRot, turnSpeed * dt);
-        }
-
         Vector3 localDir = playerBody.InverseTransformDirection(toTarget.normalized);
-        float desiredPitch = -Mathf.Asin(Mathf.Clamp(localDir.y, -1f, 1f)) * Mathf.Rad2Deg;
-        desiredPitch = Mathf.Clamp(desiredPitch, minVerticalAngle, maxVerticalAngle);
-        pitchAngle = Mathf.Lerp(pitchAngle, desiredPitch, turnSpeed * dt);
-
-        ApplyCameraRotation();
+        float desiredRelativePitch = -Mathf.Asin(Mathf.Clamp(localDir.y, -1f, 1f)) * Mathf.Rad2Deg - basePitch;
+        SetTransferLookOffset(desiredRelativePitch);
     }
 
     public void UpdateCameraEffects(float effectiveSpeed, bool isGroundedWalking, bool isSprinting, float wallRunTiltTarget, float dt)
@@ -457,17 +558,55 @@ public class PlayerLook : MonoBehaviour
         // 1. Hafif Hareket ve Parkur Kamera Sarsıntısını hesapla
         UpdateMovementAndImpactShake(effectiveSpeed, isGroundedWalking, isSprinting, dt);
 
-        // 2. Roll ve Pitch Offset yumuşak geçişi (Wall Run + Sarkaç + Slide)
-        float combinedRollTarget = wallRunTiltTarget + targetSwingRollOffset + targetSlideRollOffset;
-        currentRollOffset = Mathf.Lerp(currentRollOffset, combinedRollTarget, offsetLerpSpeed * dt);
-        currentPitchOffset = Mathf.Lerp(currentPitchOffset, targetSwingPitchOffset, offsetLerpSpeed * dt);
+        // 2. Su altı boğulma yalpalaması (aktifse)
+        if (isDrowningCameraActive)
+        {
+            drowningSwayTimer += dt;
+            currentDrownRollSway = Mathf.Sin(drowningSwayTimer * 2.2f) * 4.5f;
+            currentDrownPitchSway = Mathf.Cos(drowningSwayTimer * 1.6f) * 3.0f - 4.0f;
+        }
+        else
+        {
+            currentDrownRollSway = 0f;
+            currentDrownPitchSway = 0f;
+        }
 
-        // 3. Kamera Yükseklik Ofseti (Slide sırasında yumuşakça alçalma ve kalkma)
+        // 3. Ayrı kamera offsetlerini SmoothDamp ile güncelle
+        // Dal bırakıldığında (hedef = 0 iken) cameraOffsetResetTime (varsayılan 0.25 sn) içinde pürüzsüzce sıfıra döner!
+        float activeSmoothTime = 1f / Mathf.Max(1f, offsetLerpSpeed);
+        float resetSmoothTime = Mathf.Max(0.02f, cameraOffsetResetTime);
+
+        float swingPitchTime = Mathf.Abs(targetSwingPitchOffset) < 0.001f ? resetSmoothTime : activeSmoothTime;
+        float swingRollTime = Mathf.Abs(targetSwingRollOffset) < 0.001f ? resetSmoothTime : activeSmoothTime;
+        float transferPitchTime = Mathf.Abs(targetTransferPitchOffset) < 0.001f ? resetSmoothTime : activeSmoothTime;
+
+        swingPitchOffset = Mathf.SmoothDamp(swingPitchOffset, targetSwingPitchOffset, ref swingPitchSmoothVel, swingPitchTime, Mathf.Infinity, dt);
+        swingRollOffset = Mathf.SmoothDamp(swingRollOffset, targetSwingRollOffset, ref swingRollSmoothVel, swingRollTime, Mathf.Infinity, dt);
+        transferPitchOffset = Mathf.SmoothDamp(transferPitchOffset, targetTransferPitchOffset, ref transferPitchSmoothVel, transferPitchTime, Mathf.Infinity, dt);
+        slideRollOffset = Mathf.SmoothDamp(slideRollOffset, targetSlideRollOffset, ref slideRollSmoothVel, activeSmoothTime, Mathf.Infinity, dt);
+        wallRunRollOffset = Mathf.SmoothDamp(wallRunRollOffset, wallRunTiltTarget, ref wallRunRollSmoothVel, activeSmoothTime, Mathf.Infinity, dt);
+
+        // Çok küçük kalıntıları tam sıfıra sabitle
+        if (Mathf.Abs(targetSwingPitchOffset) < 0.001f && Mathf.Abs(swingPitchOffset) < 0.01f) swingPitchOffset = 0f;
+        if (Mathf.Abs(targetSwingRollOffset) < 0.001f && Mathf.Abs(swingRollOffset) < 0.01f) swingRollOffset = 0f;
+        if (Mathf.Abs(targetTransferPitchOffset) < 0.001f && Mathf.Abs(transferPitchOffset) < 0.01f) transferPitchOffset = 0f;
+
+        // 4. Kamera Yükseklik Ofseti (Slide sırasında yumuşakça alçalma ve kalkma)
         currentCameraHeightOffset = Mathf.Lerp(currentCameraHeightOffset, targetCameraHeightOffset, heightOffsetLerpSpeed * dt);
 
-        // 4. Dinamik FOV (90 temel; hız/sallanma ile en fazla +6, slide ile +4 derece)
+        // 5. Dinamik FOV (90 temel; boğulma sırasında 90 -> 75'e düşer)
         if (targetCamera != null)
         {
+            if (isDrowningCameraActive)
+            {
+                targetCamera.fieldOfView = Mathf.MoveTowards(
+                    targetCamera.fieldOfView,
+                    drowningTargetFov,
+                    drowningFovTransitionSpeed * dt
+                );
+                return;
+            }
+
             float targetFov = baseFieldOfView;
 
             if (enableDynamicFov)
@@ -487,18 +626,24 @@ public class PlayerLook : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Nihai kamera rotasyonu = basePitch (clamp'li) + toplam offsetler (ikinci güvenlik clamp'i ile).
+    /// transform.localEulerAngles ile geri okuma ASLA yapılmaz.
+    /// </summary>
     private void ApplyCameraRotation()
     {
         float shakeWeight = 1f - thirdPersonBlend * 0.6f;
         Vector3 totalRotShake = (currentShakeRotEuler * shakeWeight) + externalShakeRotEuler;
 
-        float finalPitch = Mathf.Clamp(
-            pitchAngle + currentPitchOffset + totalRotShake.x,
-            minVerticalAngle,
-            maxVerticalAngle
-        );
+        // 1. Clamp: Yalnızca basePitch için
+        basePitch = Mathf.Clamp(basePitch, minVerticalAngle, maxVerticalAngle);
+
+        // 2. Clamp: Nihai açı (basePitch + toplam offsetler) için ikinci güvenlik clamp'i
+        float combinedPitch = basePitch + TotalPitchOffset + totalRotShake.x;
+        float finalPitch = Mathf.Clamp(combinedPitch, minVerticalAngle, maxVerticalAngle);
+
         float finalYaw = totalRotShake.y;
-        float finalRoll = currentRollOffset + totalRotShake.z;
+        float finalRoll = TotalRollOffset + totalRotShake.z;
 
         transform.localRotation = Quaternion.Euler(finalPitch, finalYaw, finalRoll);
     }
@@ -541,11 +686,7 @@ public class PlayerLook : MonoBehaviour
             float bobY = Mathf.Sin(headBobTimer) * bobVerticalAmplitude * speedFactor;
             float bobX = Mathf.Cos(headBobTimer * 0.5f) * bobHorizontalAmplitude * speedFactor;
 
-            targetPosShake = new Vector3(
-                bobX,
-                bobY,
-                0f // İleri-geri (Z) pozisyon sarsıntısı yapılmaz ki kamera asla geriye düşmesin
-            );
+            targetPosShake = new Vector3(bobX, bobY, 0f);
 
             float rotMag = movementRotationShakeDegrees * speedFactor;
             float stepPitch = Mathf.Sin(headBobTimer) * rotMag * 0.55f;
@@ -586,7 +727,6 @@ public class PlayerLook : MonoBehaviour
             playerVisual = playerBody.GetComponentInChildren<PlayerVisual>();
         }
 
-        // FirstPerson kamera konumunu Player yerel uzayında (Local Space) TAM SABİT olarak al (Dünya uzayında Lerp gecikmesi YOK!)
         Vector3 fpPivotWorld;
         if (attachCameraToEyeMesh && playerVisual != null)
         {
@@ -609,9 +749,9 @@ public class PlayerLook : MonoBehaviour
 
         Vector3 shakeLocalOffset = (currentShakePosOffset * (1f - thirdPersonBlend * 0.7f)) + externalShakePosOffset;
 
-        // ThirdPerson hedef noktası: oyuncunun arkasında ve yukarıda (thirdPersonOffset: varsayılan 0, 1.2, -3.2)
+        float clampedCombinedPitch = Mathf.Clamp(basePitch + TotalPitchOffset, minVerticalAngle, maxVerticalAngle);
         Quaternion yawAndPitchRot = (playerBody != null)
-            ? playerBody.rotation * Quaternion.Euler(pitchAngle + currentPitchOffset, 0f, 0f)
+            ? playerBody.rotation * Quaternion.Euler(clampedCombinedPitch, 0f, 0f)
             : transform.rotation;
 
         Vector3 tpDesiredOffsetWorld =

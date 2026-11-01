@@ -41,7 +41,7 @@ public class CheckpointTrigger : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        if (other == null)
+        if (other == null || GameFlowManager.EndingActive)
             return;
 
         bool isPlayer = other.GetComponent<PlayerMotor>() != null ||

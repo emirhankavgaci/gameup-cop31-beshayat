@@ -7,6 +7,7 @@ using UnityEngine.Events;
 /// Waypoint yolu (pathPoints) boyunca ilerler, oyuncunun yol üzerindeki izdüşümünü (playerProgress)
 /// ve selin konumunu (floodProgress) hesaplar, Rubber Banding uygular, bölge hız geçişlerini yönetir,
 /// ses/kamera sarsıntısını sürer ve yakalanma (OnPlayerCaught) durumunu algılar.
+/// Final sekansında (EndingSequence) TeleportBehindPlayer(distance) ile oyuncunun arkasına ışınlanır.
 /// </summary>
 [RequireComponent(typeof(BoxCollider))]
 public class FloodChaser : MonoBehaviour
@@ -132,9 +133,11 @@ public class FloodChaser : MonoBehaviour
     private float startDelayTimer;
     private bool isFloodStopped;
     private bool hasTriggeredCatch;
+    private bool disableRubberBanding;
+    private Vector3 currentFlowDirection = Vector3.forward;
     private BoxCollider floodTriggerCollider;
 
-    // Dış erişim özellikleri (FloodDebugHUD, ZoneManager ve GameFlowManager için)
+    // Dış erişim özellikleri (FloodDebugHUD, ZoneManager, EndingSequence ve GameFlowManager için)
     public float CurrentSpeed => currentSpeed;
     public float BaseSpeed => baseSpeed;
     public float CurrentRubberBandMultiplier => currentRubberBandMultiplier;
@@ -148,6 +151,7 @@ public class FloodChaser : MonoBehaviour
     public bool IsStopped => isFloodStopped;
     public bool IsActive => !isFloodStopped && startDelayTimer <= 0f;
     public float CurrentWaterSurfaceY => transform.position.y + waterSurfaceLocalY;
+    public Vector3 CurrentFlowDirection => currentFlowDirection.sqrMagnitude > 0.001f ? currentFlowDirection : transform.forward;
 
     private void Awake()
     {
@@ -227,16 +231,23 @@ public class FloodChaser : MonoBehaviour
             return;
         }
 
-        // 4. Rubber Banding çarpanını mesafeye göre yumuşakça hesapla
+        // 4. Rubber Banding çarpanını mesafeye göre yumuşakça hesapla (EndingActive iken kapalıdır)
         distanceToPlayer = playerProgress - floodProgress;
-        float targetMultiplier = CalculateRubberBandMultiplier(distanceToPlayer);
-        currentRubberBandMultiplier = Mathf.Lerp(currentRubberBandMultiplier, targetMultiplier, multiplierLerpSpeed * dt);
+        if (disableRubberBanding || GameFlowManager.EndingActive)
+        {
+            currentRubberBandMultiplier = 1f;
+        }
+        else
+        {
+            float targetMultiplier = CalculateRubberBandMultiplier(distanceToPlayer);
+            currentRubberBandMultiplier = Mathf.Lerp(currentRubberBandMultiplier, targetMultiplier, multiplierLerpSpeed * dt);
+        }
 
         // 5. Sel hızını ve ilerlemesini güncelle
         currentSpeed = baseSpeed * currentRubberBandMultiplier;
         floodProgress += currentSpeed * dt;
 
-        if (HasValidWaypointPath() && floodProgress > totalPathLength)
+        if (HasValidWaypointPath() && floodProgress > totalPathLength && !GameFlowManager.EndingActive)
         {
             floodProgress = totalPathLength;
         }
@@ -251,12 +262,6 @@ public class FloodChaser : MonoBehaviour
         CheckSubmersionAndOverrunCatch();
     }
 
-    /// <summary>
-    /// Rubber banding kuralı:
-    /// - distanceToPlayer > farDistance (45 m) -> catchUpMultiplier (1.5)
-    /// - distanceToPlayer < nearDistance (8 m) -> slowDownMultiplier (0.8)
-    /// - Ara değerlerde yumuşak Lerp geçişi.
-    /// </summary>
     private float CalculateRubberBandMultiplier(float distance)
     {
         if (distance >= farDistance)
@@ -274,7 +279,7 @@ public class FloodChaser : MonoBehaviour
     }
 
     /// <summary>
-    /// Bölge değişimlerinde selin temel hızını yumuşak geçişle değiştirir.
+    /// Bölge değişimlerinde veya final sekansında selin temel hızını yumuşak geçişle değiştirir.
     /// </summary>
     public void SetBaseSpeed(float speed, float blendTime)
     {
@@ -311,9 +316,6 @@ public class FloodChaser : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Waypoint noktaları arasındaki kümülatif uzunlukları önbelleğe alır.
-    /// </summary>
     public void RebuildPathCache()
     {
         if (!HasValidWaypointPath())
@@ -354,10 +356,6 @@ public class FloodChaser : MonoBehaviour
         return true;
     }
 
-    /// <summary>
-    /// Oyuncunun dünya konumunu en yakın waypoint segmentine izdüşürerek yol üzerindeki
-    /// toplam ilerleme mesafesini (playerProgress) hesaplar.
-    /// </summary>
     public void UpdatePlayerProgressOnPath()
     {
         if (playerTransform == null)
@@ -367,7 +365,6 @@ public class FloodChaser : MonoBehaviour
 
         if (!HasValidWaypointPath())
         {
-            // Waypoint dizisi atanmamışsa başlangıç noktasından ileri vektöre izdüşüm al
             playerProgress = Vector3.Dot(playerPos - fallbackStartPos, fallbackForwardDir);
             currentPlayerSegmentIndex = 0;
             return;
@@ -395,10 +392,9 @@ public class FloodChaser : MonoBehaviour
             Vector3 segDir = segVec / segLen;
             float projection = Vector3.Dot(playerPos - segStart, segDir);
 
-            // İlk segmentin gerisini de destekle ki başlangıçta negatif progress doğru ölçülsün
             float clampedProj = (i == 0)
                 ? Mathf.Min(projection, segLen)
-                : Mathf.Clamp(projection, 0f, segLen);
+                : (i == pathPoints.Length - 2 ? Mathf.Max(0f, projection) : Mathf.Clamp(projection, 0f, segLen));
 
             Vector3 closestPointOnSeg = segStart + segDir * Mathf.Clamp(projection, 0f, segLen);
             float distSqr = (playerPos - closestPointOnSeg).sqrMagnitude;
@@ -415,9 +411,6 @@ public class FloodChaser : MonoBehaviour
         currentPlayerSegmentIndex = bestSegIndex;
     }
 
-    /// <summary>
-    /// floodProgress değerine karşılık gelen dünya pozisyonunu ve bir sonraki waypoint'e bakan yönü uygular.
-    /// </summary>
     private void ApplyFloodTransformFromProgress(bool instantRotation)
     {
         EvaluatePathAtProgress(floodProgress, out Vector3 targetPos, out Vector3 targetForward, out currentFloodSegmentIndex);
@@ -425,7 +418,8 @@ public class FloodChaser : MonoBehaviour
 
         if (targetForward.sqrMagnitude > 0.001f)
         {
-            Quaternion targetRot = Quaternion.LookRotation(targetForward.normalized, Vector3.up);
+            currentFlowDirection = targetForward.normalized;
+            Quaternion targetRot = Quaternion.LookRotation(currentFlowDirection, Vector3.up);
             if (instantRotation)
             {
                 transform.rotation = targetRot;
@@ -437,9 +431,6 @@ public class FloodChaser : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Verilen yol ilerleme değerine (progress) göre yol üzerindeki 3B noktayı ve teğet yönü döndürür.
-    /// </summary>
     public void EvaluatePathAtProgress(float progress, out Vector3 worldPoint, out Vector3 forwardDirection, out int segmentIndex)
     {
         if (!HasValidWaypointPath())
@@ -455,7 +446,6 @@ public class FloodChaser : MonoBehaviour
             RebuildPathCache();
         }
 
-        // Yol başlangıcının gerisindeyse (örneğin respawn'da ilk checkpoint'in 40m gerisi) ilk segment doğrultusunda geriye uzat
         if (progress <= 0f)
         {
             Vector3 p0 = pathPoints[0].position;
@@ -508,7 +498,6 @@ public class FloodChaser : MonoBehaviour
     {
         float absDistance = Mathf.Max(0f, distanceToPlayer);
 
-        // 1. Kamera sarsıntısı (mesafe < 25m ise mesafe azaldıkça artar)
         if (cameraShake != null)
         {
             if (!isFloodStopped && startDelayTimer <= 0f && absDistance < shakeTriggerDistance)
@@ -516,13 +505,12 @@ public class FloodChaser : MonoBehaviour
                 float proximity = 1f - Mathf.Clamp01(absDistance / Mathf.Max(1f, shakeTriggerDistance));
                 cameraShake.SetContinuousShakeIntensity(proximity);
             }
-            else
+            else if (!GameFlowManager.EndingActive)
             {
                 cameraShake.SetContinuousShakeIntensity(0f);
             }
         }
 
-        // 2. Sel ses yüksekliği (mesafe 0 -> 1.0, 60m -> 0.1)
         if (floodAudioSource != null)
         {
             float t = Mathf.InverseLerp(audioNearDistance, Mathf.Max(audioNearDistance + 1f, audioFarDistance), absDistance);
@@ -546,7 +534,6 @@ public class FloodChaser : MonoBehaviour
         if (hasTriggeredCatch || isFloodStopped || playerTransform == null)
             return;
 
-        // 1. Oyuncunun başı su seviyesinin altına girdiyse ve selin kapladığı bölgedeyse yakalanma sayılır
         float playerHeadY = playerTransform.position.y + playerHeadHeightOffset;
         bool isWithinFloodLongitudinalRange = distanceToPlayer <= 1.5f && distanceToPlayer >= -waterBodyLength;
 
@@ -556,14 +543,13 @@ public class FloodChaser : MonoBehaviour
             return;
         }
 
-        // 2. Hızlı hareket nedeniyle trigger kaçırılsa bile selin ön dalga duvarı oyuncuyu geçtiyse yakalanma sayılır
         if (distanceToPlayer <= -0.5f)
         {
             Vector3 localPlayerPos = transform.InverseTransformPoint(playerTransform.position);
             bool withinWidth = Mathf.Abs(localPlayerPos.x) <= (waveWallWidth * 0.65f);
             bool withinHeight = localPlayerPos.y <= (waveWallHeight * 0.75f);
 
-            if (withinWidth && withinHeight)
+            if (withinWidth && withinHeight || GameFlowManager.EndingActive)
             {
                 TriggerPlayerCaught();
             }
@@ -595,9 +581,6 @@ public class FloodChaser : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Yakalanma olayını tetikler (tekrarlı tetiklemeyi kilitler).
-    /// </summary>
     public void TriggerPlayerCaught()
     {
         if (hasTriggeredCatch || isFloodStopped)
@@ -615,7 +598,38 @@ public class FloodChaser : MonoBehaviour
     }
 
     /// <summary>
-    /// Respawn sırasında seli oyuncunun belirtilen mesafe (varsayılan 40 m) gerisine yerleştirir.
+    /// Oyun sonu sekansında (EndingSequence) seli anında yol üzerinde oyuncunun belirtilen mesafe (varsayılan 10 m)
+    /// gerisine ışınlar ve bekleme süresi olmadan kovalamacayı sürdürür.
+    /// </summary>
+    public void TeleportBehindPlayer(float distance)
+    {
+        UpdatePlayerProgressOnPath();
+        floodProgress = playerProgress - Mathf.Max(1f, distance);
+        currentRubberBandMultiplier = 1f;
+        startDelayTimer = 0f;
+        isFloodStopped = false;
+        hasTriggeredCatch = false;
+
+        ApplyFloodTransformFromProgress(instantRotation: true);
+        distanceToPlayer = playerProgress - floodProgress;
+        UpdateAudioAndCameraShake();
+    }
+
+    /// <summary>
+    /// Rubber banding (mesafeye göre hız dengeleme) sistemini açar veya kapatır.
+    /// Final sekansı (EndingSequence) sırasında kapalı tutulur.
+    /// </summary>
+    public void SetRubberBandingEnabled(bool enabledRubberBanding)
+    {
+        disableRubberBanding = !enabledRubberBanding;
+        if (disableRubberBanding)
+        {
+            currentRubberBandMultiplier = 1f;
+        }
+    }
+
+    /// <summary>
+    /// Respawn sırasında seli oyuncunun belirtilen mesafe (varsayılan 80 m) gerisine yerleştirir.
     /// </summary>
     public void RepositionBehindPlayer(float distanceBehindPlayer, float respawnGraceDelay = 0.5f)
     {
@@ -632,9 +646,6 @@ public class FloodChaser : MonoBehaviour
         UpdateAudioAndCameraShake();
     }
 
-    /// <summary>
-    /// Oyun sonuna (FinishTrigger) ulaşıldığında seli durdurur.
-    /// </summary>
     public void StopFlood()
     {
         isFloodStopped = true;
@@ -645,9 +656,6 @@ public class FloodChaser : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Seli tekrar aktif hale getirir.
-    /// </summary>
     public void ResumeFlood()
     {
         hasTriggeredCatch = false;
@@ -659,7 +667,6 @@ public class FloodChaser : MonoBehaviour
         if (floodTriggerCollider == null)
             return;
 
-        // Ön yüzü Z = 0'da olan, geriye doğru waterBodyLength kadar uzanan, waveWallWidth genişliğinde ve waveWallHeight yüksekliğinde kutu
         floodTriggerCollider.size = new Vector3(waveWallWidth, waveWallHeight, waterBodyLength);
         floodTriggerCollider.center = new Vector3(0f, waveWallHeight * 0.25f, -waterBodyLength * 0.5f);
     }
@@ -672,7 +679,6 @@ public class FloodChaser : MonoBehaviour
             mainCam.farClipPlane = DEFAULT_CAMERA_MIN_FAR_CLIP;
         }
 
-        // Ayrıca sel mesh'lerinin oyuncu arkasına baktığında frustum culling nedeniyle erken kaybolmaması için bounds genişlet
         Renderer[] renderers = GetComponentsInChildren<Renderer>();
         for (int i = 0; i < renderers.Length; i++)
         {
@@ -685,7 +691,6 @@ public class FloodChaser : MonoBehaviour
 
     private void OnDrawGizmos()
     {
-        // 1. Waypoint yolunu çiz
         if (pathPoints != null && pathPoints.Length >= 2)
         {
             Gizmos.color = new Color(0.1f, 0.85f, 1f, 0.9f);
@@ -702,7 +707,6 @@ public class FloodChaser : MonoBehaviour
                     Vector3 b = pathPoints[i + 1].position;
                     Gizmos.DrawLine(a, b);
 
-                    // Yön oku
                     Vector3 mid = (a + b) * 0.5f;
                     Vector3 dir = (b - a).normalized;
                     Vector3 right = Vector3.Cross(Vector3.up, dir).normalized;
@@ -712,11 +716,9 @@ public class FloodChaser : MonoBehaviour
             }
         }
 
-        // 2. Selin ön yüzünü (dalga duvarı) ve su gövdesini çiz
         Matrix4x4 oldMatrix = Gizmos.matrix;
         Gizmos.matrix = transform.localToWorldMatrix;
 
-        // Ön dalga duvarı düzlemi (kırmızı/turuncu)
         Gizmos.color = new Color(1f, 0.35f, 0.1f, 0.45f);
         Vector3 wallCenter = new Vector3(0f, waveWallHeight * 0.25f, 0f);
         Vector3 wallSize = new Vector3(waveWallWidth, waveWallHeight, 0.6f);
@@ -724,7 +726,6 @@ public class FloodChaser : MonoBehaviour
         Gizmos.color = new Color(1f, 0.2f, 0.1f, 0.95f);
         Gizmos.DrawWireCube(wallCenter, wallSize);
 
-        // Arka su gövdesi (mavi)
         Gizmos.color = new Color(0.1f, 0.55f, 0.95f, 0.2f);
         Vector3 bodyCenter = new Vector3(0f, waveWallHeight * 0.25f, -waterBodyLength * 0.5f);
         Vector3 bodySize = new Vector3(waveWallWidth, waveWallHeight, waterBodyLength);
@@ -732,7 +733,6 @@ public class FloodChaser : MonoBehaviour
         Gizmos.color = new Color(0.2f, 0.7f, 1f, 0.7f);
         Gizmos.DrawWireCube(bodyCenter, bodySize);
 
-        // Su seviyesi çizgisi (camgöbeği)
         Gizmos.color = Color.cyan;
         Vector3 waterSurfaceCenter = new Vector3(0f, waterSurfaceLocalY, -waterBodyLength * 0.5f);
         Gizmos.DrawWireCube(waterSurfaceCenter, new Vector3(waveWallWidth, 0.05f, waterBodyLength));
@@ -740,4 +740,3 @@ public class FloodChaser : MonoBehaviour
         Gizmos.matrix = oldMatrix;
     }
 }
-

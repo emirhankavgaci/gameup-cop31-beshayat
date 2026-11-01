@@ -2,7 +2,8 @@ using UnityEngine;
 
 /// <summary>
 /// CANOPY: The Last Run - Sel Kovalamacası Debug HUD ve Üst Ekran Sel Mesafe Çubuğu.
-/// Gösterilenler: Sel hızı, mesafe, bölge adı, ölüm sayısı, toplam süre, son checkpoint
+/// Gösterilenler: Sel hızı, mesafe, bölge adı, ölüm sayısı, toplam süre, son checkpoint,
+/// oyun sonu (ending) sekansı durumu (Idle / FloodTeleported / Drowning / Fading / Info)
 /// ve ekranın üst kısmında görsel sel mesafe çubuğu.
 /// </summary>
 public class FloodDebugHUD : MonoBehaviour
@@ -19,6 +20,9 @@ public class FloodDebugHUD : MonoBehaviour
 
     [Tooltip("Ölüm sayısı ve toplam süre için GameFlowManager referansı.")]
     [SerializeField] private GameFlowManager gameFlowManager;
+
+    [Tooltip("Oyun sonu sekans durumu (Idle / FloodTeleported / Drowning / Fading / Info) için EndingSequence referansı.")]
+    [SerializeField] private EndingSequence endingSequence;
 
     [Header("HUD Görünüm Ayarları")]
     [Tooltip("Sel Debug HUD panelini ve üst mesafe çubuğunu göster/gizle.")]
@@ -37,7 +41,7 @@ public class FloodDebugHUD : MonoBehaviour
     [SerializeField] private float panelWidth = 370f;
 
     [Tooltip("Bilgi paneli yüksekliği (piksel).")]
-    [SerializeField] private float panelHeight = 230f;
+    [SerializeField] private float panelHeight = 255f;
 
     [Header("Üst Sel Mesafe Çubuğu Ayarları")]
     [Tooltip("Mesafe çubuğunun tam dolu görüneceği güvenli maksimum mesafe (varsayılan 60 m).")]
@@ -71,6 +75,9 @@ public class FloodDebugHUD : MonoBehaviour
 
         if (gameFlowManager == null)
             gameFlowManager = FindObjectOfType<GameFlowManager>();
+
+        if (endingSequence == null)
+            endingSequence = FindObjectOfType<EndingSequence>();
     }
 
     private void Update()
@@ -92,9 +99,6 @@ public class FloodDebugHUD : MonoBehaviour
         DrawInfoPanel();
     }
 
-    /// <summary>
-    /// Ekranın üst ortasında sel-oyuncu mesafesini gösteren renkli mesafe çubuğunu çizer.
-    /// </summary>
     private void DrawTopDistanceBar()
     {
         if (floodChaser == null)
@@ -106,11 +110,9 @@ public class FloodDebugHUD : MonoBehaviour
         float barX = (Screen.width - barWidth) * 0.5f;
         float barY = barTopOffset;
 
-        // Arka plan çerçevesi
         DrawColoredRect(new Rect(barX - 2f, barY - 2f, barWidth + 4f, barHeight + 4f), new Color(0f, 0f, 0f, 0.75f));
         DrawColoredRect(new Rect(barX, barY, barWidth, barHeight), new Color(0.15f, 0.15f, 0.18f, 0.9f));
 
-        // Tehlike seviyesine göre renk: < 8m kırmızı, 8-25m turuncu/sarı, > 25m mavi/yeşil
         Color barColor;
         if (dist <= floodChaser.NearDistance)
         {
@@ -127,7 +129,6 @@ public class FloodDebugHUD : MonoBehaviour
             barColor = new Color(0.2f, 0.85f, 0.95f, 0.9f);
         }
 
-        // Doluluk çubuğu (soldan sağa: sol uç SEL, sağ uç OYUNCU mesafesi)
         float filledWidth = barWidth * fillRatio;
         DrawColoredRect(new Rect(barX, barY, filledWidth, barHeight), barColor);
 
@@ -150,7 +151,6 @@ public class FloodDebugHUD : MonoBehaviour
         GUILayout.Label("FLOOD CHASER DEBUG HUD [F4]", headerStyle);
         GUILayout.Space(4f);
 
-        // 1. Sel Hızı ve Rubber Band
         if (floodChaser != null)
         {
             GUILayout.Label(
@@ -158,7 +158,6 @@ public class FloodDebugHUD : MonoBehaviour
                 labelStyle
             );
 
-            // 2. Mesafe ve Yol İlerlemesi
             string distColor = floodChaser.DistanceToPlayer < floodChaser.NearDistance
                 ? "#FF5555"
                 : (floodChaser.DistanceToPlayer > floodChaser.FarDistance ? "#55FF88" : "#FFDD55");
@@ -173,20 +172,28 @@ public class FloodDebugHUD : MonoBehaviour
             GUILayout.Label("Sel Hızı / Mesafe: <color=#FF6666>FloodChaser Atanmadı</color>", labelStyle);
         }
 
-        // 3. Bölge Adı
         string zoneName = zoneManager != null ? zoneManager.CurrentZoneName : "Varsayılan";
         GUILayout.Label($"Bölge (Zone): <b>{zoneName}</b>", labelStyle);
 
-        // 4. Son Checkpoint
         string cpName = checkpointManager != null ? checkpointManager.LastCheckpointName : "Başlangıç";
         GUILayout.Label($"Son Checkpoint: <b>{cpName}</b>", labelStyle);
 
-        // 5. Ölüm Sayısı ve Toplam Süre
         int deaths = gameFlowManager != null ? gameFlowManager.DeathCount : 0;
         float totalTime = gameFlowManager != null ? gameFlowManager.ElapsedTime : Time.timeSinceLevelLoad;
 
         GUILayout.Label($"Ölüm Sayısı: <b>{deaths}</b>", labelStyle);
         GUILayout.Label($"Toplam Süre: <b>{GameFlowManager.FormatElapsedTime(totalTime)}</b>", labelStyle);
+
+        if (endingSequence == null && GameFlowManager.EndingActive)
+        {
+            endingSequence = FindObjectOfType<EndingSequence>();
+        }
+        EndingSequence.EndingState endState = endingSequence != null
+            ? endingSequence.CurrentState
+            : EndingSequence.EndingState.Idle;
+        string endStateColor = endState == EndingSequence.EndingState.Idle ? "#AAAAAA" : "#55FF88";
+        GUILayout.Label($"Ending Durumu: <color={endStateColor}><b>{endState}</b></color>", labelStyle);
+
         GUILayout.Space(2f);
         GUILayout.Label("<i>[R] Son Checkpoint'e Dön</i>", labelStyle);
 
@@ -236,4 +243,3 @@ public class FloodDebugHUD : MonoBehaviour
         barLabelStyle.normal.textColor = Color.white;
     }
 }
-

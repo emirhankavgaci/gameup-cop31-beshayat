@@ -1,8 +1,9 @@
 using UnityEngine;
 
 /// <summary>
-/// CANOPY: The Last Run - Tüm Parkur Sistemlerini (Wall Run Zinciri, Sarkaç ve Son Bırakma Sebebi,
-/// Slide Engel Nedeni, Hız Vektörleri, Bakış Modu ViewMode ve Aktif Maymun Animasyon State/Klip Bilgisi)
+/// CANOPY: The Last Run - Tüm Parkur Sistemlerini (Wall Run Zinciri, Wall Jump Coyote/Engel Nedeni,
+/// Kamera BasePitch ve Ayrı Offset Durumu, Sarkaç ve Son Bırakma Sebebi, Slide Engel Nedeni,
+/// Hız Vektörleri, Bakış Modu ViewMode ve Aktif Maymun Animasyon State/Klip Bilgisi)
 /// Ekranda Gösteren OnGUI Debug Paneli.
 /// </summary>
 public class PlayerDebugHUD : MonoBehaviour
@@ -11,7 +12,7 @@ public class PlayerDebugHUD : MonoBehaviour
     [Tooltip("İzlenecek merkezi PlayerMotor bileşeni.")]
     [SerializeField] private PlayerMotor motor;
 
-    [Tooltip("İzlenecek PlayerLook bileşeni (ViewMode bilgisi için, opsiyonel).")]
+    [Tooltip("İzlenecek PlayerLook bileşeni (ViewMode ve basePitch/offset bilgisi için, opsiyonel).")]
     [SerializeField] private PlayerLook playerLook;
 
     [Tooltip("İzlenecek MonkeyAnimationDriver bileşeni (aktif animasyon state ve klip bilgisi için, opsiyonel).")]
@@ -43,10 +44,10 @@ public class PlayerDebugHUD : MonoBehaviour
     [SerializeField] private float panelMarginY = 16f;
 
     [Tooltip("Panel genişliği (piksel).")]
-    [SerializeField] private float panelWidth = 460f;
+    [SerializeField] private float panelWidth = 480f;
 
     [Tooltip("Panel yüksekliği (piksel).")]
-    [SerializeField] private float panelHeight = 490f;
+    [SerializeField] private float panelHeight = 560f;
 
     [Tooltip("Yazı puntosu büyüklüğü.")]
     [SerializeField] private int fontSize = 13;
@@ -103,7 +104,7 @@ public class PlayerDebugHUD : MonoBehaviour
         string groundedText = motor.IsGrounded ? $"EVET ({slopeAngle:F1}°)" : "HAYIR";
         GUILayout.Label($"Zeminde mi: <b>{groundedText}</b>", labelStyle);
 
-        // 0. Kamera Bakış Modu (ViewMode) ve Maymun Animasyon Bilgileri
+        // 0. Kamera Bakış Modu (ViewMode), basePitch, Toplam Offset ve Maymun Animasyon Bilgileri
         GUILayout.Space(3f);
         string viewModeText = playerLook != null
             ? $"{playerLook.CurrentViewMode} {(playerLook.AllowViewToggle ? "[V]" : "(Kilitli)")}"
@@ -113,17 +114,26 @@ public class PlayerDebugHUD : MonoBehaviour
             : "Visual Yok";
         GUILayout.Label($"Bakış Modu (ViewMode): <b>{viewModeText}</b> | <i>{armMeshNote}</i>", labelStyle);
 
+        if (playerLook != null)
+        {
+            string resetColor = playerLook.AreOffsetsReset ? "#55FF88" : "#FFDD55";
+            string resetStateText = playerLook.AreOffsetsReset ? "SIFIRLANDI (TRUE)" : "AKTİF / SIFIRLANIYOR";
+            GUILayout.Label(
+                $"Kamera Pitch: basePitch: <b>{playerLook.BasePitch:F1}°</b> | Toplam Offset: <b>{playerLook.TotalPitchOffset:F1}°</b> (Roll: {playerLook.TotalRollOffset:F1}°)",
+                labelStyle
+            );
+            GUILayout.Label(
+                $"Offset Sıfırlandı mı: <color={resetColor}><b>{resetStateText}</b></color> (SwingP: {playerLook.SwingPitchOffset:F1}° | TransP: {playerLook.TransferPitchOffset:F1}°)",
+                labelStyle
+            );
+        }
+
         if (animationDriver != null)
         {
             GUILayout.Label(
                 $"Aktif Animasyon State: <color=#55FF88><b>{animationDriver.CurrentAnimatorStateName}</b></color> (Hız: <b>{animationDriver.CurrentAnimSpeedMultiplier:F2}x</b>)",
                 labelStyle
             );
-            GUILayout.Label($"Klip Eşleşme: <size={fontSize - 1}>{animationDriver.UnmatchedClipsReport}</size>", labelStyle);
-        }
-        else
-        {
-            GUILayout.Label("Aktif Animasyon State: <color=#FFAA44><b>MonkeyAnimationDriver Atanmadı</b></color>", labelStyle);
         }
 
         // 1. Slide ve Sprint Bilgileri
@@ -169,26 +179,23 @@ public class PlayerDebugHUD : MonoBehaviour
 
             GUILayout.Label($"Tutulan Dal: <b>{activeBranchName}</b> | branchT: <b>{branchGrabHandler.CurrentBranchT:F2}</b>", labelStyle);
             GUILayout.Label(
-                $"swingAngle: <b>{branchGrabHandler.SwingAngleDegrees:F1}°</b> | swingAngVel: <b>{branchGrabHandler.SwingAngularVelocity:F2} rad/s</b>",
+                $"swingAngle: <b>{branchGrabHandler.SwingAngleDegrees:F1}°</b> | swingAngVel: <b>{branchGrabHandler.SwingAngularVelocity:F2} rad/s</b> | lastRelease: <b>{branchGrabHandler.LastReleaseReason}</b>",
                 labelStyle
             );
-            GUILayout.Label($"lastReleaseReason: <b>{branchGrabHandler.LastReleaseReason}</b>", labelStyle);
 
             bool transferAvailable = branchGrabHandler.HasTransferTarget;
             string blockedNote = branchGrabHandler.IsTransferBlockedBySwingInput
                 ? " <color=#FF6666><b>(blocked by swing input)</b></color>"
                 : string.Empty;
 
-            GUILayout.Label($"transferAvailable: <b>{transferAvailable}</b>{blockedNote}", labelStyle);
-
             string targetBranchInfo = branchGrabHandler.CurrentTransferTarget != null
-                ? $"{branchGrabHandler.CurrentTransferTarget.name} ({branchGrabHandler.CandidateTransferDistance:F1}m | Skor: {branchGrabHandler.CandidateTransferScore:F2})"
+                ? $"{branchGrabHandler.CurrentTransferTarget.name} ({branchGrabHandler.CandidateTransferDistance:F1}m)"
                 : "YOK";
 
-            GUILayout.Label($"Hedef Dal [E]: <b>{targetBranchInfo}</b>", labelStyle);
+            GUILayout.Label($"transferAvailable: <b>{transferAvailable}</b>{blockedNote} | Hedef [E]: <b>{targetBranchInfo}</b>", labelStyle);
         }
 
-        // 3. Wall Run ve Duvardan Duvara Zincirleme Bilgileri
+        // 3. Wall Run, Wall Jump Coyote ve Duvardan Duvara Zincirleme Bilgileri
         if (wallRunHandler != null)
         {
             GUILayout.Space(3f);
@@ -197,11 +204,17 @@ public class PlayerDebugHUD : MonoBehaviour
                 : string.Empty;
 
             GUILayout.Label(
-                $"Aktif Duvar: <b>{wallRunHandler.ActiveWallName}{sideInfo}</b> | Kalan Süre: <b>{wallRunHandler.WallRunTimer:F2}s</b>",
+                $"Aktif Duvar: <b>{wallRunHandler.ActiveWallName}{sideInfo}</b> | Kalan Süre: <b>{wallRunHandler.WallRunTimer:F2}s</b> | Chain: <b>{wallRunHandler.ChainCount}</b>",
                 labelStyle
             );
             GUILayout.Label(
-                $"lastWallCollider: <b>{wallRunHandler.LastWallColliderName}</b> | Zincir (Chain): <b>{wallRunHandler.ChainCount}</b>",
+                $"lastWallCollider: <b>{wallRunHandler.LastWallColliderName}</b> | Wall Coyote: <b>{wallRunHandler.WallCoyoteRemaining:F2}s</b>",
+                labelStyle
+            );
+
+            string wjAvailColor = wallRunHandler.WallJumpAvailable ? "#55FF88" : "#FF6666";
+            GUILayout.Label(
+                $"wallJumpAvailable: <color={wjAvailColor}><b>{wallRunHandler.WallJumpAvailable}</b></color> | Engel Nedeni: <b>{wallRunHandler.LastWallJumpBlockReason}</b>",
                 labelStyle
             );
 

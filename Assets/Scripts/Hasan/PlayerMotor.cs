@@ -3,9 +3,13 @@ using UnityEngine;
 
 /// <summary>
 /// CANOPY: The Last Run - Ana Karakter Hareket ve State Machine Yöneticisi.
-/// Durumlar: Grounded, Airborne, WallRunning, Hanging, Transferring, Sliding.
-/// Hanging ve Transferring durumlarında CharacterController devre dışı bırakılır ve pozisyon doğrudan yönetilir.
-/// Animasyon sürücüsü (MonkeyAnimationDriver) için OnJump, OnLand ve OnStateChanged event'lerini barındırır.
+/// Durumlar: Grounded, Airborne, WallRunning, Hanging, Transferring, Sliding, Drowning.
+///
+/// Space Girişi ve Wall Jump Önceliği (Bug Fix 1):
+/// - Space girişi Update'in EN BAŞINDA tek bir yerde Input.GetKeyDown(jumpKey) ile okunur ve
+///   jumpPressedThisFrame olarak saklanır.
+/// - Wall jump kontrolü (WallRunning, Wall Coyote Time ve allowAirWallJump) normal zıplama,
+///   normal coyote ve normal buffer kontrollerinden ÖNCE yapılır.
 /// </summary>
 [RequireComponent(typeof(CharacterController))]
 public class PlayerMotor : MonoBehaviour
@@ -17,7 +21,8 @@ public class PlayerMotor : MonoBehaviour
         WallRunning = 2,
         Hanging = 3,
         Transferring = 4,
-        Sliding = 5
+        Sliding = 5,
+        Drowning = 6
     }
 
     [Header("Bileşen Referansları")]
@@ -104,7 +109,26 @@ public class PlayerMotor : MonoBehaviour
     [Tooltip("Zıplama tuşu.")]
     [SerializeField] private KeyCode jumpKey = KeyCode.Space;
 
-    // Animasyon, ses ve efekt bağlantıları için C# Event'leri
+    [Header("Boğulma (Drowning) Fiziği Ayarları")]
+    [Tooltip("Boğulma sırasında oyuncunun su akıntı yönünde (selin ilerleme yönü) sürüklenme hızı (m/s).")]
+    [SerializeField] private float drownDriftSpeed = 3.2f;
+
+    [Tooltip("Boğulma sırasında mevcut hızın su altı akıntı hızına sönümlenme (damping) ivmesi.")]
+    [SerializeField] private float drownVelocityDamping = 5.0f;
+
+    [Tooltip("Boğulma sırasında azaltılmış su altı yerçekimi ivmesi (m/s²).")]
+    [SerializeField] private float drownReducedGravity = -2.2f;
+
+    [Tooltip("Boğulma sırasında oyuncunun yavaşça yukarı-aşağı salınım (bobbing) dikey hız genliği (m/s).")]
+    [SerializeField] private float drownBobVerticalSpeed = 0.65f;
+
+    [Tooltip("Boğulma sırasında yukarı-aşağı sürüklenme salınım frekansı (rad/sn).")]
+    [SerializeField] private float drownBobFrequency = 2.1f;
+
+    [Tooltip("Su yüzeyinin ne kadar altında dengelenerek sürükleneceği (metre).")]
+    [SerializeField] private float drownSubmergeDepthOffset = 0.85f;
+
+    // C# Event'leri
     public event Action OnJumpCallback;
     public event Action<float> OnLandCallback;
     public event Action<PlayerState, PlayerState> OnStateChangedCallback;
@@ -122,12 +146,18 @@ public class PlayerMotor : MonoBehaviour
     private bool isJumpCutApplied;
     private float lastAirborneVerticalVelocity;
 
-    // Girdi önbelleği
+    // Girdi önbelleği (Space tek noktadan okunur)
+    private bool jumpPressedThisFrame;
     private float horizontalInput;
     private float verticalInput;
     private Vector3 moveInputDirection;
 
-    // Dışarıdan erişilebilir salt-okunur özellikler (Animasyon ve Debug HUD için)
+    // Boğulma (Drowning) durumu değişkenleri
+    private Vector3 drowningFlowDirection = Vector3.forward;
+    private float drowningWaterSurfaceY;
+    private float drowningElapsedTimer;
+
+    // Dış erişim özellikleri
     public CharacterController Controller => controller;
     public PlayerLook Look => playerLook;
     public WallRunHandler WallRun => wallRunHandler;
@@ -148,6 +178,7 @@ public class PlayerMotor : MonoBehaviour
     public float HorizontalInput => horizontalInput;
     public float VerticalInput => verticalInput;
     public Vector3 MoveInputDirection => moveInputDirection;
+    public bool JumpPressedThisFrame => jumpPressedThisFrame;
     public bool HasBufferedJump => jumpBufferTimer > 0f;
 
     private void Awake()
@@ -176,20 +207,26 @@ public class PlayerMotor : MonoBehaviour
             playerLook.ProcessMouseLookForCurrentFrame();
         }
 
-        // 1. Oyuncu girdilerini oku
+        // 1. Oyuncu girdilerini (ve Space basışını tek bir yerde) EN BAŞTA oku
         ReadPlayerInput(dt);
 
         // 2. Zemin algılamasını güncelle
         CheckGround();
 
-        // 3. Slide zamanlayıcılarını (kesintisiz sprint süresi, slide buffer, cooldown) güncelle
-        if (slideHandler != null)
+        // 3. WallRun zamanlayıcılarını (wall coyote, wall jump buffer, cooldown) güncelle
+        if (wallRunHandler != null && currentState != PlayerState.Drowning)
+        {
+            wallRunHandler.TickWallTimers(dt, jumpPressedThisFrame);
+        }
+
+        // 4. Slide zamanlayıcılarını güncelle
+        if (slideHandler != null && currentState != PlayerState.Drowning)
         {
             slideHandler.TickTimersAndInput(dt);
         }
 
-        // 4. Havadayken veya Wall Run sırasındayken Otomatik Dal Tutunma (Wall Run'dan önceliklidir; Slide sırasında çalışmaz)
-        if (branchGrabHandler != null)
+        // 5. Havadayken veya Wall Run sırasındayken Otomatik Dal Tutunma
+        if (branchGrabHandler != null && currentState != PlayerState.Drowning)
         {
             bool canAutoDetectBranch = (currentState == PlayerState.Airborne || currentState == PlayerState.WallRunning);
             if (canAutoDetectBranch && branchGrabHandler.TryAutoGrabBranch())
@@ -201,10 +238,10 @@ public class PlayerMotor : MonoBehaviour
             }
         }
 
-        // 5. Durum makinesini (State Machine) çalıştır
+        // 6. Durum makinesini (State Machine) çalıştır
         UpdateStateMachine(dt);
 
-        // 6. Kamera efektlerini (FOV, Roll/Pitch/Height Offset, ViewMode ve Headbob) güncelle
+        // 7. Kamera efektlerini (FOV, Roll/Pitch/Height Offset, ViewMode ve Headbob) güncelle
         if (playerLook != null)
         {
             float targetWallTilt = (currentState == PlayerState.WallRunning && wallRunHandler != null)
@@ -244,6 +281,20 @@ public class PlayerMotor : MonoBehaviour
 
     private void ReadPlayerInput(float dt)
     {
+        if (currentState == PlayerState.Drowning)
+        {
+            jumpPressedThisFrame = false;
+            horizontalInput = 0f;
+            verticalInput = 0f;
+            moveInputDirection = Vector3.zero;
+            isSprinting = false;
+            jumpBufferTimer = 0f;
+            return;
+        }
+
+        // Space girişi Update'in EN BAŞINDA tek bir yerde okunur ve jumpPressedThisFrame olarak saklanır
+        jumpPressedThisFrame = Input.GetKeyDown(jumpKey);
+
         horizontalInput = Input.GetAxisRaw("Horizontal");
         verticalInput = Input.GetAxisRaw("Vertical");
 
@@ -253,13 +304,12 @@ public class PlayerMotor : MonoBehaviour
         bool forwardIntent = verticalInput > 0.1f;
         isSprinting = Input.GetKey(sprintKey) && forwardIntent;
 
-        // Jump Buffering (Grounded, Airborne, WallRunning ve Sliding durumlarında Space tuşunu kaydet)
+        // Normal Jump Buffering (WallRunning durumunda normal jump buffer'a yazılmaz, WallRunHandler kendi yönetir)
         if (currentState == PlayerState.Grounded ||
             currentState == PlayerState.Airborne ||
-            currentState == PlayerState.WallRunning ||
             currentState == PlayerState.Sliding)
         {
-            if (Input.GetKeyDown(jumpKey))
+            if (jumpPressedThisFrame)
             {
                 jumpBufferTimer = jumpBufferDuration;
             }
@@ -283,7 +333,10 @@ public class PlayerMotor : MonoBehaviour
 
     private void CheckGround()
     {
-        if (currentState == PlayerState.Hanging || currentState == PlayerState.Transferring || !controller.enabled)
+        if (currentState == PlayerState.Hanging ||
+            currentState == PlayerState.Transferring ||
+            currentState == PlayerState.Drowning ||
+            !controller.enabled)
         {
             isGrounded = false;
             groundNormal = Vector3.up;
@@ -318,7 +371,6 @@ public class PlayerMotor : MonoBehaviour
                         wallRunHandler.ResetLastWallOnGrounded();
                     }
 
-                    // Yere iniş event'ini tetikle (MonkeyAnimationDriver LandTrigger için kullanır)
                     OnLandCallback?.Invoke(lastAirborneVerticalVelocity);
                 }
 
@@ -370,6 +422,10 @@ public class PlayerMotor : MonoBehaviour
                     SetState(PlayerState.Grounded);
                 }
                 break;
+
+            case PlayerState.Drowning:
+                UpdateDrowningState(dt);
+                break;
         }
     }
 
@@ -384,7 +440,6 @@ public class PlayerMotor : MonoBehaviour
             return;
         }
 
-        // C tuşuna basıldıysa (veya havada basılıp 0.25 sn slide buffer ile yere inildiyse) Slide başlatmayı dene
         if (slideHandler != null && slideHandler.TryStartSlide())
         {
             return;
@@ -406,7 +461,7 @@ public class PlayerMotor : MonoBehaviour
             velocity.y = groundedStickForce;
         }
 
-        if (jumpBufferTimer > 0f)
+        if (jumpPressedThisFrame || jumpBufferTimer > 0f)
         {
             ExecuteJump();
             return;
@@ -435,13 +490,21 @@ public class PlayerMotor : MonoBehaviour
             coyoteTimer -= dt;
         }
 
-        if (jumpBufferTimer > 0f && coyoteTimer > 0f)
+        // BUG FIX 1: Wall Jump kontrolü (Wall Coyote Time + allowAirWallJump)
+        // normal zıplama, normal coyote ve normal buffer kontrollerinden ÖNCE yapılır!
+        if (wallRunHandler != null && wallRunHandler.TryExecutePriorityWallJump(jumpPressedThisFrame))
+        {
+            return;
+        }
+
+        // Normal Coyote Jump kontrolü
+        if ((jumpPressedThisFrame || jumpBufferTimer > 0f) && coyoteTimer > 0f)
         {
             ExecuteJump();
             return;
         }
 
-        // 8 yönlü Wall Run başlangıç kontrolü (zincirleme dahil)
+        // 8 yönlü Wall Run başlangıç kontrolü (zincirleme ve wallJumpBufferTime dahil)
         if (wallRunHandler != null && wallRunHandler.CanStartWallRun())
         {
             wallRunHandler.StartWallRun();
@@ -491,7 +554,78 @@ public class PlayerMotor : MonoBehaviour
             return;
         }
 
+        // WallRunning durumunda Space asla normal zıplamaya düşmez; yalnızca WallRunHandler içinde işlenir
         wallRunHandler.UpdateWallRun(dt);
+    }
+
+    public void EnterDrowningState(Vector3 flowDirection, float waterSurfaceY)
+    {
+        if (branchGrabHandler != null)
+        {
+            branchGrabHandler.ForceResetBranchState();
+        }
+
+        if (wallRunHandler != null)
+        {
+            wallRunHandler.ForceResetWallRunState();
+        }
+
+        if (slideHandler != null)
+        {
+            slideHandler.ForceResetSlideState();
+        }
+
+        UpdateDrowningWaterContext(flowDirection, waterSurfaceY);
+        drowningElapsedTimer = 0f;
+
+        ConsumeAllJumpInputs();
+        horizontalInput = 0f;
+        verticalInput = 0f;
+        moveInputDirection = Vector3.zero;
+        isSprinting = false;
+
+        velocity *= 0.35f;
+
+        SetState(PlayerState.Drowning);
+    }
+
+    public void UpdateDrowningWaterContext(Vector3 flowDirection, float waterSurfaceY)
+    {
+        Vector3 flatFlow = new Vector3(flowDirection.x, 0f, flowDirection.z);
+        if (flatFlow.sqrMagnitude > 0.001f)
+        {
+            drowningFlowDirection = flatFlow.normalized;
+        }
+        drowningWaterSurfaceY = waterSurfaceY;
+    }
+
+    private void UpdateDrowningState(float dt)
+    {
+        drowningElapsedTimer += dt;
+
+        Vector3 targetHorizontalDrift = drowningFlowDirection * drownDriftSpeed;
+        Vector3 currentHoriz = new Vector3(velocity.x, 0f, velocity.z);
+        Vector3 dampedHoriz = Vector3.MoveTowards(currentHoriz, targetHorizontalDrift, drownVelocityDamping * dt);
+
+        velocity.x = dampedHoriz.x;
+        velocity.z = dampedHoriz.z;
+
+        float bobWave = Mathf.Sin(drowningElapsedTimer * drownBobFrequency) * drownBobVerticalSpeed;
+        float targetSubmergedY = drowningWaterSurfaceY - drownSubmergeDepthOffset;
+        float depthError = targetSubmergedY - transform.position.y;
+        float buoyancyPull = Mathf.Clamp(depthError * 1.8f, -1.5f, 2.2f);
+
+        float targetVerticalVel = bobWave + buoyancyPull + (drownReducedGravity * 0.25f);
+        velocity.y = Mathf.MoveTowards(velocity.y, targetVerticalVel, drownVelocityDamping * dt);
+
+        if (controller != null && controller.enabled)
+        {
+            controller.Move(velocity * dt);
+        }
+        else
+        {
+            transform.position += velocity * dt;
+        }
     }
 
     private void ExecuteJump()
@@ -499,8 +633,7 @@ public class PlayerMotor : MonoBehaviour
         float jumpVelocity = Mathf.Sqrt(2f * Mathf.Abs(gravity) * jumpHeight);
         velocity.y = jumpVelocity;
 
-        jumpBufferTimer = 0f;
-        coyoteTimer = 0f;
+        ConsumeAllJumpInputs();
         isGrounded = false;
         isJumpCutApplied = false;
 
@@ -513,16 +646,12 @@ public class PlayerMotor : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Slide-Jump için mevcut kayma yatay hızını koruyarak tam zıplama yüksekliğinde fırlatır.
-    /// </summary>
     public void ExecuteJumpWithCustomHorizontalVelocity(Vector3 customHorizontalVel)
     {
         float jumpVelocity = Mathf.Sqrt(2f * Mathf.Abs(gravity) * jumpHeight);
         velocity = new Vector3(customHorizontalVel.x, jumpVelocity, customHorizontalVel.z);
 
-        jumpBufferTimer = 0f;
-        coyoteTimer = 0f;
+        ConsumeAllJumpInputs();
         isGrounded = false;
         isJumpCutApplied = false;
 
@@ -556,8 +685,11 @@ public class PlayerMotor : MonoBehaviour
         {
             if (playerLook != null)
             {
-                playerLook.SetSwingCameraOffsets(0f, 0f);
-                playerLook.SetMouseInputEnabled(true);
+                playerLook.ResetCameraOffsets();
+                if (newState != PlayerState.Drowning)
+                {
+                    playerLook.SetMouseInputEnabled(true);
+                }
             }
 
             if (wallRunHandler != null)
@@ -586,9 +718,6 @@ public class PlayerMotor : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Harici sistemlerin (Wall Jump, Swing Launch, Slide) hız vektörünü doğrudan atamasını sağlar.
-    /// </summary>
     public void SetVelocity(Vector3 newVelocity)
     {
         velocity = newVelocity;
@@ -607,7 +736,19 @@ public class PlayerMotor : MonoBehaviour
 
     public void ConsumeJumpBuffer()
     {
+        jumpPressedThisFrame = false;
         jumpBufferTimer = 0f;
+    }
+
+    /// <summary>
+    /// Wall jump, normal jump veya dal fırlaması gerçekleştiğinde aynı Space basışının
+    /// ikinci bir zıplama tetiklememesi için tüm zıplama/coyote/buffer bayraklarını sıfırlar.
+    /// </summary>
+    public void ConsumeAllJumpInputs()
+    {
+        jumpPressedThisFrame = false;
+        jumpBufferTimer = 0f;
+        coyoteTimer = 0f;
     }
 
     private void OnControllerColliderHit(ControllerColliderHit hit)
@@ -622,10 +763,6 @@ public class PlayerMotor : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Sel yakalanması veya debug respawn durumunda oyuncunun hızını, parkur durumlarını (State)
-    /// sıfırlar ve belirtilen checkpoint konumuna/rotasyonuna güvenli şekilde ışınlar.
-    /// </summary>
     public void TeleportAndResetState(Vector3 targetPosition, Quaternion targetRotation)
     {
         SetCharacterControllerEnabled(false);
@@ -649,8 +786,7 @@ public class PlayerMotor : MonoBehaviour
         moveInputDirection = Vector3.zero;
         horizontalInput = 0f;
         verticalInput = 0f;
-        jumpBufferTimer = 0f;
-        coyoteTimer = 0f;
+        ConsumeAllJumpInputs();
         isJumpCutApplied = false;
         isSprinting = false;
         lastAirborneVerticalVelocity = 0f;
@@ -677,9 +813,6 @@ public class PlayerMotor : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Oyuncunun yalnızca hızını ve aktif parkur durumunu sıfırlar (konumu değiştirmeden).
-    /// </summary>
     public void ResetMotorVelocityAndState()
     {
         TeleportAndResetState(transform.position, transform.rotation);

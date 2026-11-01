@@ -1,10 +1,16 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
 
 /// <summary>
-/// CANOPY: The Last Run - 8 Yönlü Duvar Algılama, Bakış Yönlü Duvardan Duvara Zıplama (Wall Jump),
-/// Aim Assist ve Sınırsız Duvar Zincirleme (Wall Chain) Yöneticisi.
+/// CANOPY: The Last Run - 8 Yönlü Duvar Algılama, WallRunSurface Tek Yüz Doğrulaması,
+/// Bakış + Girdi Yönlü Duvardan Duvara Zıplama (Wall Jump), Wall Coyote Time, Wall Jump Buffer,
+/// Havada Duvara Yakınken Wall Jump (allowAirWallJump), Aim Assist ve Duvar Zincirleme (Wall Chain) Yöneticisi.
+///
+/// Not: Wall run sırasında A/D/S ile duvardan düşme tamamen kaldırılmıştır.
+/// Wall run yalnızca Space (wall jump), Left Ctrl (bırakma), süre dolması, duvar/geçerli yüz bitmesi
+/// veya yere inme ile sona erer.
 /// </summary>
 public class WallRunHandler : MonoBehaviour
 {
@@ -18,7 +24,7 @@ public class WallRunHandler : MonoBehaviour
     [Tooltip("Anlık kamera yönünü okumak için PlayerLook bileşeni.")]
     [SerializeField] private PlayerLook playerLook;
 
-    [Header("1b) 8 Yönlü Duvar Algılama Ayarları")]
+    [Header("1b) 8 Yönlü Duvar Algılama ve WallRunSurface Ayarları")]
     [Tooltip("Sadece bu katmandaki (WallRunnable) duvarlarda wall run çalışır.")]
     [SerializeField] private LayerMask wallRunnableLayer;
 
@@ -34,7 +40,10 @@ public class WallRunHandler : MonoBehaviour
     [Tooltip("Duvar yüzey normali ile Vector3.up arasındaki maksimum açı (dik duvar kontrolü).")]
     [SerializeField] private float maxWallNormalAngle = 100f;
 
-    [Header("1c) Wall Run Başlama ve Zincirleme (Chain) Kuralları")]
+    [Tooltip("Açık olursa WallRunSurface bileşeni olmayan duvarlarda koşulmasına izin verilmez. Kapalıysa (varsayılan) uyarı verip iki yüzü de kabul eder.")]
+    [SerializeField] private bool requireSurfaceComponent = false;
+
+    [Header("1c) Wall Run Başlama, Bırakma ve Zincirleme (Chain) Kuralları")]
     [Tooltip("Wall run başlatmak için gereken minimum yatay hız eşiği (varsayılan 3.5 m/s).")]
     [SerializeField] private float minWallRunSpeed = 3.5f;
 
@@ -56,6 +65,9 @@ public class WallRunHandler : MonoBehaviour
     [Tooltip("Aynı duvara (lastWallCollider) tekrar yapışmayı engelleyen bekleme süresi (varsayılan 0.2 sn).")]
     [SerializeField] private float sameWallRegrabCooldown = 0.2f;
 
+    [Tooltip("Wall run sırasında duvardan bilerek ayrılıp düşmek için kullanılan tek tuş (varsayılan Left Ctrl). A/D/S düşürmez!")]
+    [SerializeField] private KeyCode wallDropKey = KeyCode.LeftControl;
+
     [Header("1d) Wall Run Hareket, Yön Verme ve Fizik")]
     [Tooltip("Wall run sırasında yerçekiminin etki oranı (0.10 = %10 yerçekimi etkisi).")]
     [Range(0f, 1f)]
@@ -70,25 +82,35 @@ public class WallRunHandler : MonoBehaviour
     [Tooltip("Wall run sırasında ulaşılabilecek maksimum paralel hız (m/s).")]
     [SerializeField] private float maxWallRunSpeed = 14.5f;
 
-    [Tooltip("Karakteri duvarda tutan ama hız kaybettirmeyen hafif yapışma hızı.")]
+    [Tooltip("Karakteri duvarda tutan ama hız kaybettirmeyen yapışma hızı.")]
     [SerializeField] private float wallStickPushSpeed = 1.8f;
 
-    [Tooltip("A/D tuşlarıyla duvara hafifçe yaklaşma veya uzaklaşma etki gücü (varsayılan 1.5).")]
-    [SerializeField] private float wallRunSteerStrength = 1.5f;
-
-    [Tooltip("S tuşuna veya duvardan uzağa A/D tuşuna bu süre basılı tutulursa duvardan isteğe bağlı ayrılır (sn).")]
-    [SerializeField] private float manualDropHoldDuration = 0.25f;
+    [Tooltip("A/D tuşlarıyla duvara hafifçe yaklaşma etkisi (duvardan düşürmez).")]
+    [SerializeField] private float wallRunSteerStrength = 1.0f;
 
     [Tooltip("Duvarın karşı tarafına doğru uygulanacak kamera yatış (roll/tilt) açısı (12-15 derece).")]
     [Range(8f, 20f)]
     [SerializeField] private float wallRunCameraTiltAngle = 14f;
 
-    [Header("1a) Bakış Yönlü Wall Jump ve Aim Assist")]
+    [Header("1a) Bakış + Girdi Yönlü Wall Jump, Coyote, Buffer ve Aim Assist")]
     [Tooltip("Wall jump tetikleme tuşu.")]
     [SerializeField] private KeyCode wallJumpKey = KeyCode.Space;
 
+    [Tooltip("Wall run bittikten sonra (süre dolması, duvar bitişi) Space tuşunun hâlâ wall jump yapabildiği coyote süresi (varsayılan 0.25 sn).")]
+    [SerializeField] private float wallJumpCoyoteTime = 0.25f;
+
+    [Tooltip("Duvara yapışmadan hemen önce basılan Space tuşunu hatırlama (buffer) süresi (varsayılan 0.15 sn).")]
+    [SerializeField] private float wallJumpBufferTime = 0.15f;
+
+    [Tooltip("Havadayken ve duvara yakınken (wallDetectDistance içinde) wall run başlamamış olsa bile Space ile wall jump yapılabilsin.")]
+    [SerializeField] private bool allowAirWallJump = true;
+
     [Tooltip("Wall jump yatay yön hesabında kamera bakış yönünün ağırlığı (varsayılan 1.0).")]
     [SerializeField] private float wallJumpLookInfluence = 1.0f;
+
+    [Tooltip("A/W/D hareket girdisi varsa, hareket girdisi yönünün kamera bakış yönüne karıştırılma oranı (varsayılan 0.5).")]
+    [Range(0f, 1f)]
+    [SerializeField] private float wallJumpInputInfluence = 0.5f;
 
     [Tooltip("Wall jump yatay yön hesabında duvar normalinin (duvardan uzağa) ağırlığı (varsayılan 0.5).")]
     [SerializeField] private float wallJumpAwayInfluence = 0.5f;
@@ -131,6 +153,8 @@ public class WallRunHandler : MonoBehaviour
 
     // Dahili çalışma durumu
     private readonly Collider[] aimAssistColliders = new Collider[16];
+    private readonly HashSet<Collider> warnedMissingSurfaceColliders = new HashSet<Collider>();
+
     private bool hasDetectedWall;
     private bool isWallRight;
     private bool isWallLeft;
@@ -139,14 +163,23 @@ public class WallRunHandler : MonoBehaviour
     private Collider activeWallCollider;
     private Collider lastWallCollider;
 
+    // Wall Coyote ve Wall Jump Buffer değişkenleri
+    private float wallJumpCoyoteTimer;
+    private Vector3 coyoteWallNormal;
+    private Collider coyoteWallCollider;
+    private float wallJumpBufferTimer;
+
     private float wallRunTimer;
     private float sameWallCooldownTimer;
     private float postBranchLockTimer;
     private float chainGraceTimer;
-    private float manualDropTimer;
     private float currentWallSpeed;
     private int chainCount;
     private Vector3 lastWallJumpDirection = Vector3.forward;
+
+    // HUD tanı değişkenleri
+    private bool wallJumpAvailable;
+    private string lastWallJumpBlockReason = "none";
 
     // Debug HUD ve dış erişim özellikleri
     public bool IsWallRight => isWallRight;
@@ -159,6 +192,10 @@ public class WallRunHandler : MonoBehaviour
         : "YOK";
     public string LastWallColliderName => lastWallCollider != null ? lastWallCollider.name : "YOK";
     public Vector3 LastWallJumpDirection => lastWallJumpDirection;
+    public bool WallJumpAvailable => wallJumpAvailable;
+    public float WallCoyoteRemaining => Mathf.Max(0f, wallJumpCoyoteTimer);
+    public float WallJumpBufferRemaining => Mathf.Max(0f, wallJumpBufferTimer);
+    public string LastWallJumpBlockReason => lastWallJumpBlockReason;
 
     public float CurrentCameraTiltTarget
     {
@@ -190,10 +227,11 @@ public class WallRunHandler : MonoBehaviour
         }
     }
 
-    private void Update()
+    /// <summary>
+    /// PlayerMotor.Update başında çağrılır; zamanlayıcıları ve HUD için wallJumpAvailable durumunu günceller.
+    /// </summary>
+    public void TickWallTimers(float dt, bool spacePressedThisFrame)
     {
-        float dt = Time.deltaTime;
-
         if (sameWallCooldownTimer > 0f)
         {
             sameWallCooldownTimer -= dt;
@@ -208,15 +246,206 @@ public class WallRunHandler : MonoBehaviour
         {
             chainGraceTimer -= dt;
         }
+
+        if (wallJumpCoyoteTimer > 0f)
+        {
+            wallJumpCoyoteTimer -= dt;
+            if (wallJumpCoyoteTimer <= 0f)
+            {
+                coyoteWallCollider = null;
+            }
+        }
+
+        if (spacePressedThisFrame)
+        {
+            wallJumpBufferTimer = wallJumpBufferTime;
+        }
+        else if (wallJumpBufferTimer > 0f)
+        {
+            wallJumpBufferTimer -= dt;
+        }
+
+        UpdateWallJumpDiagnosticState();
     }
 
     /// <summary>
-    /// 1b) Oyuncu etrafında yatay düzlemde 45 derece aralıklı 8 yönlü Raycast atar.
-    /// WallRunnable katmanında ve 80-100 derece normal açısına sahip en yakın geçerli duvarı seçer.
+    /// PlayerMotor tarafından normal zıplama, normal coyote ve normal buffer kontrollerinden ÖNCE çağrılır.
+    /// Eğer oyuncu WallRunning durumundaysa, Wall Coyote süresi içindeyse veya allowAirWallJump ile
+    /// havada geçerli bir duvara yakınsa Wall Jump yapar ve true döner.
     /// </summary>
-    private bool DetectClosestValidWall(bool ignoreLastWallRule, out RaycastHit bestHit)
+    public bool TryExecutePriorityWallJump(bool spacePressedThisFrame)
+    {
+        if (motor == null)
+            return false;
+
+        bool wantsWallJump = spacePressedThisFrame || wallJumpBufferTimer > 0f;
+        if (!wantsWallJump)
+            return false;
+
+        // 1. Durum: Zaten WallRunning durumundayız -> Space her zaman Wall Jump yapar (asla normal zıplamaya düşmez)
+        if (motor.CurrentState == PlayerMotor.PlayerState.WallRunning)
+        {
+            lastWallJumpBlockReason = "none";
+            ExecuteWallJumpFromSurface(activeWallNormal, activeWallCollider);
+            return true;
+        }
+
+        // Sadece Airborne durumunda coyote veya air wall jump çalışabilir
+        if (motor.CurrentState != PlayerMotor.PlayerState.Airborne || motor.IsGrounded)
+        {
+            if (spacePressedThisFrame)
+            {
+                lastWallJumpBlockReason = "state";
+            }
+            return false;
+        }
+
+        if (postBranchLockTimer > 0f)
+        {
+            if (spacePressedThisFrame)
+            {
+                lastWallJumpBlockReason = "cooldown";
+            }
+            return false;
+        }
+
+        // 2. Durum: Wall Coyote Time (wall run yeni bitti, 0.25 sn içinde Space'e basıldı)
+        if (wallJumpCoyoteTimer > 0f && coyoteWallCollider != null)
+        {
+            lastWallJumpBlockReason = "none";
+            ExecuteWallJumpFromSurface(coyoteWallNormal, coyoteWallCollider);
+            return true;
+        }
+
+        // 3. Durum: Havadayken duvara yakın (wallDetectDistance içinde), wall run başlamamış olsa bile Air Wall Jump
+        if (allowAirWallJump && spacePressedThisFrame)
+        {
+            if (DetectClosestValidWall(ignoreLastWallRule: false, out RaycastHit airWallHit, out string failReason))
+            {
+                lastWallJumpBlockReason = "none";
+                currentWallSpeed = Mathf.Max(motor.HorizontalSpeed, motor.WalkSpeed);
+                ExecuteWallJumpFromSurface(airWallHit.normal, airWallHit.collider);
+                return true;
+            }
+
+            lastWallJumpBlockReason = failReason;
+        }
+
+        return false;
+    }
+
+    private void UpdateWallJumpDiagnosticState()
+    {
+        if (motor == null)
+        {
+            wallJumpAvailable = false;
+            lastWallJumpBlockReason = "state";
+            return;
+        }
+
+        if (motor.CurrentState == PlayerMotor.PlayerState.WallRunning)
+        {
+            wallJumpAvailable = true;
+            lastWallJumpBlockReason = "none";
+            return;
+        }
+
+        if (motor.CurrentState != PlayerMotor.PlayerState.Airborne || motor.IsGrounded)
+        {
+            wallJumpAvailable = false;
+            lastWallJumpBlockReason = "state";
+            return;
+        }
+
+        if (postBranchLockTimer > 0f)
+        {
+            wallJumpAvailable = false;
+            lastWallJumpBlockReason = "cooldown";
+            return;
+        }
+
+        if (wallJumpCoyoteTimer > 0f && coyoteWallCollider != null)
+        {
+            wallJumpAvailable = true;
+            lastWallJumpBlockReason = "none";
+            return;
+        }
+
+        if (allowAirWallJump)
+        {
+            bool found = DetectClosestValidWall(ignoreLastWallRule: false, out _, out string failReason);
+            wallJumpAvailable = found;
+            lastWallJumpBlockReason = found ? "none" : failReason;
+            return;
+        }
+
+        wallJumpAvailable = false;
+        lastWallJumpBlockReason = "no wall";
+    }
+
+    /// <summary>
+    /// Çarpan RaycastHit'in dik duvar açısına ve WallRunSurface tek yüz kuralına uyup uymadığını kontrol eder.
+    /// </summary>
+    private bool IsValidWallSurfaceHit(RaycastHit hit, out string failReason)
+    {
+        failReason = "none";
+        if (hit.collider == null)
+        {
+            failReason = "no wall";
+            return false;
+        }
+
+        float angleWithUp = Vector3.Angle(hit.normal, Vector3.up);
+        bool isVerticalWall = (angleWithUp >= minWallNormalAngle && angleWithUp <= maxWallNormalAngle);
+        if (!isVerticalWall)
+        {
+            failReason = "no wall";
+            return false;
+        }
+
+        WallRunSurface surface = hit.collider.GetComponent<WallRunSurface>();
+        if (surface == null)
+        {
+            surface = hit.collider.GetComponentInParent<WallRunSurface>();
+        }
+
+        if (surface == null)
+        {
+            if (!warnedMissingSurfaceColliders.Contains(hit.collider))
+            {
+                warnedMissingSurfaceColliders.Add(hit.collider);
+                Debug.LogWarning(
+                    $"[WallRunHandler] '{hit.collider.name}' objesi WallRunnable katmanında ancak üzerinde WallRunSurface bileşeni yok! " +
+                    (requireSurfaceComponent ? "WallRun reddedildi." : "Eski davranışa (iki yüz geçerli) düşüldü."),
+                    hit.collider
+                );
+            }
+
+            if (requireSurfaceComponent)
+            {
+                failReason = "no wall";
+                return false;
+            }
+
+            return true;
+        }
+
+        if (!surface.IsHitNormalValid(hit.normal))
+        {
+            failReason = "backface";
+            return false;
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// 8 yönlü yatay Raycast atar. Yalnızca geçerli yüze (WallRunSurface) çarpan hit'ler aday olur ve en yakını seçilir.
+    /// </summary>
+    private bool DetectClosestValidWall(bool ignoreLastWallRule, out RaycastHit bestHit, out string blockReason)
     {
         bestHit = default;
+        blockReason = "no wall";
         hasDetectedWall = false;
         isWallRight = false;
         isWallLeft = false;
@@ -226,6 +455,9 @@ public class WallRunHandler : MonoBehaviour
 
         float minDistance = float.MaxValue;
         bool foundAny = false;
+        bool rejectedBySameCollider = false;
+        bool rejectedByCooldown = false;
+        bool rejectedByBackface = false;
 
         for (int i = 0; i < DIRECTION_RAY_COUNT; i++)
         {
@@ -234,15 +466,26 @@ public class WallRunHandler : MonoBehaviour
 
             if (Physics.Raycast(origin, rayDir, out RaycastHit hit, wallDetectDistance, wallRunnableLayer, QueryTriggerInteraction.Ignore))
             {
-                float angleWithUp = Vector3.Angle(hit.normal, Vector3.up);
-                bool isVerticalWall = (angleWithUp >= minWallNormalAngle && angleWithUp <= maxWallNormalAngle);
-                if (!isVerticalWall)
+                if (!IsValidWallSurfaceHit(hit, out string surfaceFailReason))
+                {
+                    if (surfaceFailReason == "backface")
+                    {
+                        rejectedByBackface = true;
+                    }
                     continue;
+                }
 
-                // Aynı duvar (lastWallCollider) kontrolü: Farklı duvarlar anında kabul edilir,
-                // yalnızca lastWallCollider engellenir.
+                // Aynı duvar (lastWallCollider) ve cooldown kontrolü
                 if (!ignoreLastWallRule && lastWallCollider != null && hit.collider == lastWallCollider)
                 {
+                    if (sameWallCooldownTimer > 0f)
+                    {
+                        rejectedByCooldown = true;
+                    }
+                    else
+                    {
+                        rejectedBySameCollider = true;
+                    }
                     continue;
                 }
 
@@ -259,20 +502,28 @@ public class WallRunHandler : MonoBehaviour
         {
             hasDetectedWall = true;
             closestWallHit = bestHit;
+            blockReason = "none";
             UpdateWallSideRelativeToCamera(bestHit.normal);
+            return true;
         }
 
-        return foundAny;
+        if (rejectedByCooldown)
+            blockReason = "cooldown";
+        else if (rejectedBySameCollider)
+            blockReason = "same collider";
+        else if (rejectedByBackface)
+            blockReason = "backface";
+        else
+            blockReason = "no wall";
+
+        return false;
     }
 
-    /// <summary>
-    /// Duvarın oyuncunun/kameranın sağında mı yoksa solunda mı olduğunu belirleyerek kamera roll yönünü ayarlar.
-    /// </summary>
     private void UpdateWallSideRelativeToCamera(Vector3 wallNormal)
     {
         Vector3 camForward = GetCameraHorizontalForward();
         Vector3 camRight = Vector3.Cross(Vector3.up, camForward).normalized;
-        Vector3 toWallDir = - new Vector3(wallNormal.x, 0f, wallNormal.z).normalized;
+        Vector3 toWallDir = -new Vector3(wallNormal.x, 0f, wallNormal.z).normalized;
 
         float rightDot = Vector3.Dot(camRight, toWallDir);
         isWallRight = rightDot >= 0f;
@@ -280,7 +531,7 @@ public class WallRunHandler : MonoBehaviour
     }
 
     /// <summary>
-    /// 1c) Oyuncunun havada olup olmadığını, hız eşiğini (3.5 m/s) ve 8 yönlü duvar temasını kontrol eder.
+    /// Oyuncunun havada olup olmadığını, hız eşiğini ve 8 yönlü geçerli duvar yüzü temasını kontrol eder.
     /// </summary>
     public bool CanStartWallRun()
     {
@@ -289,7 +540,8 @@ public class WallRunHandler : MonoBehaviour
 
         if (motor.CurrentState == PlayerMotor.PlayerState.Hanging ||
             motor.CurrentState == PlayerMotor.PlayerState.Transferring ||
-            motor.CurrentState == PlayerMotor.PlayerState.Sliding)
+            motor.CurrentState == PlayerMotor.PlayerState.Sliding ||
+            motor.CurrentState == PlayerMotor.PlayerState.Drowning)
         {
             return false;
         }
@@ -297,33 +549,33 @@ public class WallRunHandler : MonoBehaviour
         if (motor.HorizontalSpeed < minWallRunSpeed)
             return false;
 
-        // Wall jump sonrası ilk 0.6 sn (wallChainGraceTime) içinde veya requireForwardKeyOutsideGrace kapalıysa W şartı aranmaz
         if (requireForwardKeyOutsideGrace && chainGraceTimer <= 0f && motor.VerticalInput <= 0.05f)
             return false;
 
-        return DetectClosestValidWall(ignoreLastWallRule: false, out _);
+        return DetectClosestValidWall(ignoreLastWallRule: false, out _, out _);
     }
 
     /// <summary>
-    /// Wall Run durumunu başlatır, zincirleme (chain) sayısını ve süresini hesaplar.
+    /// Wall Run durumunu başlatır; eğer duvara değmeden önceki 0.15 sn içinde Space'e basılmışsa
+    /// (wallJumpBufferTimer > 0) otomatik olarak anında Wall Jump tetikler.
     /// </summary>
     public void StartWallRun()
     {
         activeWallNormal = closestWallHit.normal;
         activeWallCollider = closestWallHit.collider;
 
-        // Yeni bir duvara yapıştığımızda önceki duvar kilidi sıfırlanır (şimdi aktif duvar bu oldu)
         if (lastWallCollider != null && activeWallCollider != lastWallCollider)
         {
             lastWallCollider = null;
         }
 
-        // Zincirleme süresi hesabı: Her art arda duvarda 0.15 sn azalır, minimum 1.2 sn olur
+        wallJumpCoyoteTimer = 0f;
+        coyoteWallCollider = null;
+
         float calculatedDuration = maxWallRunDuration - (chainCount * chainTimePenalty);
         wallRunTimer = Mathf.Max(minChainWallRunDuration, calculatedDuration);
         chainCount++;
 
-        manualDropTimer = 0f;
         currentWallSpeed = Mathf.Max(motor.HorizontalSpeed, motor.WalkSpeed);
 
         Vector3 wallForward = CalculateWallForwardDirection(activeWallNormal);
@@ -332,36 +584,52 @@ public class WallRunHandler : MonoBehaviour
             : 0f;
 
         UpdateWallSideRelativeToCamera(activeWallNormal);
-
-        // Anlık wall jump önizleme yönünü güncelle
-        lastWallJumpDirection = ComputeWallJumpVelocityVector(out _).normalized;
+        lastWallJumpDirection = ComputeWallJumpVelocityVector(activeWallNormal, activeWallCollider, out _).normalized;
 
         motor.SetVelocity(wallForward * currentWallSpeed + Vector3.up * dampedVerticalY);
         motor.SetState(PlayerMotor.PlayerState.WallRunning);
 
         onWallRunStart?.Invoke();
         OnWallRunStartCallback?.Invoke();
+
+        // Wall Jump Buffer: Duvara yapışmadan hemen önce (0.15 sn içinde) Space'e basıldıysa otomatik Wall Jump yap!
+        if (wallJumpBufferTimer > 0f || motor.JumpPressedThisFrame)
+        {
+            lastWallJumpBlockReason = "none";
+            ExecuteWallJumpFromSurface(activeWallNormal, activeWallCollider);
+        }
     }
 
     /// <summary>
-    /// 1d) Her karede Wall Run hareketini, mouse bakışına göre koşu yönünü, A/D steer etkisini ve Space ile Wall Jump'ı işler.
+    /// Her karede Wall Run hareketini işler.
+    /// A/D/S ile duvardan düşme tamamen kaldırılmıştır! Sadece Space (Wall Jump), Left Ctrl (Bırakma),
+    /// süre dolması, duvarın/geçerli yüzün bitmesi veya yere inme ile biter.
     /// </summary>
     public void UpdateWallRun(float dt)
     {
-        // Space tuşuna basıldıysa gecikmesiz anlık kamera yönüyle hemen Wall Jump yap!
-        if (Input.GetKeyDown(wallJumpKey) || motor.HasBufferedJump)
+        // 1. Space basıldıysa veya buffer varsa -> Wall Jump
+        if (motor.JumpPressedThisFrame || wallJumpBufferTimer > 0f || motor.HasBufferedJump)
         {
-            ExecuteWallJump();
+            lastWallJumpBlockReason = "none";
+            ExecuteWallJumpFromSurface(activeWallNormal, activeWallCollider);
             return;
         }
 
-        // Aktif duvarı veya köşe dönüldüyse yeni duvarı kontrol et
-        bool stillOnWall = DetectClosestValidWall(ignoreLastWallRule: true, out RaycastHit currentHit);
+        // 2. Left Ctrl basıldıysa -> İsteğe bağlı bırakma
+        if (Input.GetKeyDown(wallDropKey))
+        {
+            StopWallRunAndFall(enableCoyote: false);
+            return;
+        }
+
+        // 3. Aktif duvarı ve geçerli yüzü (WallRunSurface) kontrol et
+        // Köşeden arka yüze dolanılırsa DetectClosestValidWall false döner ve wall run otomatik biter (coyote başlar)
+        bool stillOnWall = DetectClosestValidWall(ignoreLastWallRule: true, out RaycastHit currentHit, out _);
         wallRunTimer -= dt;
 
         if (!stillOnWall || motor.IsGrounded || wallRunTimer <= 0f)
         {
-            StopWallRunAndFall();
+            StopWallRunAndFall(enableCoyote: !motor.IsGrounded);
             return;
         }
 
@@ -369,24 +637,7 @@ public class WallRunHandler : MonoBehaviour
         activeWallCollider = currentHit.collider;
         UpdateWallSideRelativeToCamera(activeWallNormal);
 
-        // Opsiyonel manuel bırakma: S basılı tutulursa veya duvardan uzağa A/D basılı tutulursa
-        float awayInput = isWallRight ? -motor.HorizontalInput : motor.HorizontalInput;
-        bool wantsToDrop = (motor.VerticalInput < -0.5f) || (awayInput > 0.6f && motor.VerticalInput < 0.05f);
-        if (wantsToDrop)
-        {
-            manualDropTimer += dt;
-            if (manualDropTimer >= manualDropHoldDuration)
-            {
-                StopWallRunAndFall();
-                return;
-            }
-        }
-        else
-        {
-            manualDropTimer = 0f;
-        }
-
-        // 1d) Oyuncunun mouse bakışı duvar boyunca koşu yönünü belirler
+        // 4. Oyuncunun mouse bakışı duvar boyunca koşu yönünü belirler
         Vector3 wallForward = CalculateWallForwardDirection(activeWallNormal);
         currentWallSpeed = Mathf.MoveTowards(currentWallSpeed, maxWallRunSpeed, wallRunSpeedBoostRate * dt);
 
@@ -394,16 +645,14 @@ public class WallRunHandler : MonoBehaviour
         float reducedGravity = motor.Gravity * wallRunGravityMultiplier;
         float newVerticalVelocity = motor.Velocity.y + reducedGravity * dt;
 
-        // A/D ile duvara hafif yaklaşma / uzaklaşma etkisi (wallRunSteerStrength)
+        // Duvarda tutan yapışma kuvveti (A/D basılsa bile asla duvardan düşürmez!)
         Vector3 horizontalNormal = new Vector3(activeWallNormal.x, 0f, activeWallNormal.z).normalized;
-        float steerOffset = awayInput * wallRunSteerStrength;
-        float netStickPush = Mathf.Max(0.2f, wallStickPushSpeed - steerOffset);
+        float netStickPush = Mathf.Max(0.8f, wallStickPushSpeed);
         Vector3 stickVelocity = -horizontalNormal * netStickPush;
 
         Vector3 finalWallVelocity = (wallForward * currentWallSpeed) + (Vector3.up * newVerticalVelocity);
 
-        // Debug ve Gizmos için o anki olası wall jump yönünü güncel tut
-        lastWallJumpDirection = ComputeWallJumpVelocityVector(out _).normalized;
+        lastWallJumpDirection = ComputeWallJumpVelocityVector(activeWallNormal, activeWallCollider, out _).normalized;
 
         motor.SetVelocity(finalWallVelocity);
         if (motor.Controller.enabled)
@@ -413,91 +662,115 @@ public class WallRunHandler : MonoBehaviour
     }
 
     /// <summary>
-    /// 1a) Space'e basıldığı karedeki anlık kamera yönünü ve duvar normalini (ve açıksa Aim Assist'i) kullanarak
-    /// oyuncuyu seçtiği yöne fırlatır.
+    /// Belirtilen duvar normali ve collider üzerinden Wall Jump gerçekleştirir;
+    /// tüm zıplama buffer ve coyote sayaçlarını sıfırlar ki aynı Space basışı ikinci kez zıplatmasın.
     /// </summary>
-    private void ExecuteWallJump()
+    private void ExecuteWallJumpFromSurface(Vector3 wallNormal, Collider wallCol)
     {
-        Vector3 jumpVelocity = ComputeWallJumpVelocityVector(out Vector3 jumpDirNormalized);
+        bool wasWallRunning = (motor != null && motor.CurrentState == PlayerMotor.PlayerState.WallRunning);
+
+        Vector3 jumpVelocity = ComputeWallJumpVelocityVector(wallNormal, wallCol, out Vector3 jumpDirNormalized);
         lastWallJumpDirection = jumpDirNormalized;
 
-        // Sadece bu duvarın collider'ını kilitle; karşı duvar veya başka duvarlar 0 sn gecikmeyle hemen tutunabilir
-        lastWallCollider = activeWallCollider;
+        lastWallCollider = wallCol;
         sameWallCooldownTimer = sameWallRegrabCooldown;
         chainGraceTimer = wallChainGraceTime;
 
-        motor.ConsumeJumpBuffer();
+        // Tüm zıplama buffer ve coyote sayaçlarını sıfırla (çift zıplamayı önler)
+        wallJumpBufferTimer = 0f;
+        wallJumpCoyoteTimer = 0f;
+        coyoteWallCollider = null;
+        motor.ConsumeAllJumpInputs();
+
         motor.SetState(PlayerMotor.PlayerState.Airborne);
         motor.SetVelocity(jumpVelocity);
 
         onWallJump?.Invoke();
         OnWallJumpCallback?.Invoke(jumpDirNormalized);
-        onWallRunEnd?.Invoke();
-        OnWallRunEndCallback?.Invoke();
+
+        if (wasWallRunning)
+        {
+            onWallRunEnd?.Invoke();
+            OnWallRunEndCallback?.Invoke();
+        }
     }
 
     /// <summary>
-    /// 1a) Bakış yönü + duvar normali + isteğe bağlı Aim Assist ile Wall Jump hız vektörünü hesaplar.
+    /// Space basıldığı karedeki kamera yönü + A/W/D hareket girdisi yönü (wallJumpInputInfluence = 0.5)
+    /// + duvar normali (wallJumpAwayInfluence) + Aim Assist ile Wall Jump hız vektörünü hesaplar.
     /// </summary>
-    private Vector3 ComputeWallJumpVelocityVector(out Vector3 normalizedJumpDirection)
+    private Vector3 ComputeWallJumpVelocityVector(Vector3 referenceWallNormal, Collider referenceWallCollider, out Vector3 normalizedJumpDirection)
     {
         Vector3 lookFlat = GetCameraHorizontalForward();
-        Vector3 wallNormalFlat = new Vector3(activeWallNormal.x, 0f, activeWallNormal.z);
+        Vector3 wallNormalFlat = new Vector3(referenceWallNormal.x, 0f, referenceWallNormal.z);
         if (wallNormalFlat.sqrMagnitude < 0.001f)
             wallNormalFlat = -transform.right;
         wallNormalFlat.Normalize();
 
+        // A/W/D hareket girdisi varsa kamera bakış yönüne wallJumpInputInfluence (0.5) oranında karıştır
+        Vector3 desiredHorizontalIntent = lookFlat;
+        if (motor != null && motor.MoveInputDirection.sqrMagnitude > 0.01f && wallJumpInputInfluence > 0.001f)
+        {
+            Vector3 inputFlat = new Vector3(motor.MoveInputDirection.x, 0f, motor.MoveInputDirection.z);
+            if (inputFlat.sqrMagnitude > 0.01f)
+            {
+                inputFlat.Normalize();
+                // Duvardan dışarı/ileri yönlü girdiyi kamera yönüyle harmanla
+                desiredHorizontalIntent = Vector3.Slerp(lookFlat, inputFlat, wallJumpInputInfluence);
+                if (desiredHorizontalIntent.sqrMagnitude > 0.001f)
+                {
+                    desiredHorizontalIntent.Normalize();
+                }
+                else
+                {
+                    desiredHorizontalIntent = lookFlat;
+                }
+            }
+        }
+
         float effectiveAwayWeight = wallJumpAwayInfluence;
 
-        // Eğer bakış yönü duvara doğruysa (lookFlat · wallNormalFlat < 0), duvara giren bileşeni çıkar
-        // ve minimum uzağa itme (wallJumpMinAwayFromWall) uygula ki oyuncu duvara geri yapışmasın.
-        float dotWithNormal = Vector3.Dot(lookFlat, wallNormalFlat);
+        // Eğer hedeflenen yön duvara doğruysa (dot < 0), duvara giren bileşeni çıkar ve minimum uzağa itme uygula
+        float dotWithNormal = Vector3.Dot(desiredHorizontalIntent, wallNormalFlat);
         if (dotWithNormal < 0f)
         {
-            lookFlat = (lookFlat - wallNormalFlat * dotWithNormal);
-            if (lookFlat.sqrMagnitude > 0.001f)
+            desiredHorizontalIntent = desiredHorizontalIntent - wallNormalFlat * dotWithNormal;
+            if (desiredHorizontalIntent.sqrMagnitude > 0.001f)
             {
-                lookFlat.Normalize();
+                desiredHorizontalIntent.Normalize();
             }
             else
             {
-                lookFlat = wallNormalFlat;
+                desiredHorizontalIntent = wallNormalFlat;
             }
 
             effectiveAwayWeight = Mathf.Max(effectiveAwayWeight, wallJumpMinAwayFromWall);
         }
 
-        Vector3 combinedHorizontalDir = (lookFlat * wallJumpLookInfluence) + (wallNormalFlat * effectiveAwayWeight);
+        Vector3 combinedHorizontalDir = (desiredHorizontalIntent * wallJumpLookInfluence) + (wallNormalFlat * effectiveAwayWeight);
         if (combinedHorizontalDir.sqrMagnitude < 0.001f)
         {
             combinedHorizontalDir = wallNormalFlat;
         }
         combinedHorizontalDir.Normalize();
 
-        // İsteğe bağlı Aim Assist: Baktığımız yönde 20 derece koni ve 12m menzilde başka bir WallRunnable duvar varsa
-        // yatay fırlama yönünü %30 o duvara doğru yumuşat
         if (wallJumpAimAssist)
         {
-            combinedHorizontalDir = ApplyWallJumpAimAssist(combinedHorizontalDir, lookFlat);
+            combinedHorizontalDir = ApplyWallJumpAimAssist(combinedHorizontalDir, desiredHorizontalIntent, referenceWallCollider);
         }
 
-        // Momentum korunumu: max(mevcut duvar koşusu hızı, wallJumpHorizontalSpeed)
-        float launchHorizontalSpeed = Mathf.Max(currentWallSpeed, wallJumpHorizontalSpeed);
+        float referenceSpeed = Mathf.Max(currentWallSpeed, motor != null ? motor.HorizontalSpeed : 0f);
+        float launchHorizontalSpeed = Mathf.Max(referenceSpeed, wallJumpHorizontalSpeed);
         Vector3 finalVelocity = (combinedHorizontalDir * launchHorizontalSpeed) + (Vector3.up * wallJumpUpSpeed);
 
         normalizedJumpDirection = finalVelocity.sqrMagnitude > 0.001f ? finalVelocity.normalized : Vector3.up;
         return finalVelocity;
     }
 
-    /// <summary>
-    /// Oyuncunun baktığı yönde 20 derece koni içinde 12 m menzilde başka bir "WallRunnable" duvar arar
-    /// ve bulursa yönü %30 o duvara doğru yaklaştırır.
-    /// </summary>
-    private Vector3 ApplyWallJumpAimAssist(Vector3 baseHorizontalDir, Vector3 lookHorizontalDir)
+    private Vector3 ApplyWallJumpAimAssist(Vector3 baseHorizontalDir, Vector3 lookHorizontalDir, Collider ignoredWallCollider)
     {
         Vector3 origin = transform.position + Vector3.up * raycastHeightOffset;
 
-        // Önce koni içinde 5 yelpaze ışını ile hızlı ve keskin yüzey araması yap
         float bestAngle = aimAssistConeAngle;
         Vector3 bestTargetDir = baseHorizontalDir;
         bool foundTargetWall = false;
@@ -505,17 +778,16 @@ public class WallRunHandler : MonoBehaviour
         int fanRayCount = 5;
         for (int i = 0; i < fanRayCount; i++)
         {
-            float t = (i / (float)(fanRayCount - 1)) * 2f - 1f; // -1 .. +1
+            float t = (i / (float)(fanRayCount - 1)) * 2f - 1f;
             float yawOffset = t * aimAssistConeAngle;
             Vector3 testDir = Quaternion.Euler(0f, yawOffset, 0f) * lookHorizontalDir;
 
             if (Physics.Raycast(origin, testDir, out RaycastHit hit, aimAssistMaxDistance, wallRunnableLayer, QueryTriggerInteraction.Ignore))
             {
-                if (hit.collider == activeWallCollider)
+                if (hit.collider == ignoredWallCollider)
                     continue;
 
-                float normalAngle = Vector3.Angle(hit.normal, Vector3.up);
-                if (normalAngle < minWallNormalAngle || normalAngle > maxWallNormalAngle)
+                if (!IsValidWallSurfaceHit(hit, out _))
                     continue;
 
                 float angleToLook = Vector3.Angle(lookHorizontalDir, testDir);
@@ -528,14 +800,13 @@ public class WallRunHandler : MonoBehaviour
             }
         }
 
-        // Eğer yelpaze ışınları ıskaladıysa OverlapSphere ile yakındaki duvarların en yakın noktasını kontrol et
         if (!foundTargetWall)
         {
             int count = Physics.OverlapSphereNonAlloc(origin, aimAssistMaxDistance, aimAssistColliders, wallRunnableLayer, QueryTriggerInteraction.Ignore);
             for (int i = 0; i < count; i++)
             {
                 Collider col = aimAssistColliders[i];
-                if (col == null || col == activeWallCollider)
+                if (col == null || col == ignoredWallCollider)
                     continue;
 
                 Vector3 closestPt = col.ClosestPoint(origin);
@@ -563,8 +834,20 @@ public class WallRunHandler : MonoBehaviour
         return baseHorizontalDir;
     }
 
-    private void StopWallRunAndFall()
+    private void StopWallRunAndFall(bool enableCoyote)
     {
+        if (enableCoyote && activeWallCollider != null)
+        {
+            wallJumpCoyoteTimer = wallJumpCoyoteTime;
+            coyoteWallNormal = activeWallNormal;
+            coyoteWallCollider = activeWallCollider;
+        }
+        else
+        {
+            wallJumpCoyoteTimer = 0f;
+            coyoteWallCollider = null;
+        }
+
         lastWallCollider = activeWallCollider;
         sameWallCooldownTimer = sameWallRegrabCooldown;
         motor.SetState(PlayerMotor.PlayerState.Airborne);
@@ -574,7 +857,7 @@ public class WallRunHandler : MonoBehaviour
     }
 
     /// <summary>
-    /// Dal tutunma (Hanging / Transferring) sonrası wall run'ı 0.2 sn kilitler.
+    /// Dal tutunma (Hanging / Transferring) sonrası wall run'ı kısa süre kilitler.
     /// </summary>
     public void TriggerPostBranchCooldown(float customCooldown = -1f)
     {
@@ -582,14 +865,18 @@ public class WallRunHandler : MonoBehaviour
         isWallLeft = false;
         isWallRight = false;
         lastWallCollider = null;
+        wallJumpCoyoteTimer = 0f;
+        coyoteWallCollider = null;
     }
 
     /// <summary>
-    /// Karakter yere değdiğinde son duvar kilidini ve zincir sayacını sıfırlar.
+    /// Karakter yere değdiğinde son duvar kilidini, coyote süresini ve zincir sayacını sıfırlar.
     /// </summary>
     public void ResetLastWallOnGrounded()
     {
         lastWallCollider = null;
+        coyoteWallCollider = null;
+        wallJumpCoyoteTimer = 0f;
         chainCount = 0;
         chainGraceTimer = 0f;
     }
@@ -604,18 +891,19 @@ public class WallRunHandler : MonoBehaviour
         isWallRight = false;
         activeWallCollider = null;
         lastWallCollider = null;
+        coyoteWallCollider = null;
         wallRunTimer = 0f;
+        wallJumpCoyoteTimer = 0f;
+        wallJumpBufferTimer = 0f;
         sameWallCooldownTimer = 0f;
         postBranchLockTimer = 0f;
         chainGraceTimer = 0f;
-        manualDropTimer = 0f;
         currentWallSpeed = 0f;
         chainCount = 0;
+        wallJumpAvailable = false;
+        lastWallJumpBlockReason = "none";
     }
 
-    /// <summary>
-    /// 1d) Duvara paralel eksenin hangi yönünün oyuncunun anlık mouse bakışına daha yakın olduğunu (dot product) bulur.
-    /// </summary>
     private Vector3 CalculateWallForwardDirection(Vector3 wallNormal)
     {
         Vector3 horizontalNormal = new Vector3(wallNormal.x, 0f, wallNormal.z).normalized;
@@ -630,9 +918,6 @@ public class WallRunHandler : MonoBehaviour
         return crossForward;
     }
 
-    /// <summary>
-    /// PlayerLook üzerinden gecikmesiz anlık yatay kamera bakış yönünü okur.
-    /// </summary>
     private Vector3 GetCameraHorizontalForward()
     {
         if (playerLook != null)
@@ -656,7 +941,6 @@ public class WallRunHandler : MonoBehaviour
         Vector3 origin = transform.position + Vector3.up * raycastHeightOffset;
         Vector3 baseForward = Application.isPlaying ? GetCameraHorizontalForward() : transform.forward;
 
-        // 8 yönlü duvar algılama raycast'lerini çiz
         for (int i = 0; i < DIRECTION_RAY_COUNT; i++)
         {
             float angle = i * DIRECTION_ANGLE_STEP;
@@ -665,7 +949,6 @@ public class WallRunHandler : MonoBehaviour
             Gizmos.DrawLine(origin, origin + rayDir * wallDetectDistance);
         }
 
-        // Oyuncudan çıkan yeşil ok: Wall Jump fırlama yönü
         if (lastWallJumpDirection.sqrMagnitude > 0.01f)
         {
             Gizmos.color = Color.green;

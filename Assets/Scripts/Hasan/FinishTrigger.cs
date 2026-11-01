@@ -4,13 +4,17 @@ using UnityEngine.Events;
 
 /// <summary>
 /// CANOPY: The Last Run - Oyun Sonu Bitiş Tetikleyicisi (Finish Trigger).
-/// Oyuncu ulaştığında sel durur ve GameFlowManager üzerinden "Kurtuldun" ekranı açılır.
+/// Oyuncu ulaştığında kontrolü kilitlemeden EndingSequence (selin arkaya ışınlanması, boğulma ve
+/// IUCN sinematik bilgi ekranı) sekansını başlatır. Eski "Kurtuldun" ekranı kaldırılmıştır.
 /// </summary>
 [RequireComponent(typeof(BoxCollider))]
 public class FinishTrigger : MonoBehaviour
 {
     [Header("Referanslar")]
-    [Tooltip("Oyun akışını ve bitiş ekranını yöneten GameFlowManager (boşsa otomatik bulunur).")]
+    [Tooltip("Oyun sonu boğulma ve bilgi ekranı sekansı yöneticisi (boşsa sahnede otomatik bulunur/oluşturulur).")]
+    [SerializeField] private EndingSequence endingSequence;
+
+    [Tooltip("Oyun akışını yöneten GameFlowManager (boşsa otomatik bulunur).")]
     [SerializeField] private GameFlowManager gameFlowManager;
 
     [Header("Olaylar")]
@@ -27,6 +31,11 @@ public class FinishTrigger : MonoBehaviour
         if (col != null)
         {
             col.isTrigger = true;
+        }
+
+        if (endingSequence == null)
+        {
+            endingSequence = FindObjectOfType<EndingSequence>();
         }
 
         if (gameFlowManager == null)
@@ -51,9 +60,24 @@ public class FinishTrigger : MonoBehaviour
         onFinishReachedEvent?.Invoke();
         OnFinishReached?.Invoke();
 
-        if (gameFlowManager != null)
+        if (endingSequence == null)
+        {
+            endingSequence = FindObjectOfType<EndingSequence>();
+        }
+
+        if (endingSequence != null)
+        {
+            endingSequence.StartEndingSequence();
+        }
+        else if (gameFlowManager != null)
         {
             gameFlowManager.CompleteLevel();
+        }
+        else
+        {
+            GameObject seqObj = new GameObject("EndingSequence_Runtime");
+            endingSequence = seqObj.AddComponent<EndingSequence>();
+            endingSequence.StartEndingSequence();
         }
     }
 
@@ -80,4 +104,3 @@ public class FinishTrigger : MonoBehaviour
         Gizmos.matrix = oldMatrix;
     }
 }
-
