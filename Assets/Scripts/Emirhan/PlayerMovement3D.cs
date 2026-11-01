@@ -29,7 +29,8 @@ public class PlayerMovement3D : MonoBehaviour
     [SerializeField] private float maxPitch = 65f;
     [SerializeField] private bool lockCursorOnStart = true;
 
-    [Header("Fall Safety & Water Layer Priority")]
+    [Header("Startup Ground Snap & Fall Safety (Zemine Batmayı Önleme)")]
+    [SerializeField] private bool snapToGroundOnStart = true; // Oyun başında yüksekten düşüp zemine gömülmeyi önler
     [SerializeField] private float fallRespawnY = -15f;
     [SerializeField] private int playerRenderQueue = 2010; // Suyun (2005) karakteri kapatmaması için üst katman
 
@@ -77,13 +78,21 @@ public class PlayerMovement3D : MonoBehaviour
         defaultMoveSpeed = moveSpeed;
         defaultSprintSpeed = sprintSpeed;
 
-        initialSpawnPosition = transform.position;
-        lastSafeGroundedPosition = transform.position;
-
-        // Karakterin fiziksel çarpışmalarda devrilmesini engelle ve 60 FPS akıcı kamera takibi için Interpolation aç
+        // Karakterin fiziksel çarpışmalarda devrilmesini ve zeminin içine girmesini (tunneling) engelle
         rb.constraints = RigidbodyConstraints.FreezeRotation;
         rb.interpolation = RigidbodyInterpolation.Interpolate;
-        rb.collisionDetectionMode = CollisionDetectionMode.Continuous;
+        rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
+
+        // Eğer karakterin üzerinde ikinci bir Collider (Pickup Range) varsa, onun katı çarpışma yapıp
+        // karakteri zemine itmemesi için Trigger olduğundan emin ol
+        Collider[] allColliders = GetComponents<Collider>();
+        for (int i = 0; i < allColliders.Length; i++)
+        {
+            if (allColliders[i] != capsuleCollider)
+            {
+                allColliders[i].isTrigger = true;
+            }
+        }
 
         yaw = transform.eulerAngles.y;
 
@@ -117,6 +126,56 @@ public class PlayerMovement3D : MonoBehaviour
         {
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;
+        }
+    }
+
+    private void Start()
+    {
+        if (snapToGroundOnStart)
+        {
+            SnapCharacterToGroundSurface();
+        }
+
+        initialSpawnPosition = transform.position;
+        lastSafeGroundedPosition = transform.position;
+    }
+
+    /// <summary>
+    /// Oyun başladığı anda karakterin yüksekten hızla düşüp ada zemininin içine gömülmesini önlemek için
+    /// karakterin ayak altını tam ada yüzeyine sıfır hızla oturtur.
+    /// </summary>
+    private void SnapCharacterToGroundSurface()
+    {
+        if (capsuleCollider == null) return;
+
+        rb.linearVelocity = Vector3.zero;
+        rb.angularVelocity = Vector3.zero;
+
+        Bounds bounds = capsuleCollider.bounds;
+        float pivotToBottom = transform.position.y - bounds.min.y;
+        Vector3 rayOrigin = new Vector3(transform.position.x, bounds.center.y + 2f, transform.position.z);
+
+        RaycastHit[] hits = Physics.RaycastAll(rayOrigin, Vector3.down, 20f, groundLayer, QueryTriggerInteraction.Ignore);
+        float highestGroundY = float.MinValue;
+        bool foundGround = false;
+
+        for (int i = 0; i < hits.Length; i++)
+        {
+            Collider hitCol = hits[i].collider;
+            if (hitCol != capsuleCollider && !hitCol.transform.IsChildOf(transform) && !hitCol.TryGetComponent<WaterLevelController>(out _))
+            {
+                if (hits[i].point.y > highestGroundY)
+                {
+                    highestGroundY = hits[i].point.y;
+                    foundGround = true;
+                }
+            }
+        }
+
+        if (foundGround)
+        {
+            transform.position = new Vector3(transform.position.x, highestGroundY + pivotToBottom + 0.02f, transform.position.z);
+            Physics.SyncTransforms();
         }
     }
 
