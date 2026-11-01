@@ -62,6 +62,9 @@ public class CheckpointManager : MonoBehaviour
     /// </summary>
     public void SaveCheckpoint(int checkpointIndex, string checkpointName, Vector3 position, Quaternion rotation)
     {
+        if (GameFlowManager.EndingActive)
+            return;
+
         if (onlyAllowForwardCheckpoints && hasSavedCheckpoint && checkpointIndex < lastCheckpointIndex)
             return;
 

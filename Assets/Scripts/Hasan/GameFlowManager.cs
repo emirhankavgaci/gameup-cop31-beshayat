@@ -3,13 +3,30 @@ using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// CANOPY: The Last Run - Yakalanma, Ölüm Sayacı, Süre Takibi, Respawn, Ekran Kararması / Su Altı Flaşı
-/// ve "Kurtuldun" Oyun Sonu Ekranı Yöneticisi.
-/// Sahnede UI Image / Canvas atanmamışsa çalışma zamanında (runtime) otomatik oluşturur.
+/// CANOPY: The Last Run - Yakalanma, Ölüm Sayacı, Süre Takibi, Respawn ve Ekran Kararması / Su Altı Flaşı Yöneticisi.
+/// Oyun sonu (EndingSequence) aktif olduğunda EndingActive bayrağı ile respawn ve checkpoint sistemini devre dışı bırakır.
+/// Eski "Kurtuldun" OnGUI ekranı kaldırılmıştır.
 /// </summary>
 public class GameFlowManager : MonoBehaviour
 {
     private const float DEFAULT_UNDERWATER_MAX_ALPHA = 0.40f;
+
+    /// <summary>
+    /// Final sekansı (EndingSequence) aktifken true olur.
+    /// Bu bayrak true iken rubber banding, checkpoint kaydı ve yakalanınca respawn olma devre dışıdır.
+    /// </summary>
+    public static bool EndingActive { get; private set; }
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    private static void ResetStaticEndingFlag()
+    {
+        EndingActive = false;
+    }
+
+    public static void SetEndingActive(bool active)
+    {
+        EndingActive = active;
+    }
 
     [Header("Temel Sistem Referansları")]
     [Tooltip("Oyuncu hareket ve state yöneticisi.")]
@@ -24,11 +41,14 @@ public class GameFlowManager : MonoBehaviour
     [Tooltip("Kamera sarsıntı yöneticisi.")]
     [SerializeField] private CameraShake cameraShake;
 
+    [Tooltip("Oyun sonu boğulma ve bilgi ekranı sekansı yöneticisi (boşsa otomatik bulunur).")]
+    [SerializeField] private EndingSequence endingSequence;
+
     [Header("Yakalanma ve Respawn Ayarları")]
     [Tooltip("Yakalanınca ekran kararması ve son checkpoint'e ışınlanma arasındaki bekleme süresi (varsayılan 1.2 sn).")]
     [SerializeField] private float respawnDelay = 1.2f;
 
-    [Tooltip("Respawn sonrasında selin oyuncunun ne kadar gerisine yerleşeceği (varsayılan 60 m).")]
+    [Tooltip("Respawn sonrasında selin oyuncunun ne kadar gerisine yerleşeceği (varsayılan 80 m).")]
     [SerializeField] private float respawnFloodDistance = 80f;
 
     [Tooltip("Respawn sonrasında selin tekrar harekete geçmeden önce kısa bekleme süresi (sn).")]
@@ -57,12 +77,6 @@ public class GameFlowManager : MonoBehaviour
     private bool isRespawning;
     private bool isLevelCompleted;
 
-    // Bitiş ekranı için OnGUI stilleri
-    private GUIStyle victoryBoxStyle;
-    private GUIStyle victoryTitleStyle;
-    private GUIStyle victoryStatStyle;
-    private GUIStyle victoryButtonStyle;
-
     // Dış erişim özellikleri (FloodDebugHUD için)
     public int DeathCount => deathCount;
     public float ElapsedTime => elapsedTime;
@@ -72,7 +86,8 @@ public class GameFlowManager : MonoBehaviour
 
     private void Awake()
     {
-        // Sahnede eski 40m değeri kayıtlı kaldıysa otomatik 60m'ye güncelle
+        EndingActive = false;
+
         if (Mathf.Approximately(respawnFloodDistance, 40f))
         {
             respawnFloodDistance = 80f;
@@ -89,6 +104,9 @@ public class GameFlowManager : MonoBehaviour
 
         if (cameraShake == null)
             cameraShake = FindObjectOfType<CameraShake>();
+
+        if (endingSequence == null)
+            endingSequence = FindObjectOfType<EndingSequence>();
 
         EnsureRuntimeOverlayUI();
     }
@@ -112,28 +130,22 @@ public class GameFlowManager : MonoBehaviour
 
     private void Update()
     {
-        if (!isLevelCompleted)
+        if (!isLevelCompleted && !EndingActive)
         {
             elapsedTime += Time.deltaTime;
         }
 
-        // R tuşuyla (debug) son checkpoint'e dönme
-        if (Input.GetKeyDown(debugRespawnKey) && !isRespawning)
+        // R tuşuyla (debug) son checkpoint'e dönme (EndingActive iken devre dışıdır)
+        if (!EndingActive && Input.GetKeyDown(debugRespawnKey) && !isRespawning)
         {
-            if (isLevelCompleted)
-            {
-                RestartFromLastCheckpoint(resetStats: false);
-            }
-            else
-            {
-                RespawnImmediatelyAtLastCheckpoint();
-            }
+            RespawnImmediatelyAtLastCheckpoint();
         }
     }
 
     private void HandlePlayerCaught()
     {
-        if (isRespawning || isLevelCompleted)
+        // Final sekansı (EndingActive) sırasında yakalanınca respawn OLMAZ (EndingSequence boğulmayı yönetir)
+        if (EndingActive || isRespawning || isLevelCompleted)
             return;
 
         deathCount++;
@@ -142,10 +154,11 @@ public class GameFlowManager : MonoBehaviour
 
     /// <summary>
     /// Kaktüs veya diken gibi bir engele çarpıldığında oyuncuyu son checkpoint'e gönderir.
+    /// Final sekansı (EndingActive) sırasında devre dışıdır.
     /// </summary>
     public void TriggerObstacleRespawn(bool instantTeleport = true)
     {
-        if (isRespawning || isLevelCompleted)
+        if (EndingActive || isRespawning || isLevelCompleted)
             return;
 
         deathCount++;
@@ -169,40 +182,41 @@ public class GameFlowManager : MonoBehaviour
     {
         isRespawning = true;
 
-        // Oyuncu yakalandığında kontrolü dondur
         if (playerMotor != null)
         {
             playerMotor.SetVelocity(Vector3.zero);
             playerMotor.SetCharacterControllerEnabled(false);
         }
 
-        // 1. Kısa mavi su altı flaşı (%40 opaklık) + ekranın siyaha kararması (1.2 sn toplam süre)
         float halfDelay = Mathf.Max(0.2f, respawnDelay);
         float elapsed = 0f;
 
         while (elapsed < halfDelay)
         {
+            if (EndingActive)
+            {
+                SetImageAlpha(underwaterFlashImage, underwaterOverlayColor, 0f);
+                SetImageAlpha(blackFadeImage, Color.black, 0f);
+                isRespawning = false;
+                yield break;
+            }
+
             elapsed += Time.deltaTime;
             float normalizedTime = Mathf.Clamp01(elapsed / halfDelay);
 
-            // İlk anda hızlıca %40 mavi su altı tonu belirir
             float underwaterAlpha = Mathf.Sin(Mathf.Clamp01(normalizedTime * 1.4f) * Mathf.PI * 0.5f) * underwaterOverlayColor.a;
             SetImageAlpha(underwaterFlashImage, underwaterOverlayColor, underwaterAlpha);
 
-            // Ekran siyaha kararır
             float blackAlpha = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(elapsed / Mathf.Max(0.15f, halfDelay * 0.75f)));
             SetImageAlpha(blackFadeImage, Color.black, blackAlpha);
 
             yield return null;
         }
 
-        // 2. 1.2 sn sonunda oyuncuyu son checkpoint'e ışınla, hızı ve state'i sıfırla, seli geri çek
         PerformTeleportAndReset();
 
-        // Kısa bir kare fizik senkronizasyonu bekle
         yield return null;
 
-        // 3. Ekranı yumuşakça geri aç
         float fadeInElapsed = 0f;
         float fadeInTime = Mathf.Max(0.15f, fadeOutInDuration);
         while (fadeInElapsed < fadeInTime)
@@ -223,11 +237,11 @@ public class GameFlowManager : MonoBehaviour
         isRespawning = false;
     }
 
-    /// <summary>
-    /// R tuşuna basıldığında beklemeden son checkpoint'e döndürür ve seli respawnFloodDistance kadar geriye çeker.
-    /// </summary>
     public void RespawnImmediatelyAtLastCheckpoint()
     {
+        if (EndingActive)
+            return;
+
         StopAllCoroutines();
         isRespawning = false;
         SetImageAlpha(underwaterFlashImage, underwaterOverlayColor, 0f);
@@ -264,48 +278,25 @@ public class GameFlowManager : MonoBehaviour
     }
 
     /// <summary>
-    /// FinishTrigger'a ulaşıldığında çağrılır: seli durdurur ve "Kurtuldun" ekranını açar.
+    /// FinishTrigger'a ulaşıldığında çağrılır: eski "Kurtuldun" ekranı yerine yeni EndingSequence başlatılır.
     /// </summary>
     public void CompleteLevel()
     {
-        if (isLevelCompleted)
+        if (isLevelCompleted || EndingActive)
             return;
 
         isLevelCompleted = true;
 
-        if (floodChaser != null)
+        if (endingSequence == null)
         {
-            floodChaser.StopFlood();
+            endingSequence = FindObjectOfType<EndingSequence>();
+            if (endingSequence == null)
+            {
+                endingSequence = gameObject.AddComponent<EndingSequence>();
+            }
         }
 
-        if (cameraShake != null)
-        {
-            cameraShake.ClearOffsets();
-        }
-
-        Cursor.lockState = CursorLockMode.None;
-        Cursor.visible = true;
-    }
-
-    private void RestartFromLastCheckpoint(bool resetStats)
-    {
-        isLevelCompleted = false;
-        if (resetStats)
-        {
-            deathCount = 0;
-            elapsedTime = 0f;
-        }
-
-        FinishTrigger[] finishTriggers = FindObjectsOfType<FinishTrigger>();
-        for (int i = 0; i < finishTriggers.Length; i++)
-        {
-            finishTriggers[i].ResetFinishTrigger();
-        }
-
-        Cursor.lockState = CursorLockMode.Locked;
-        Cursor.visible = false;
-
-        RespawnImmediatelyAtLastCheckpoint();
+        endingSequence.StartEndingSequence();
     }
 
     private void EnsureRuntimeOverlayUI()
@@ -372,67 +363,4 @@ public class GameFlowManager : MonoBehaviour
         float secs = seconds - (mins * 60f);
         return $"{mins:00}:{secs:00.00}";
     }
-
-    private void OnGUI()
-    {
-        if (!isLevelCompleted)
-            return;
-
-        EnsureVictoryGuiStyles();
-
-        float boxW = 460f;
-        float boxH = 260f;
-        float boxX = (Screen.width - boxW) * 0.5f;
-        float boxY = (Screen.height - boxH) * 0.5f;
-
-        GUI.Box(new Rect(boxX, boxY, boxW, boxH), GUIContent.none, victoryBoxStyle);
-
-        GUILayout.BeginArea(new Rect(boxX + 24f, boxY + 22f, boxW - 48f, boxH - 44f));
-
-        GUILayout.Label("KURTULDUN!", victoryTitleStyle);
-        GUILayout.Space(14f);
-
-        GUILayout.Label($"Toplam Süre: <b>{FormatElapsedTime(elapsedTime)}</b>", victoryStatStyle);
-        GUILayout.Space(6f);
-        GUILayout.Label($"Ölüm Sayısı: <b>{deathCount}</b>", victoryStatStyle);
-        GUILayout.Space(22f);
-
-        if (GUILayout.Button("Son Checkpoint'ten Devam Et [R]", victoryButtonStyle, GUILayout.Height(36f)))
-        {
-            RestartFromLastCheckpoint(resetStats: false);
-        }
-
-        GUILayout.EndArea();
-    }
-
-    private void EnsureVictoryGuiStyles()
-    {
-        if (victoryBoxStyle != null)
-            return;
-
-        victoryBoxStyle = new GUIStyle(GUI.skin.box);
-
-        victoryTitleStyle = new GUIStyle(GUI.skin.label)
-        {
-            fontSize = 30,
-            fontStyle = FontStyle.Bold,
-            alignment = TextAnchor.MiddleCenter
-        };
-        victoryTitleStyle.normal.textColor = new Color(0.35f, 1f, 0.55f, 1f);
-
-        victoryStatStyle = new GUIStyle(GUI.skin.label)
-        {
-            fontSize = 18,
-            richText = true,
-            alignment = TextAnchor.MiddleCenter
-        };
-        victoryStatStyle.normal.textColor = Color.white;
-
-        victoryButtonStyle = new GUIStyle(GUI.skin.button)
-        {
-            fontSize = 15,
-            fontStyle = FontStyle.Bold
-        };
-    }
 }
-

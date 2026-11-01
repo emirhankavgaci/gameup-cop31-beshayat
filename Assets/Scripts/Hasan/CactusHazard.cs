@@ -96,7 +96,7 @@ public class CactusHazard : MonoBehaviour
     /// </summary>
     public void HandlePlayerHit(PlayerMotor motor)
     {
-        if (motor == null)
+        if (motor == null || GameFlowManager.EndingActive)
             return;
 
         if (Time.time - lastHitTime < hitCooldown)
