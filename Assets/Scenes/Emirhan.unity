@@ -15,11 +15,11 @@ RenderSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 10
   m_Fog: 1
-  m_FogColor: {r: 0.5730687, g: 0.8260716, b: 0.8867924, a: 1}
-  m_FogMode: 3
+  m_FogColor: {r: 0.384256, g: 0.754717, b: 0.35955858, a: 1}
+  m_FogMode: 1
   m_FogDensity: 0.005
-  m_LinearFogStart: 0
-  m_LinearFogEnd: 300
+  m_LinearFogStart: 15
+  m_LinearFogEnd: 30
   m_AmbientSkyColor: {r: 0.212, g: 0.227, b: 0.259, a: 1}
   m_AmbientEquatorColor: {r: 0.114, g: 0.125, b: 0.133, a: 1}
   m_AmbientGroundColor: {r: 0.047, g: 0.043, b: 0.035, a: 1}
@@ -43722,7 +43722,6 @@ Transform:
   - {fileID: 1139549641}
   - {fileID: 1062641939}
   - {fileID: 120776884}
-  - {fileID: 7530717525200878091}
   - {fileID: 8697193436635587289}
   - {fileID: 4626620748510678322}
   - {fileID: 1896686585519862965}
@@ -45272,21 +45271,6 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 1624268339745616459, guid: 4a6dc37b4f15b804ea852e21ead78e51, type: 3}
   m_PrefabInstance: {fileID: 5026392437094799979}
   m_PrefabAsset: {fileID: 0}
---- !u!4 &7530717525200878091
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8010891617113105875}
-  serializedVersion: 2
-  m_LocalRotation: {x: -0.7071068, y: 0, z: -0, w: 0.7071067}
-  m_LocalPosition: {x: -0, y: 0, z: 0}
-  m_LocalScale: {x: 100, y: 100, z: 100}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 543450653000088175}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &7605447408747511480
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -45360,22 +45344,6 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 532344208027134710}
   m_Mesh: {fileID: 6732850581507961659, guid: cabaaf748ff28ee46b78f37a139abac3, type: 3}
---- !u!1 &8010891617113105875
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 7530717525200878091}
-  m_Layer: 0
-  m_Name: NEP
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
 --- !u!4 &8039890803330648822
 Transform:
   m_ObjectHideFlags: 0
