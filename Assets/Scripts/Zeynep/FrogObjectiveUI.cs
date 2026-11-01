@@ -10,6 +10,33 @@ public class FrogObjectiveUI : MonoBehaviour
     [Header("UI")]
     [SerializeField] private bool showObjectives = true;
 
+    public bool AllObjectivesCompleted
+    {
+        get
+        {
+            if (friends == null || spots == null)
+                return false;
+
+            int fedCount = 0;
+            int plantedCount = 0;
+
+            foreach (FriendFrog friend in friends)
+            {
+                if (friend != null && friend.IsFed)
+                    fedCount++;
+            }
+
+            foreach (PlantingSpot spot in spots)
+            {
+                if (spot != null && spot.IsPlanted)
+                    plantedCount++;
+            }
+
+            return fedCount >= requiredFrogs &&
+                   plantedCount >= requiredSeeds;
+        }
+    }
+
     private FriendFrog[] friends;
     private PlantingSpot[] spots;
 

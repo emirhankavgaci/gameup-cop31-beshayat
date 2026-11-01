@@ -44,6 +44,17 @@ public class FrogController : MonoBehaviour
     [SerializeField] private CapsuleCollider frogCollider;
     [SerializeField] private float obstacleSkin = 0.05f;
 
+    [Header("Swimming")]
+    [SerializeField] private LayerMask waterLayer;
+    [SerializeField] private float waterCheckHeight = 5f;
+    [SerializeField] private float waterCheckDistance = 12f;
+    [SerializeField] private float swimSurfaceOffset = 0.35f;
+    [SerializeField] private float swimFollowSpeed = 5f;
+    [SerializeField] private float swimBobAmount = 0.05f;
+    [SerializeField] private float swimBobSpeed = 3f;
+
+    private bool isSwimming;
+
     private Rigidbody rb;
 
     private float moveInput;
@@ -253,6 +264,29 @@ public class FrogController : MonoBehaviour
         return false;
     }
 
+    private bool TryGetWaterHeight(
+    Vector3 position,
+    out float waterY)
+    {
+        Vector3 rayOrigin =
+            position + Vector3.up * waterCheckHeight;
+
+        if (Physics.Raycast(
+            rayOrigin,
+            Vector3.down,
+            out RaycastHit hit,
+            waterCheckDistance,
+            waterLayer,
+            QueryTriggerInteraction.Ignore))
+        {
+            waterY = hit.point.y;
+            return true;
+        }
+
+        waterY = position.y;
+        return false;
+    }
+
     private void HandleAttack()
     {
         if (!Input.GetMouseButtonDown(0))
@@ -452,20 +486,48 @@ public class FrogController : MonoBehaviour
         MoveFrog(direction, speed);
     }
 
+
     private void MoveFrog(Vector3 direction, float speed)
     {
         float dt = Time.fixedDeltaTime;
 
         Vector3 movement = direction * speed * dt;
 
-        // Önümüzde engel varsa hareket mesafesini sýnýrla.
         movement = CheckObstacle(movement);
 
         Vector3 nextPosition = rb.position + movement;
 
-        if (TryGetGroundHeight(
+        bool hasGround = TryGetGroundHeight(
             nextPosition,
-            out float targetGroundY))
+            out float targetGroundY
+        );
+
+        bool hasWater = TryGetWaterHeight(
+            nextPosition,
+            out float waterY
+        );
+
+        // Kara su yüzeyinden yüksekse karada kal.
+        bool shouldSwim = hasWater &&
+            (!hasGround || targetGroundY < waterY + swimSurfaceOffset);
+
+        isSwimming = shouldSwim && !isJumping;
+
+        if (isSwimming)
+        {
+            float bob = Mathf.Sin(
+                Time.time * swimBobSpeed
+            ) * swimBobAmount;
+
+            float targetY = waterY + swimSurfaceOffset + bob;
+
+            nextPosition.y = Mathf.MoveTowards(
+                rb.position.y,
+                targetY,
+                swimFollowSpeed * dt
+            );
+        }
+        else if (hasGround)
         {
             if (isJumping)
             {
@@ -489,12 +551,9 @@ public class FrogController : MonoBehaviour
                 jumpTimer / Mathf.Max(0.01f, jumpDuration)
             );
 
-            // 0 -> 1 -> 0 þeklinde zýplama yayý.
             float jumpHeightNow =
                 Mathf.Sin(progress * Mathf.PI) * jumpHeight;
 
-            // Zýplama yüksekliðini baþlangýç konumuna
-            // göre uygula; zemin yükselirse iniþi de takip et.
             float baseY = Mathf.MoveTowards(
                 rb.position.y - jumpLastHeight,
                 jumpGroundY,
@@ -520,6 +579,7 @@ public class FrogController : MonoBehaviour
 
         rb.MovePosition(nextPosition);
     }
+
 
 
     private void OnTriggerEnter(Collider other)
