@@ -32,6 +32,7 @@ public class FriendFrog : MonoBehaviour
         audioSource = GetComponent<AudioSource>();
         audioSource.playOnAwake = false;
         audioSource.spatialBlend = 1f;
+
         if (heartEffect == null)
             heartEffect = GetComponent<FriendFrogHeartEffect>();
     }
@@ -47,7 +48,6 @@ public class FriendFrog : MonoBehaviour
             audioSource.PlayOneShot(frogSound);
     }
 
-
     public bool Feed(FrogFoodCollector collector)
     {
         if (!isAlive || isFed || collector == null)
@@ -61,6 +61,9 @@ public class FriendFrog : MonoBehaviour
 
         isFed = true;
 
+        // Baþarýlý besleme sesini çal.
+        AudioManager.Instance?.PlayFriendFeed();
+
         if (heartEffect != null)
             heartEffect.Play();
 
@@ -70,7 +73,8 @@ public class FriendFrog : MonoBehaviour
         Interact();
 
         // Göletin saðlýðýný artýrýr.
-        PondHealthManager pond = FindFirstObjectByType<PondHealthManager>();
+        PondHealthManager pond =
+            FindFirstObjectByType<PondHealthManager>();
 
         if (pond != null)
             pond.Heal(healAmount);
@@ -79,7 +83,6 @@ public class FriendFrog : MonoBehaviour
 
         return true;
     }
-
 
     public void Die()
     {

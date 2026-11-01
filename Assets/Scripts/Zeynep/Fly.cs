@@ -34,6 +34,9 @@ public class Fly : MonoBehaviour
         // Dil çýkarma animasyonunu bekle.
         yield return new WaitForSeconds(destroyDelay);
 
+        // Sinek yeme sesini çal.
+        AudioManager.Instance?.PlayFlyEat();
+
         // Sineðin kaybolduðu noktada efekt oluþtur.
         if (catchEffectPrefab != null)
         {
@@ -45,7 +48,6 @@ public class Fly : MonoBehaviour
 
             effect.Play();
 
-            // Efekt bittikten sonra temizle.
             float effectLifetime =
                 effect.main.duration +
                 effect.main.startLifetime.constantMax;
