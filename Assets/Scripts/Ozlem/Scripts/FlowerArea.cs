@@ -14,8 +14,7 @@ public class FlowerArea : MonoBehaviour
     [SerializeField, Range(0f, 1f)] private float lowThreshold = 0.3f;
     [SerializeField, Range(0f, 1f)] private float mediumThreshold = 0.7f;
 
-    [SerializeField] private FlowerSpawnManager spawnManager;
-
+    private FlowerSpawnManager spawnManager;
     private readonly List<FlowerNectar> flowers = new();
 
     private int initialPollenCapacity;
@@ -34,11 +33,14 @@ public class FlowerArea : MonoBehaviour
         }
     }
 
+    public void SetSpawnManager(FlowerSpawnManager manager)
+    {
+        spawnManager = manager;
+    }
+
     private void OnTriggerEnter(Collider other)
     {
-        FlowerNectar flower = other.GetComponentInParent<FlowerNectar>();
-
-        RegisterFlower(flower);
+        RegisterFlower(other.GetComponentInParent<FlowerNectar>());
     }
 
     private void OnTriggerExit(Collider other)
@@ -74,8 +76,10 @@ public class FlowerArea : MonoBehaviour
         UpdateAreaColor();
     }
 
-    public bool TryCollectNectar()
+    public bool TryCollectNectar(out Vector3 flowerPosition)
     {
+        flowerPosition = Vector3.zero;
+
         for (int i = 0; i < flowers.Count; i++)
         {
             if (flowers[i] == null)
@@ -85,14 +89,29 @@ public class FlowerArea : MonoBehaviour
                 continue;
             }
 
-            if (flowers[i].TryTakeNectar())
+            FlowerNectar flower = flowers[i];
+            Vector3 position = flower.transform.position;
+
+            if (flower.TryTakeNectar())
             {
+                flowerPosition = position;
                 UpdateAreaColor();
                 return true;
             }
         }
 
         return false;
+    }
+
+    public void RegisterPollen(int amount)
+    {
+        if (spawnManager == null)
+        {
+            Debug.LogError($"{name}: FlowerSpawnManager ba?lant?s? yok!");
+            return;
+        }
+
+        spawnManager.RegisterPollen(amount, this);
     }
 
     private void UpdateAreaColor()
@@ -124,10 +143,5 @@ public class FlowerArea : MonoBehaviour
         areaRenderer.GetPropertyBlock(propertyBlock);
         propertyBlock.SetColor(colorPropertyId, targetColor);
         areaRenderer.SetPropertyBlock(propertyBlock);
-    }
-    public void RegisterPollen(int amount)
-    {
-        if (spawnManager != null)
-            spawnManager.RegisterPollen(amount, this);
     }
 }

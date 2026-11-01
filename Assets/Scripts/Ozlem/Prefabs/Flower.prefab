@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 570811414796720420}
   - component: {fileID: 6724151992835744398}
   - component: {fileID: 6695009489979734632}
+  - component: {fileID: 573515260911924646}
   m_Layer: 0
   m_Name: Flower
   m_TagString: Flower
@@ -126,5 +127,21 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::FlowerNectar
   capacitySO: {fileID: 11400000, guid: 4626ce17c860fdb44b46d42d8ddcedf9, type: 2}
+  deathAnimation: {fileID: 573515260911924646}
   currentNectar: 0
   capacity: 0
+--- !u!114 &573515260911924646
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7478609075639278472}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bba5ad99e8a680a4aaec48cf4956588a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::FlowerDeathAnimation
+  duration: 1.2
+  rotationSpeed: 540
+  sinkDistance: 0.8

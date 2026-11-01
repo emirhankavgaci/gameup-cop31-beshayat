@@ -3,6 +3,7 @@ using UnityEngine;
 public class FlowerNectar : MonoBehaviour
 {
     [SerializeField] private PollenCapacitySO capacitySO;
+    [SerializeField] private FlowerDeathAnimation deathAnimation;
 
     [SerializeField] private int currentNectar;
     [SerializeField] private int capacity;
@@ -27,7 +28,12 @@ public class FlowerNectar : MonoBehaviour
         currentNectar--;
 
         if (currentNectar <= 0)
-            Destroy(gameObject);
+        {
+            if (deathAnimation != null)
+                deathAnimation.PlayDeath();
+            else
+                Destroy(gameObject);
+        }
 
         return true;
     }

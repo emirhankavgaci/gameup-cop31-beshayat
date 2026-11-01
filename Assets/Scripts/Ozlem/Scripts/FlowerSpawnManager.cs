@@ -1,3 +1,4 @@
+
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -14,21 +15,24 @@ public class FlowerSpawnManager : MonoBehaviour
     [SerializeField] private int maxFlowerCount = 25;
 
     [Header("Pollination")]
-    [SerializeField] private int pollenPerFlower = 10;
+    [SerializeField] private int pollenPerFlower = 2;
 
     private int collectedPollen;
 
-
     private void Start()
     {
+        foreach (FlowerArea area in spawnAreas)
+        {
+            if (area != null)
+                area.SetSpawnManager(this);
+        }
+
         int flowerCount = Random.Range(
             minFlowerCount,
             maxFlowerCount + 1);
 
         for (int i = 0; i < flowerCount; i++)
-        {
             SpawnFlower();
-        }
 
         foreach (FlowerArea area in spawnAreas)
         {
@@ -37,9 +41,11 @@ public class FlowerSpawnManager : MonoBehaviour
         }
     }
 
-
     public void RegisterPollen(int amount, FlowerArea targetArea)
     {
+        if (amount <= 0 || pollenPerFlower <= 0 || targetArea == null)
+            return;
+
         collectedPollen += amount;
 
         while (collectedPollen >= pollenPerFlower)
@@ -53,7 +59,7 @@ public class FlowerSpawnManager : MonoBehaviour
 
     private bool SpawnFlower()
     {
-        if (spawnAreas.Count == 0)
+        if (spawnAreas == null || spawnAreas.Count == 0)
             return false;
 
         FlowerArea area = spawnAreas[
@@ -64,24 +70,36 @@ public class FlowerSpawnManager : MonoBehaviour
 
     private bool SpawnFlower(FlowerArea area)
     {
-        if (area == null || flowerPrefabs.Count == 0)
-            return false;
-
-        GameObject prefab = flowerPrefabs[
-            Random.Range(0, flowerPrefabs.Count)];
-
-        if (prefab == null || !prefab.CompareTag("Flower"))
-            return false;
-
-        FlowerNectar flowerNectar = prefab.GetComponent<FlowerNectar>();
-
-        if (flowerNectar == null)
+        if (area == null || flowerPrefabs == null)
             return false;
 
         Collider areaCollider = area.GetComponent<Collider>();
 
         if (areaCollider == null)
+        {
+            Debug.LogError($"{area.name}: Collider bulunamad?!");
             return false;
+        }
+
+        List<GameObject> validPrefabs = new();
+
+        foreach (GameObject prefab in flowerPrefabs)
+        {
+            if (prefab != null &&
+                prefab.GetComponentInChildren<FlowerNectar>() != null)
+            {
+                validPrefabs.Add(prefab);
+            }
+        }
+
+        if (validPrefabs.Count == 0)
+        {
+            Debug.LogError("FlowerSpawnManager: Geçerli FlowerNectar prefab? bulunamad?!");
+            return false;
+        }
+
+        GameObject selectedPrefab = validPrefabs[
+            Random.Range(0, validPrefabs.Count)];
 
         Bounds bounds = areaCollider.bounds;
 
@@ -95,12 +113,20 @@ public class FlowerSpawnManager : MonoBehaviour
         position.y = area.transform.position.y;
 
         GameObject flower = Instantiate(
-            prefab,
+            selectedPrefab,
             position,
-            prefab.transform.rotation
+            selectedPrefab.transform.rotation
         );
 
-        area.RegisterFlower(flower.GetComponent<FlowerNectar>());
+        FlowerNectar nectar = flower.GetComponentInChildren<FlowerNectar>();
+
+        if (nectar == null)
+        {
+            Destroy(flower);
+            return false;
+        }
+
+        area.RegisterFlower(nectar);
 
         return true;
     }
