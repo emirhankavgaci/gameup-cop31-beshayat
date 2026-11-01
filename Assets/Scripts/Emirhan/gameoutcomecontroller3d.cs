@@ -6,7 +6,8 @@ using TMPro;
 
 /// <summary>
 /// Unity 6 (6000.x) uyumlu, Kazanma ("Korku Değil Ümit") ve Kaybetme (Nehir Kurudu) durumlarını,
-/// Su Miktarı Barını, 5x4 Baraj İlerleme Arayüzünü, Köşe Kontrol Rehberini ve Sahne Yeniden Başlatmayı yöneten kontrolcü.
+/// Su Miktarı Barını, 5x4 Baraj İlerleme Arayüzünü, Köşe Kontrol Rehberini,
+/// Sadece Bu Sahneye Özel 60 FPS (Düşük Sistemde Otomatik 30 FPS Fallback) Ayarını ve Sahne Yeniden Başlatmayı yöneten kontrolcü.
 /// </summary>
 public class GameOutcomeController3D : MonoBehaviour
 {
@@ -30,15 +31,39 @@ public class GameOutcomeController3D : MonoBehaviour
     [SerializeField] [TextArea(2, 4)] private string defaultControlsHint =
         "WASD: Movement  |  Shift: Run  |  Space: Jump  |  Mouse: Look Around  |  Left Mouse Button (Hold): Carry";
 
+    [Header("Sahneye Özel 60 FPS & Otomatik 30 FPS Fallback (Diğer Sahneleri Etkilemez)")]
+    [SerializeField] private bool enableSceneFpsControl = true;
+    [SerializeField] private int preferredFps = 60;
+    [SerializeField] private int fallbackFps = 30;
+    [SerializeField] private float lowFpsThreshold = 45f; // Ortalama FPS bu değerin altına düşerse 30 FPS'e sabitler
+
     [Header("Kısayol Ayarları")]
     [SerializeField] private bool allowRKeyToRestart = true;
 
     private bool isGameEnded = false;
     private bool isReloadingScene = false;
+    private int previousTargetFrameRate;
+    private int previousVSyncCount;
+    private float smoothedDeltaTime = 0.016f;
+    private float lowFpsTimer = 0f;
+    private bool hasFallenBackTo30Fps = false;
+
     public bool IsGameEnded => isGameEnded;
 
     private void Awake()
     {
+        Time.timeScale = 1f;
+
+        if (enableSceneFpsControl)
+        {
+            // Diğer ekip arkadaşlarının sahnelerini etkilememek için önceki ayarları kaydet
+            previousTargetFrameRate = Application.targetFrameRate;
+            previousVSyncCount = QualitySettings.vSyncCount;
+
+            QualitySettings.vSyncCount = 0;
+            Application.targetFrameRate = preferredFps;
+        }
+
         if (waterController == null)
             waterController = FindAnyObjectByType<WaterLevelController>();
 
@@ -70,6 +95,13 @@ public class GameOutcomeController3D : MonoBehaviour
     private void OnDestroy()
     {
         UnsubscribeEvents();
+
+        // Başka bir ekip arkadaşının sahnesine geçilirse eski FPS/VSync ayarlarını geri yükle
+        if (enableSceneFpsControl && !isReloadingScene)
+        {
+            QualitySettings.vSyncCount = previousVSyncCount;
+            Application.targetFrameRate = previousTargetFrameRate;
+        }
     }
 
     private void SubscribeEvents()
@@ -123,6 +155,27 @@ public class GameOutcomeController3D : MonoBehaviour
     private void Update()
     {
         if (isReloadingScene) return;
+
+        // Sistem 60 FPS'i kaldıramıyorsa (2.5 saniye boyunca 45 FPS altında kalırsa) dalgalanmayı önlemek için 30 FPS'e sabitle
+        if (enableSceneFpsControl && !hasFallenBackTo30Fps && Time.timeSinceLevelLoad > 2.0f)
+        {
+            smoothedDeltaTime += (Time.unscaledDeltaTime - smoothedDeltaTime) * 0.1f;
+            float currentFps = 1f / Mathf.Max(0.0001f, smoothedDeltaTime);
+
+            if (currentFps < lowFpsThreshold)
+            {
+                lowFpsTimer += Time.unscaledDeltaTime;
+                if (lowFpsTimer >= 2.5f)
+                {
+                    hasFallenBackTo30Fps = true;
+                    Application.targetFrameRate = fallbackFps;
+                }
+            }
+            else
+            {
+                lowFpsTimer = Mathf.Max(0f, lowFpsTimer - Time.unscaledDeltaTime);
+            }
+        }
 
         // 'R' tuşuna basarak her an (veya oyun bittiğinde) sahneyi hızlıca yeniden başlatabilme
         if (allowRKeyToRestart && Keyboard.current != null)

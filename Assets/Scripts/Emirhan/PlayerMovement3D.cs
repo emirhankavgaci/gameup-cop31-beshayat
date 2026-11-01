@@ -80,8 +80,10 @@ public class PlayerMovement3D : MonoBehaviour
         initialSpawnPosition = transform.position;
         lastSafeGroundedPosition = transform.position;
 
-        // Karakterin fiziksel çarpışmalarda devrilmesini ve fizik motoru yüzünden dönmesini engelle
+        // Karakterin fiziksel çarpışmalarda devrilmesini engelle ve 60 FPS akıcı kamera takibi için Interpolation aç
         rb.constraints = RigidbodyConstraints.FreezeRotation;
+        rb.interpolation = RigidbodyInterpolation.Interpolate;
+        rb.collisionDetectionMode = CollisionDetectionMode.Continuous;
 
         yaw = transform.eulerAngles.y;
 
