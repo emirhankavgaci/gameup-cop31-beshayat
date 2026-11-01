@@ -1,16 +1,44 @@
+
 using System.Collections.Generic;
 using UnityEngine;
 
 public class FlowerArea : MonoBehaviour
 {
+    [Header("Visual")]
+    [SerializeField] private Renderer areaRenderer;
+    [SerializeField] private Color lowColor = Color.red;
+    [SerializeField] private Color mediumColor = Color.yellow;
+    [SerializeField] private Color highColor = Color.green;
+
+    [Header("Color Thresholds")]
+    [SerializeField, Range(0f, 1f)] private float lowThreshold = 0.3f;
+    [SerializeField, Range(0f, 1f)] private float mediumThreshold = 0.7f;
+
+    [SerializeField] private FlowerSpawnManager spawnManager;
+
     private readonly List<FlowerNectar> flowers = new();
+
+    private int initialPollenCapacity;
+    private MaterialPropertyBlock propertyBlock;
+    private int colorPropertyId;
+
+    private void Awake()
+    {
+        propertyBlock = new MaterialPropertyBlock();
+
+        if (areaRenderer != null)
+        {
+            colorPropertyId = areaRenderer.sharedMaterial.HasProperty("_BaseColor")
+                ? Shader.PropertyToID("_BaseColor")
+                : Shader.PropertyToID("_Color");
+        }
+    }
 
     private void OnTriggerEnter(Collider other)
     {
         FlowerNectar flower = other.GetComponentInParent<FlowerNectar>();
 
-        if (flower != null && !flowers.Contains(flower))
-            flowers.Add(flower);
+        RegisterFlower(flower);
     }
 
     private void OnTriggerExit(Collider other)
@@ -19,6 +47,31 @@ public class FlowerArea : MonoBehaviour
 
         if (flower != null)
             flowers.Remove(flower);
+    }
+
+    public void RegisterFlower(FlowerNectar flower)
+    {
+        if (flower == null || flowers.Contains(flower))
+            return;
+
+        flowers.Add(flower);
+        UpdateAreaColor();
+    }
+
+    public void InitializePollenCapacity()
+    {
+        initialPollenCapacity = 0;
+
+        foreach (FlowerNectar flower in flowers)
+        {
+            if (flower != null)
+                initialPollenCapacity += flower.Capacity;
+        }
+
+        if (initialPollenCapacity <= 0)
+            initialPollenCapacity = 1;
+
+        UpdateAreaColor();
     }
 
     public bool TryCollectNectar()
@@ -33,15 +86,48 @@ public class FlowerArea : MonoBehaviour
             }
 
             if (flowers[i].TryTakeNectar())
+            {
+                UpdateAreaColor();
                 return true;
+            }
         }
 
         return false;
     }
 
-    public void RegisterFlower(FlowerNectar flower)
+    private void UpdateAreaColor()
     {
-        if (flower != null && !flowers.Contains(flower))
-            flowers.Add(flower);
+        if (areaRenderer == null || initialPollenCapacity <= 0)
+            return;
+
+        int currentPollen = 0;
+
+        foreach (FlowerNectar flower in flowers)
+        {
+            if (flower != null)
+                currentPollen += flower.CurrentNectar;
+        }
+
+        float ratio = Mathf.Clamp01(
+            (float)currentPollen / initialPollenCapacity
+        );
+
+        Color targetColor;
+
+        if (ratio <= lowThreshold)
+            targetColor = lowColor;
+        else if (ratio <= mediumThreshold)
+            targetColor = mediumColor;
+        else
+            targetColor = highColor;
+
+        areaRenderer.GetPropertyBlock(propertyBlock);
+        propertyBlock.SetColor(colorPropertyId, targetColor);
+        areaRenderer.SetPropertyBlock(propertyBlock);
+    }
+    public void RegisterPollen(int amount)
+    {
+        if (spawnManager != null)
+            spawnManager.RegisterPollen(amount, this);
     }
 }

@@ -18,6 +18,7 @@ public class FlowerSpawnManager : MonoBehaviour
 
     private int collectedPollen;
 
+
     private void Start()
     {
         int flowerCount = Random.Range(
@@ -28,15 +29,22 @@ public class FlowerSpawnManager : MonoBehaviour
         {
             SpawnFlower();
         }
+
+        foreach (FlowerArea area in spawnAreas)
+        {
+            if (area != null)
+                area.InitializePollenCapacity();
+        }
     }
 
-    public void RegisterPollen(int amount)
+
+    public void RegisterPollen(int amount, FlowerArea targetArea)
     {
         collectedPollen += amount;
 
         while (collectedPollen >= pollenPerFlower)
         {
-            if (!SpawnFlower())
+            if (!SpawnFlower(targetArea))
                 return;
 
             collectedPollen -= pollenPerFlower;
@@ -45,11 +53,19 @@ public class FlowerSpawnManager : MonoBehaviour
 
     private bool SpawnFlower()
     {
-        if (flowerPrefabs.Count == 0 || spawnAreas.Count == 0)
+        if (spawnAreas.Count == 0)
             return false;
 
         FlowerArea area = spawnAreas[
             Random.Range(0, spawnAreas.Count)];
+
+        return SpawnFlower(area);
+    }
+
+    private bool SpawnFlower(FlowerArea area)
+    {
+        if (area == null || flowerPrefabs.Count == 0)
+            return false;
 
         GameObject prefab = flowerPrefabs[
             Random.Range(0, flowerPrefabs.Count)];

@@ -756,7 +756,7 @@ MonoBehaviour:
   collectionStartDelay: 5
   collectInterval: 0.5
   currentNectar: 0
-  capacity: 0
+  capacity: 15
 --- !u!114 &1500667582
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -896,6 +896,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7f4df13b752e55e4a9f83f507db4480e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::FlowerArea
+  areaRenderer: {fileID: 1760561487}
+  lowColor: {r: 1, g: 0, b: 0, a: 1}
+  mediumColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
+  highColor: {r: 0, g: 1, b: 0, a: 1}
+  lowThreshold: 0.3
+  mediumThreshold: 0.7
 --- !u!54 &1760561492
 Rigidbody:
   m_ObjectHideFlags: 0

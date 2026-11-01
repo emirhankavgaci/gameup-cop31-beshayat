@@ -1,16 +1,23 @@
+
 using UnityEngine;
 
 public class BeeNectar : MonoBehaviour
 {
     [SerializeField] private PollenCapacitySO capacitySO;
+
+    [Header("Collection")]
     [SerializeField] private float collectionStartDelay = 2f;
     [SerializeField] private float collectInterval = 0.5f;
+
+    [Header("Pollination")]
+    [SerializeField] private float pollinationDelay = 3f;
 
     [SerializeField] private int currentNectar;
     [SerializeField] private int capacity;
 
     private float areaEnterTimer;
     private float collectTimer;
+    private float pollinationTimer;
 
     public int CurrentNectar => currentNectar;
     public int Capacity => capacity;
@@ -26,13 +33,30 @@ public class BeeNectar : MonoBehaviour
 
     private void OnTriggerStay(Collider other)
     {
-        if (currentNectar >= capacity)
-            return;
-
         FlowerArea area = other.GetComponent<FlowerArea>();
 
         if (area == null)
             return;
+
+        // Kapasite doluysa polen b?rak.
+        if (currentNectar >= capacity)
+        {
+            pollinationTimer += Time.fixedDeltaTime;
+
+            if (pollinationTimer >= pollinationDelay)
+            {
+                area.RegisterPollen(currentNectar);
+
+                currentNectar = 0;
+                pollinationTimer = 0f;
+                areaEnterTimer = 0f;
+                collectTimer = 0f;
+            }
+
+            return;
+        }
+
+        pollinationTimer = 0f;
 
         areaEnterTimer += Time.fixedDeltaTime;
 
@@ -56,6 +80,7 @@ public class BeeNectar : MonoBehaviour
         {
             areaEnterTimer = 0f;
             collectTimer = 0f;
+            pollinationTimer = 0f;
         }
     }
 }
