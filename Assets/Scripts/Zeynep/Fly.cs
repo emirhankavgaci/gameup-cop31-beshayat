@@ -2,6 +2,7 @@
 using System.Collections;
 using UnityEngine;
 
+[RequireComponent(typeof(AudioSource))]
 public class Fly : MonoBehaviour
 {
     [Header("Food")]
@@ -13,7 +14,37 @@ public class Fly : MonoBehaviour
     [Header("Effects")]
     [SerializeField] private ParticleSystem catchEffectPrefab;
 
+    [Header("Fly Audio")]
+    [SerializeField] private AudioClip flySound;
+    [SerializeField, Range(0f, 1f)]
+    private float flyVolume = 0.25f;
+    [SerializeField] private float minDistance = 1f;
+    [SerializeField] private float maxDistance = 12f;
+
+    private AudioSource audioSource;
     private bool isCaught = false;
+
+    private void Awake()
+    {
+        audioSource = GetComponent<AudioSource>();
+
+        audioSource.playOnAwake = false;
+        audioSource.loop = true;
+        audioSource.spatialBlend = 1f;
+        audioSource.rolloffMode = AudioRolloffMode.Linear;
+        audioSource.minDistance = minDistance;
+        audioSource.maxDistance = maxDistance;
+        audioSource.volume = flyVolume;
+    }
+
+    private void Start()
+    {
+        if (flySound == null)
+            return;
+
+        audioSource.clip = flySound;
+        audioSource.Play();
+    }
 
     public void Catch(FrogFoodCollector collector)
     {
@@ -22,22 +53,20 @@ public class Fly : MonoBehaviour
 
         isCaught = true;
 
-        // Yiyecek puanýný ekle.
+        // Sinek yakalandýðýnda uçma sesini durdur.
+        audioSource.Stop();
+
         collector.AddFood(foodValue);
 
-        // Sineðin kaybolmasýný ve efekti geciktir.
         StartCoroutine(CatchSequence());
     }
 
     private IEnumerator CatchSequence()
     {
-        // Dil çýkarma animasyonunu bekle.
         yield return new WaitForSeconds(destroyDelay);
 
-        // Sinek yeme sesini çal.
         AudioManager.Instance?.PlayFlyEat();
 
-        // Sineðin kaybolduðu noktada efekt oluþtur.
         if (catchEffectPrefab != null)
         {
             ParticleSystem effect = Instantiate(
@@ -55,7 +84,6 @@ public class Fly : MonoBehaviour
             Destroy(effect.gameObject, effectLifetime + 0.2f);
         }
 
-        // Efekt çýktýðý anda sineði yok et.
         Destroy(gameObject);
     }
 }

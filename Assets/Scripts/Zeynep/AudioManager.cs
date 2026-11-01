@@ -17,6 +17,7 @@ public class AudioManager : MonoBehaviour
     [SerializeField] private AudioClip friendFeed;
     [SerializeField] private AudioClip mudStep;
     [SerializeField] private AudioClip taskComplete;
+    [SerializeField] private AudioClip seedPlant;
 
     private void Awake()
     {
@@ -39,6 +40,14 @@ public class AudioManager : MonoBehaviour
         musicSource.Play();
     }
 
+    private void Update()
+    {
+        if (Input.GetKeyDown(KeyCode.T))
+        {
+            PlayTaskComplete();
+        }
+    }
+
     public void PlayFlyEat()
     {
         PlaySFX(flyEat);
@@ -57,6 +66,11 @@ public class AudioManager : MonoBehaviour
     public void PlayTaskComplete()
     {
         PlaySFX(taskComplete);
+    }
+
+    public void PlaySeedPlant()
+    {
+        PlaySFX(seedPlant);
     }
 
     private void PlaySFX(AudioClip clip)

@@ -64,6 +64,9 @@ public class FriendFrog : MonoBehaviour
         // Baþarýlý besleme sesini çal.
         AudioManager.Instance?.PlayFriendFeed();
 
+        // Görev tamamlama sesini çal.
+        AudioManager.Instance?.PlayTaskComplete();
+
         if (heartEffect != null)
             heartEffect.Play();
 
