@@ -151,6 +151,7 @@ public class WallRunHandler : MonoBehaviour
     // Debug HUD ve dış erişim özellikleri
     public bool IsWallRight => isWallRight;
     public bool IsWallLeft => isWallLeft;
+    public Vector3 ActiveWallNormal => activeWallNormal;
     public float WallRunTimer => wallRunTimer;
     public int ChainCount => chainCount;
     public string ActiveWallName => (motor != null && motor.CurrentState == PlayerMotor.PlayerState.WallRunning && activeWallCollider != null)

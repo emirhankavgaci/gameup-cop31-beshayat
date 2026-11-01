@@ -210,6 +210,7 @@ public class BranchGrabHandler : MonoBehaviour
     public float SwingAngleRadians => swingAngle;
     public float SwingAngleDegrees => swingAngle * Mathf.Rad2Deg;
     public float SwingAngularVelocity => swingAngularVelocity;
+    public Vector3 SwingForwardDirection => swingForwardDir;
     public float CurrentTangentialSpeed => Mathf.Abs(swingAngularVelocity) * pendulumLength;
     public float CurrentTransferSpeed => currentTransferSpeed;
     public BranchReleaseReason LastReleaseReason => lastReleaseReason;
