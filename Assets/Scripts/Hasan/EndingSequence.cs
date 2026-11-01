@@ -112,7 +112,7 @@ public class EndingSequence : MonoBehaviour
     [SerializeField] private float infoHoldTime = 8.0f;
 
     [Tooltip("Bilgi ekranından sonra yüklenecek sahnenin adı veya build index numarası.")]
-    [SerializeField] private string nextSceneName = "";
+    [SerializeField] private string nextSceneName = "Ozlem";
 
     [Header("Debug Test Kontrolü")]
     [Tooltip("Inspector'dan işaretlendiğinde oyun içinde anında final sekansını başlatır (E tuşu yerine bu bool kullanılır).")]

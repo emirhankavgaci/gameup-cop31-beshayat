@@ -278757,7 +278757,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f2e21c7c6e3973449a7d09f0630a5ad2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EndingInfoUI
-  nextSceneName: 
+  nextSceneName: Ozlem
   infoHoldTime: 8
   minSkipWaitTime: 3
   exitFadeOutDuration: 1
@@ -278816,7 +278816,7 @@ MonoBehaviour:
   underwaterVolumeMultiplier: 0.35
   bubbleParticleSystem: {fileID: 0}
   infoHoldTime: 8
-  nextSceneName: 
+  nextSceneName: Ozlem
   debugSkipToEnding: 0
 --- !u!1 &1810298787
 GameObject:

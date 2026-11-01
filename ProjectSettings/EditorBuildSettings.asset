@@ -6,7 +6,19 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
+    path: Assets/Scenes/Main Menu.unity
+    guid: a6bc269400b51604698f27569170422b
+  - enabled: 1
+    path: Assets/Scenes/Zeynep.unity
+    guid: 2fd052db0b1b19d4b90f279fb9d1a9d8
+  - enabled: 1
     path: Assets/Scenes/Emirhan.unity
     guid: 99c9720ab356a0642a771bea13969a05
+  - enabled: 1
+    path: Assets/Scenes/Hasan.unity
+    guid: bbf0c3289bd88cf4dbc1d455e8a9f6a9
+  - enabled: 1
+    path: Assets/Scenes/Ozlem.unity
+    guid: d42a1af33680aba48aebb0242cbbbfe6
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}

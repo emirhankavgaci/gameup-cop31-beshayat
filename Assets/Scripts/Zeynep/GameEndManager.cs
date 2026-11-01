@@ -1,5 +1,4 @@
-
-using UnityEngine;
+ï»¿using UnityEngine;
 using UnityEngine.SceneManagement;
 
 public class GameEndManager : MonoBehaviour
@@ -9,10 +8,15 @@ public class GameEndManager : MonoBehaviour
     [SerializeField] private PondHealthManager pondHealthManager;
 
     [Header("Next Scene")]
-    [SerializeField] private string nextSceneName;
+    [Tooltip("BÃ¶lÃ¼m tamamlandÄ±ÄŸÄ±nda geÃ§ilecek hedef sahne adÄ±.")]
+    [SerializeField] private string nextSceneName = "Emirhan";
+
+    [Header("UI Settings")]
+    [SerializeField] private string buttonText = "TAMAM";
 
     private bool isCompleted;
     private GUIStyle titleStyle;
+    private GUIStyle subtitleStyle;
     private GUIStyle textStyle;
     private GUIStyle buttonStyle;
 
@@ -51,7 +55,7 @@ public class GameEndManager : MonoBehaviour
 
         InitializeStyles();
 
-        float width = Mathf.Min(620f, Screen.width - 40f);
+        float width = Mathf.Min(640f, Screen.width - 40f);
         float height = 480f;
 
         Rect panel = new Rect(
@@ -61,9 +65,9 @@ public class GameEndManager : MonoBehaviour
             height
         );
 
-        // Arka planý karart.
+        // Arka planÄ± karart.
         Color previousColor = GUI.color;
-        GUI.color = new Color(0f, 0f, 0f, 0.75f);
+        GUI.color = new Color(0f, 0f, 0f, 0.85f);
         GUI.DrawTexture(
             new Rect(0, 0, Screen.width, Screen.height),
             Texture2D.whiteTexture
@@ -74,48 +78,43 @@ public class GameEndManager : MonoBehaviour
 
         GUI.Label(
             new Rect(panel.x + 20, panel.y + 25, width - 40, 50),
-            "BÖLÜM TAMAMLANDI!",
+            "BÃ–LÃœM TAMAMLANDI!",
             titleStyle
         );
 
         GUI.Label(
             new Rect(panel.x + 30, panel.y + 95, width - 60, 50),
-            "BÝR GÖLET, BÝNLERCE HAYAT",
-            titleStyle
+            "BÄ°R GÃ–LET, BÄ°NLERCE HAYAT",
+            subtitleStyle ?? titleStyle
         );
 
         GUI.Label(
-            new Rect(panel.x + 40, panel.y + 175, width - 80, 160),
-            "Senin sayende gölet yeniden hayat buldu!\n\n" +
-            "Kuraklýk yalnýzca suyun azalmasý deðildir. " +
-            "Su kaynaklarý azaldýðýnda kurbaðalar, bitkiler " +
-            "ve diðer canlýlar yaþam alanlarýný kaybeder.\n\n" +
-            "Unutma: Suyu korumak, yaþamý korumaktýr.",
+            new Rect(panel.x + 40, panel.y + 170, width - 80, 180),
+            "Senin sayende gÃ¶let yeniden hayat buldu!\n\n" +
+            "KuraklÄ±k yalnÄ±zca suyun azalmasÄ± deÄŸildir. " +
+            "Su kaynaklarÄ± azaldÄ±ÄŸÄ±nda kurbaÄŸalar, bitkiler " +
+            "ve diÄŸer canlÄ±lar yaÅŸam alanlarÄ±nÄ± kaybeder.\n\n" +
+            "Unutma: Suyu korumak, yaÅŸamÄ± korumaktÄ±r.",
             textStyle
         );
 
+        string label = string.IsNullOrEmpty(buttonText) ? "TAMAM" : buttonText;
         if (GUI.Button(
             new Rect(panel.x + width / 2f - 130f,
                      panel.y + 390f, 260f, 55f),
-            "DEVAM ET",
+            label,
             buttonStyle))
         {
             ContinueGame();
         }
     }
 
-    private void ContinueGame()
+    public void ContinueGame()
     {
-        if (string.IsNullOrWhiteSpace(nextSceneName))
-        {
-            Debug.LogWarning(
-                "GameEndManager: Sonraki sahne adý belirtilmedi."
-            );
-            return;
-        }
-
         Time.timeScale = 1f;
-        SceneManager.LoadScene(nextSceneName);
+
+        string targetScene = string.IsNullOrWhiteSpace(nextSceneName) ? "Emirhan" : nextSceneName.Trim();
+        SceneManager.LoadScene(targetScene);
     }
 
     private void InitializeStyles()
@@ -130,8 +129,12 @@ public class GameEndManager : MonoBehaviour
         titleStyle.normal.textColor = Color.white;
         titleStyle.wordWrap = true;
 
+        subtitleStyle = new GUIStyle(titleStyle);
+        subtitleStyle.fontSize = 22;
+        subtitleStyle.normal.textColor = new Color(0.95f, 0.85f, 0.35f);
+
         textStyle = new GUIStyle(GUI.skin.label);
-        textStyle.fontSize = 20;
+        textStyle.fontSize = 19;
         textStyle.alignment = TextAnchor.UpperCenter;
         textStyle.normal.textColor = Color.white;
         textStyle.wordWrap = true;

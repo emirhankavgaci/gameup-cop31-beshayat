@@ -1,13 +1,13 @@
-using System;
+﻿using System;
 using UnityEngine;
 using UnityEngine.Events;
 
 /// <summary>
-/// CANOPY: The Last Run - Arkadan Gelen Sel Kovalamacası (Flood Chaser) Yöneticisi.
-/// Waypoint yolu (pathPoints) boyunca ilerler, oyuncunun yol üzerindeki izdüşümünü (playerProgress)
-/// ve selin konumunu (floodProgress) hesaplar, Rubber Banding uygular, bölge hız geçişlerini yönetir,
-/// ses/kamera sarsıntısını sürer ve yakalanma (OnPlayerCaught) durumunu algılar.
-/// Final sekansında (EndingSequence) TeleportBehindPlayer(distance) ile oyuncunun arkasına ışınlanır.
+/// CANOPY: The Last Run - Arkadan Gelen Sel KovalamacasÄ± (Flood Chaser) YÃ¶neticisi.
+/// Waypoint yolu (pathPoints) boyunca ilerler, oyuncunun yol Ã¼zerindeki izdÃ¼ÅŸÃ¼mÃ¼nÃ¼ (playerProgress)
+/// ve selin konumunu (floodProgress) hesaplar, Rubber Banding uygular, bÃ¶lge hÄ±z geÃ§iÅŸlerini yÃ¶netir,
+/// ses/kamera sarsÄ±ntÄ±sÄ±nÄ± sÃ¼rer ve yakalanma (OnPlayerCaught) durumunu algÄ±lar.
+/// Final sekansÄ±nda (EndingSequence) TeleportBehindPlayer(distance) ile oyuncunun arkasÄ±na Ä±ÅŸÄ±nlanÄ±r.
 /// </summary>
 [RequireComponent(typeof(BoxCollider))]
 public class FloodChaser : MonoBehaviour
@@ -15,104 +15,104 @@ public class FloodChaser : MonoBehaviour
     private const float MIN_SEGMENT_LENGTH = 0.001f;
     private const float DEFAULT_CAMERA_MIN_FAR_CLIP = 600f;
 
-    [Header("Hedef ve Yol (Waypoint) Referansları")]
-    [Tooltip("Takip edilen oyuncu Transform'u (boşsa PlayerMotor üzerinden otomatik bulunur).")]
+    [Header("Hedef ve Yol (Waypoint) ReferanslarÄ±")]
+    [Tooltip("Takip edilen oyuncu Transform'u (boÅŸsa PlayerMotor Ã¼zerinden otomatik bulunur).")]
     [SerializeField] private Transform playerTransform;
 
-    [Tooltip("Oyuncunun baş yüksekliği ofseti (su seviyesi altında kalma kontrolü için, metre).")]
+    [Tooltip("Oyuncunun baÅŸ yÃ¼ksekliÄŸi ofseti (su seviyesi altÄ±nda kalma kontrolÃ¼ iÃ§in, metre).")]
     [SerializeField] private float playerHeadHeightOffset = 1.6f;
 
-    [Tooltip("Selin level boyunca takip edeceği sıralı waypoint noktaları.")]
+    [Tooltip("Selin level boyunca takip edeceÄŸi sÄ±ralÄ± waypoint noktalarÄ±.")]
     [SerializeField] private Transform[] pathPoints;
 
-    [Tooltip("Selin dönüşlerde bir sonraki waypoint yönüne yumuşak dönme hızı (derece/sn veya Slerp hızı).")]
+    [Tooltip("Selin dÃ¶nÃ¼ÅŸlerde bir sonraki waypoint yÃ¶nÃ¼ne yumuÅŸak dÃ¶nme hÄ±zÄ± (derece/sn veya Slerp hÄ±zÄ±).")]
     [SerializeField] private float rotationSmoothSpeed = 6f;
 
-    [Header("Sel Boyutları ve Dalga Duvarı Ayarları")]
-    [Tooltip("Selin ön yüzündeki dalga duvarının genişliği (varsayılan 30 m).")]
+    [Header("Sel BoyutlarÄ± ve Dalga DuvarÄ± AyarlarÄ±")]
+    [Tooltip("Selin Ã¶n yÃ¼zÃ¼ndeki dalga duvarÄ±nÄ±n geniÅŸliÄŸi (varsayÄ±lan 30 m).")]
     [SerializeField] private float waveWallWidth = 30f;
 
-    [Tooltip("Selin ön yüzündeki dalga duvarının yüksekliği (varsayılan 12 m).")]
+    [Tooltip("Selin Ã¶n yÃ¼zÃ¼ndeki dalga duvarÄ±nÄ±n yÃ¼ksekliÄŸi (varsayÄ±lan 12 m).")]
     [SerializeField] private float waveWallHeight = 12f;
 
-    [Tooltip("Selin arkaya doğru uzanan su zemininin uzunluğu (varsayılan 60 m).")]
+    [Tooltip("Selin arkaya doÄŸru uzanan su zemininin uzunluÄŸu (varsayÄ±lan 60 m).")]
     [SerializeField] private float waterBodyLength = 60f;
 
-    [Tooltip("Su üst yüzeyinin (su seviyesinin) sel objesi merkezine göre dikey Y ofseti (metre).")]
+    [Tooltip("Su Ã¼st yÃ¼zeyinin (su seviyesinin) sel objesi merkezine gÃ¶re dikey Y ofseti (metre).")]
     [SerializeField] private float waterSurfaceLocalY = 4.5f;
 
-    [Tooltip("Başlangıçta BoxCollider trigger boyutunu dalga duvarı ve su gövdesine göre otomatik ayarla.")]
+    [Tooltip("BaÅŸlangÄ±Ã§ta BoxCollider trigger boyutunu dalga duvarÄ± ve su gÃ¶vdesine gÃ¶re otomatik ayarla.")]
     [SerializeField] private bool autoConfigureTriggerBounds = true;
 
-    [Tooltip("İsteğe bağlı: Ön dalga duvarı çocuk objesi (boyut/konum referansı için).")]
+    [Tooltip("Ä°steÄŸe baÄŸlÄ±: Ã–n dalga duvarÄ± Ã§ocuk objesi (boyut/konum referansÄ± iÃ§in).")]
     [SerializeField] private Transform frontWaveWallVisual;
 
-    [Tooltip("İsteğe bağlı: Arka su zemini çocuk objesi.")]
+    [Tooltip("Ä°steÄŸe baÄŸlÄ±: Arka su zemini Ã§ocuk objesi.")]
     [SerializeField] private Transform rearWaterFloorVisual;
 
-    [Header("Hız ve Başlangıç Gecikmesi")]
-    [Tooltip("Selin temel ilerleme hızı (m/s). Bölgeye göre ZoneManager tarafından değiştirilir.")]
+    [Header("HÄ±z ve BaÅŸlangÄ±Ã§ Gecikmesi")]
+    [Tooltip("Selin temel ilerleme hÄ±zÄ± (m/s). BÃ¶lgeye gÃ¶re ZoneManager tarafÄ±ndan deÄŸiÅŸtirilir.")]
     [SerializeField] private float baseSpeed = 6f;
 
-    [Tooltip("Oyun başında selin harekete geçmeden önce bekleyeceği hazırlanma süresi (varsayılan 4 sn).")]
+    [Tooltip("Oyun baÅŸÄ±nda selin harekete geÃ§meden Ã¶nce bekleyeceÄŸi hazÄ±rlanma sÃ¼resi (varsayÄ±lan 4 sn).")]
     [SerializeField] private float gameStartDelay = 4f;
 
-    [Tooltip("Selin başlangıçta yol üzerindeki ilerleme konumu (metre, negatif değer yolun gerisinden başlatır).")]
+    [Tooltip("Selin baÅŸlangÄ±Ã§ta yol Ã¼zerindeki ilerleme konumu (metre, negatif deÄŸer yolun gerisinden baÅŸlatÄ±r).")]
     [SerializeField] private float initialFloodProgress = -35f;
 
-    [Header("Rubber Banding (Mesafeye Göre Hız Dengeleme)")]
-    [Tooltip("Oyuncu bu mesafeden (varsayılan 45 m) daha uzaktaysa sel hızlanır (catchUpMultiplier).")]
+    [Header("Rubber Banding (Mesafeye GÃ¶re HÄ±z Dengeleme)")]
+    [Tooltip("Oyuncu bu mesafeden (varsayÄ±lan 45 m) daha uzaktaysa sel hÄ±zlanÄ±r (catchUpMultiplier).")]
     [SerializeField] private float farDistance = 45f;
 
-    [Tooltip("Oyuncu bu mesafeden (varsayılan 8 m) daha yakındaysa sel yavaşlar (slowDownMultiplier).")]
+    [Tooltip("Oyuncu bu mesafeden (varsayÄ±lan 8 m) daha yakÄ±ndaysa sel yavaÅŸlar (slowDownMultiplier).")]
     [SerializeField] private float nearDistance = 8f;
 
-    [Tooltip("Oyuncu çok açıldığında (> farDistance) uygulanacak hızlanma çarpanı (varsayılan 1.5).")]
+    [Tooltip("Oyuncu Ã§ok aÃ§Ä±ldÄ±ÄŸÄ±nda (> farDistance) uygulanacak hÄ±zlanma Ã§arpanÄ± (varsayÄ±lan 1.5).")]
     [SerializeField] private float catchUpMultiplier = 1.5f;
 
-    [Tooltip("Oyuncu çok yaklaştığında (< nearDistance) nefes alma payı için yavaşlama çarpanı (varsayılan 0.8).")]
+    [Tooltip("Oyuncu Ã§ok yaklaÅŸtÄ±ÄŸÄ±nda (< nearDistance) nefes alma payÄ± iÃ§in yavaÅŸlama Ã§arpanÄ± (varsayÄ±lan 0.8).")]
     [SerializeField] private float slowDownMultiplier = 0.8f;
 
-    [Tooltip("Rubber band çarpanının değişim yumuşatma hızı.")]
+    [Tooltip("Rubber band Ã§arpanÄ±nÄ±n deÄŸiÅŸim yumuÅŸatma hÄ±zÄ±.")]
     [SerializeField] private float multiplierLerpSpeed = 5f;
 
-    [Header("Ses ve Kamera Sarsıntısı Efektleri")]
-    [Tooltip("Yakınlığa göre kamera sarsıntısı uygulayan CameraShake bileşeni (boşsa otomatik bulunur).")]
+    [Header("Ses ve Kamera SarsÄ±ntÄ±sÄ± Efektleri")]
+    [Tooltip("YakÄ±nlÄ±ÄŸa gÃ¶re kamera sarsÄ±ntÄ±sÄ± uygulayan CameraShake bileÅŸeni (boÅŸsa otomatik bulunur).")]
     [SerializeField] private CameraShake cameraShake;
 
-    [Tooltip("Kamera sarsıntısının başlayacağı maksimum sel-oyuncu mesafesi (varsayılan 25 m).")]
+    [Tooltip("Kamera sarsÄ±ntÄ±sÄ±nÄ±n baÅŸlayacaÄŸÄ± maksimum sel-oyuncu mesafesi (varsayÄ±lan 25 m).")]
     [SerializeField] private float shakeTriggerDistance = 25f;
 
-    [Tooltip("Sel uğultu/dalga sesini çalan AudioSource bileşeni (opsiyonel).")]
+    [Tooltip("Sel uÄŸultu/dalga sesini Ã§alan AudioSource bileÅŸeni (opsiyonel).")]
     [SerializeField] private AudioSource floodAudioSource;
 
-    [Tooltip("Sel uğultu/dalga ses klibi (selsound.mp3).")]
+    [Tooltip("Sel uÄŸultu/dalga ses klibi (selsound.mp3).")]
     [SerializeField] private AudioClip floodAudioClip;
 
-    [Tooltip("Sesin maksimum yüksekliğe (1.0) ulaştığı mesafe (varsayılan 0 m).")]
+    [Tooltip("Sesin maksimum yÃ¼ksekliÄŸe (1.0) ulaÅŸtÄ±ÄŸÄ± mesafe (varsayÄ±lan 0 m).")]
     [SerializeField] private float audioNearDistance = 0f;
 
-    [Tooltip("Sesin minimum yüksekliğe düştüğü mesafe (varsayılan 50 m).")]
+    [Tooltip("Sesin minimum yÃ¼ksekliÄŸe dÃ¼ÅŸtÃ¼ÄŸÃ¼ mesafe (varsayÄ±lan 50 m).")]
     [SerializeField] private float audioFarDistance = 50f;
 
-    [Tooltip("Mesafe 0 iken sel ses yüksekliği (varsayılan 1.0).")]
+    [Tooltip("Mesafe 0 iken sel ses yÃ¼ksekliÄŸi (varsayÄ±lan 1.0).")]
     [Range(0f, 1f)]
     [SerializeField] private float maxAudioVolume = 1.0f;
 
-    [Tooltip("Mesafe >= 50 m iken sel ses yüksekliği (varsayılan 0.05).")]
+    [Tooltip("Mesafe >= 50 m iken sel ses yÃ¼ksekliÄŸi (varsayÄ±lan 0.05).")]
     [Range(0f, 1f)]
     [SerializeField] private float minAudioVolume = 0.05f;
 
     [Header("Olaylar (Events)")]
-    [Tooltip("Oyuncu sele yakalandığında tetiklenen UnityEvent.")]
+    [Tooltip("Oyuncu sele yakalandÄ±ÄŸÄ±nda tetiklenen UnityEvent.")]
     [SerializeField] private UnityEvent onPlayerCaughtEvent;
 
     /// <summary>
-    /// Selin ön yüz trigger'ı oyuncuya değdiğinde veya oyuncunun başı su seviyesinin altına girdiğinde tetiklenir.
+    /// Selin Ã¶n yÃ¼z trigger'Ä± oyuncuya deÄŸdiÄŸinde veya oyuncunun baÅŸÄ± su seviyesinin altÄ±na girdiÄŸinde tetiklenir.
     /// </summary>
     public event Action OnPlayerCaught;
 
-    // Dahili yol ve ilerleme değişkenleri
+    // Dahili yol ve ilerleme deÄŸiÅŸkenleri
     private float[] cumulativePathDistances;
     private float totalPathLength;
     private Vector3 fallbackStartPos;
@@ -124,7 +124,7 @@ public class FloodChaser : MonoBehaviour
     private int currentFloodSegmentIndex;
     private int currentPlayerSegmentIndex;
 
-    // Hız ve durum değişkenleri
+    // HÄ±z ve durum deÄŸiÅŸkenleri
     private float currentSpeed;
     private float currentRubberBandMultiplier = 1f;
     private float speedBlendStartValue;
@@ -140,7 +140,7 @@ public class FloodChaser : MonoBehaviour
     private Vector3 currentFlowDirection = Vector3.forward;
     private BoxCollider floodTriggerCollider;
 
-    // Dış erişim özellikleri (FloodDebugHUD, ZoneManager, EndingSequence ve GameFlowManager için)
+    // DÄ±ÅŸ eriÅŸim Ã¶zellikleri (FloodDebugHUD, ZoneManager, EndingSequence ve GameFlowManager iÃ§in)
     public float CurrentSpeed => currentSpeed;
     public float BaseSpeed => baseSpeed;
     public float CurrentRubberBandMultiplier => currentRubberBandMultiplier;
@@ -227,13 +227,13 @@ public class FloodChaser : MonoBehaviour
     {
         float dt = Time.deltaTime;
 
-        // 1. Oyuncunun yol üzerindeki ilerleme izdüşümünü her kare güncelle
+        // 1. Oyuncunun yol Ã¼zerindeki ilerleme izdÃ¼ÅŸÃ¼mÃ¼nÃ¼ her kare gÃ¼ncelle
         UpdatePlayerProgressOnPath();
 
-        // 2. Bölge hız geçişi (SetBaseSpeed blend) varsa işle
+        // 2. BÃ¶lge hÄ±z geÃ§iÅŸi (SetBaseSpeed blend) varsa iÅŸle
         UpdateBaseSpeedBlend(dt);
 
-        // 3. Başlangıç hazırlanma gecikmesi (gameStartDelay) veya durdurulma kontrolü
+        // 3. BaÅŸlangÄ±Ã§ hazÄ±rlanma gecikmesi (gameStartDelay) veya durdurulma kontrolÃ¼
         if (isFloodStopped)
         {
             currentSpeed = 0f;
@@ -251,7 +251,7 @@ public class FloodChaser : MonoBehaviour
             return;
         }
 
-        // 4. Rubber Banding çarpanını mesafeye göre yumuşakça hesapla (EndingActive iken kapalıdır)
+        // 4. Rubber Banding Ã§arpanÄ±nÄ± mesafeye gÃ¶re yumuÅŸakÃ§a hesapla (EndingActive iken kapalÄ±dÄ±r)
         distanceToPlayer = playerProgress - floodProgress;
         if (disableRubberBanding || GameFlowManager.EndingActive)
         {
@@ -263,7 +263,7 @@ public class FloodChaser : MonoBehaviour
             currentRubberBandMultiplier = Mathf.Lerp(currentRubberBandMultiplier, targetMultiplier, multiplierLerpSpeed * dt);
         }
 
-        // 5. Sel hızını ve ilerlemesini güncelle
+        // 5. Sel hÄ±zÄ±nÄ± ve ilerlemesini gÃ¼ncelle
         currentSpeed = baseSpeed * currentRubberBandMultiplier;
         floodProgress += currentSpeed * dt;
 
@@ -275,10 +275,10 @@ public class FloodChaser : MonoBehaviour
         ApplyFloodTransformFromProgress(instantRotation: false);
         distanceToPlayer = playerProgress - floodProgress;
 
-        // 6. Ses ve Kamera sarsıntısını güncelle
+        // 6. Ses ve Kamera sarsÄ±ntÄ±sÄ±nÄ± gÃ¼ncelle
         UpdateAudioAndCameraShake();
 
-        // 7. Su seviyesi altında kalma veya dalga duvarının oyuncuyu geçmesi kontrolü
+        // 7. Su seviyesi altÄ±nda kalma veya dalga duvarÄ±nÄ±n oyuncuyu geÃ§mesi kontrolÃ¼
         CheckSubmersionAndOverrunCatch();
     }
 
@@ -299,7 +299,7 @@ public class FloodChaser : MonoBehaviour
     }
 
     /// <summary>
-    /// Bölge değişimlerinde veya final sekansında selin temel hızını yumuşak geçişle değiştirir.
+    /// BÃ¶lge deÄŸiÅŸimlerinde veya final sekansÄ±nda selin temel hÄ±zÄ±nÄ± yumuÅŸak geÃ§iÅŸle deÄŸiÅŸtirir.
     /// </summary>
     public void SetBaseSpeed(float speed, float blendTime)
     {
@@ -538,9 +538,9 @@ public class FloodChaser : MonoBehaviour
                 floodAudioSource.clip = floodAudioClip;
             }
 
-            // absDistance: sel ile oyuncu arasındaki anlık mesafe (m)
-            // Sel yaklaştıkça (mesafe azaldıkça) ses artar (maxAudioVolume = 1.0f)
-            // Sel uzaklaştıkça ses azalır (minAudioVolume = 0.05f)
+            // absDistance: sel ile oyuncu arasÄ±ndaki anlÄ±k mesafe (m)
+            // Sel yaklaÅŸtÄ±kÃ§a (mesafe azaldÄ±kÃ§a) ses artar (maxAudioVolume = 1.0f)
+            // Sel uzaklaÅŸtÄ±kÃ§a ses azalÄ±r (minAudioVolume = 0.05f)
             float t = Mathf.InverseLerp(audioNearDistance, Mathf.Max(audioNearDistance + 1f, audioFarDistance), absDistance);
             float targetVolume = Mathf.Lerp(maxAudioVolume, minAudioVolume, t);
             if (isFloodStopped)
@@ -548,7 +548,7 @@ public class FloodChaser : MonoBehaviour
                 targetVolume = minAudioVolume * 0.5f;
             }
 
-            floodAudioSource.volume = targetVolume;
+            floodAudioSource.volume = targetVolume * GameAudioManager.SFXVolume;
             if (!floodAudioSource.isPlaying && floodAudioSource.clip != null && gameObject.activeInHierarchy)
             {
                 floodAudioSource.loop = true;
@@ -626,8 +626,8 @@ public class FloodChaser : MonoBehaviour
     }
 
     /// <summary>
-    /// Oyun sonu sekansında (EndingSequence) seli anında yol üzerinde oyuncunun belirtilen mesafe (varsayılan 10 m)
-    /// gerisine ışınlar ve bekleme süresi olmadan kovalamacayı sürdürür.
+    /// Oyun sonu sekansÄ±nda (EndingSequence) seli anÄ±nda yol Ã¼zerinde oyuncunun belirtilen mesafe (varsayÄ±lan 10 m)
+    /// gerisine Ä±ÅŸÄ±nlar ve bekleme sÃ¼resi olmadan kovalamacayÄ± sÃ¼rdÃ¼rÃ¼r.
     /// </summary>
     public void TeleportBehindPlayer(float distance)
     {
@@ -644,8 +644,8 @@ public class FloodChaser : MonoBehaviour
     }
 
     /// <summary>
-    /// Rubber banding (mesafeye göre hız dengeleme) sistemini açar veya kapatır.
-    /// Final sekansı (EndingSequence) sırasında kapalı tutulur.
+    /// Rubber banding (mesafeye gÃ¶re hÄ±z dengeleme) sistemini aÃ§ar veya kapatÄ±r.
+    /// Final sekansÄ± (EndingSequence) sÄ±rasÄ±nda kapalÄ± tutulur.
     /// </summary>
     public void SetRubberBandingEnabled(bool enabledRubberBanding)
     {
@@ -657,7 +657,7 @@ public class FloodChaser : MonoBehaviour
     }
 
     /// <summary>
-    /// Respawn sırasında seli oyuncunun belirtilen mesafe (varsayılan 80 m) gerisine yerleştirir.
+    /// Respawn sÄ±rasÄ±nda seli oyuncunun belirtilen mesafe (varsayÄ±lan 80 m) gerisine yerleÅŸtirir.
     /// </summary>
     public void RepositionBehindPlayer(float distanceBehindPlayer, float respawnGraceDelay = 0.5f)
     {
@@ -701,8 +701,8 @@ public class FloodChaser : MonoBehaviour
 
     private void EnsureCameraFarClipSufficient()
     {
-        // Sel mesh'lerinin oyuncu arkasına baktığında frustum culling nedeniyle erken kaybolmaması için
-        // dinamik occlusion'ı kapat (Kamera farClipPlane değeri PlayerLook 50m sis sınırı tarafından yönetilir)
+        // Sel mesh'lerinin oyuncu arkasÄ±na baktÄ±ÄŸÄ±nda frustum culling nedeniyle erken kaybolmamasÄ± iÃ§in
+        // dinamik occlusion'Ä± kapat (Kamera farClipPlane deÄŸeri PlayerLook 50m sis sÄ±nÄ±rÄ± tarafÄ±ndan yÃ¶netilir)
         Renderer[] renderers = GetComponentsInChildren<Renderer>();
         for (int i = 0; i < renderers.Length; i++)
         {

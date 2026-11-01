@@ -1,4 +1,4 @@
-
+ï»¿
 using UnityEngine;
 
 public class FrogCroak : MonoBehaviour
@@ -42,23 +42,23 @@ public class FrogCroak : MonoBehaviour
     {
         if (cooldownTimer > 0f)
         {
-            Debug.Log($"Výraklama için {cooldownTimer:F1} saniye bekle.");
+            Debug.Log($"VÄ±raklama iÃ§in {cooldownTimer:F1} saniye bekle.");
             return;
         }
 
         if (pondHealthManager == null)
         {
-            Debug.LogWarning("PondHealthManager bulunamadý!");
+            Debug.LogWarning("PondHealthManager bulunamadÄ±!");
             return;
         }
 
         cooldownTimer = croakCooldown;
 
         if (audioSource != null && croakSound != null)
-            audioSource.PlayOneShot(croakSound);
+            audioSource.PlayOneShot(croakSound, GameAudioManager.SFXVolume);
 
         pondHealthManager.Heal(healAmount);
 
-        Debug.Log("Výrak! Gölet iyileþiyor.");
+        Debug.Log("VÄ±rak! GÃ¶let iyileÅŸiyor.");
     }
 }

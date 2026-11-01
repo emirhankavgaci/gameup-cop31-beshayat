@@ -1,4 +1,3 @@
-
 using UnityEngine;
 
 public class AudioManager : MonoBehaviour
@@ -37,7 +36,26 @@ public class AudioManager : MonoBehaviour
 
         musicSource.clip = backgroundMusic;
         musicSource.loop = true;
+        musicSource.volume = GameAudioManager.MusicVolume;
         musicSource.Play();
+    }
+
+    private void OnEnable()
+    {
+        GameAudioManager.OnMusicVolumeChanged += HandleMusicVolumeChanged;
+    }
+
+    private void OnDisable()
+    {
+        GameAudioManager.OnMusicVolumeChanged -= HandleMusicVolumeChanged;
+    }
+
+    private void HandleMusicVolumeChanged(float vol)
+    {
+        if (musicSource != null)
+        {
+            musicSource.volume = vol;
+        }
     }
 
     private void Update()
@@ -78,6 +96,6 @@ public class AudioManager : MonoBehaviour
         if (clip == null || sfxSource == null)
             return;
 
-        sfxSource.PlayOneShot(clip);
+        sfxSource.PlayOneShot(clip, GameAudioManager.SFXVolume);
     }
 }

@@ -13808,7 +13808,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::GameEndManager
   objectiveUI: {fileID: 699320411}
   pondHealthManager: {fileID: 699320408}
-  nextSceneName: 
+  nextSceneName: Emirhan
 --- !u!4 &1940628101 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 8334290621563257007, guid: 61d87800d3fee664c9a6653c6f5a78a6, type: 3}

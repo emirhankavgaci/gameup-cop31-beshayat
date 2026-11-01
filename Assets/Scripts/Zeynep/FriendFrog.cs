@@ -1,4 +1,4 @@
-
+ï»¿
 using UnityEngine;
 
 [RequireComponent(typeof(AudioSource))]
@@ -42,10 +42,10 @@ public class FriendFrog : MonoBehaviour
         if (!isAlive)
             return;
 
-        Debug.Log($"{friendName}: Výrak!");
+        Debug.Log($"{friendName}: VÄ±rak!");
 
         if (frogSound != null)
-            audioSource.PlayOneShot(frogSound);
+            audioSource.PlayOneShot(frogSound, GameAudioManager.SFXVolume);
     }
 
     public bool Feed(FrogFoodCollector collector)
@@ -55,16 +55,16 @@ public class FriendFrog : MonoBehaviour
 
         if (!collector.TrySpendFood(requiredFood))
         {
-            Debug.Log($"{friendName} için yeterli besin yok.");
+            Debug.Log($"{friendName} iÃ§in yeterli besin yok.");
             return false;
         }
 
         isFed = true;
 
-        // Baþarýlý besleme sesini çal.
+        // BaÅŸarÄ±lÄ± besleme sesini Ã§al.
         AudioManager.Instance?.PlayFriendFeed();
 
-        // Görev tamamlama sesini çal.
+        // GÃ¶rev tamamlama sesini Ã§al.
         AudioManager.Instance?.PlayTaskComplete();
 
         if (heartEffect != null)
@@ -72,17 +72,17 @@ public class FriendFrog : MonoBehaviour
 
         Debug.Log($"{friendName} beslendi ve mutlu oldu!");
 
-        // Arkadaþ kurbaða mutlu bir ses çýkarýr.
+        // ArkadaÅŸ kurbaÄŸa mutlu bir ses Ã§Ä±karÄ±r.
         Interact();
 
-        // Göletin saðlýðýný artýrýr.
+        // GÃ¶letin saÄŸlÄ±ÄŸÄ±nÄ± artÄ±rÄ±r.
         PondHealthManager pond =
             FindFirstObjectByType<PondHealthManager>();
 
         if (pond != null)
             pond.Heal(healAmount);
         else
-            Debug.LogWarning("PondHealthManager bulunamadý!");
+            Debug.LogWarning("PondHealthManager bulunamadÄ±!");
 
         return true;
     }
@@ -93,6 +93,6 @@ public class FriendFrog : MonoBehaviour
             return;
 
         isAlive = false;
-        Debug.Log($"{friendName} artýk hayatta deðil.");
+        Debug.Log($"{friendName} artÄ±k hayatta deÄŸil.");
     }
 }

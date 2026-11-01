@@ -13,10 +13,40 @@ public class FlowerNectar : MonoBehaviour
 
     private void Awake()
     {
-        PollenCapacity data = capacitySO.capacities.Find(
-            x => x.type == PollenCapacityType.Flower);
+        InitializeCapacity();
+    }
 
-        capacity = data != null ? data.capacity : 0;
+    public void Initialize(PollenCapacitySO so, FlowerDeathAnimation deathAnim = null)
+    {
+        if (so != null)
+            capacitySO = so;
+
+        if (deathAnim != null)
+            deathAnimation = deathAnim;
+
+        InitializeCapacity();
+    }
+
+    public void SetDeathAnimation(FlowerDeathAnimation deathAnim)
+    {
+        deathAnimation = deathAnim;
+    }
+
+    private void InitializeCapacity()
+    {
+        if (capacitySO != null && capacitySO.capacities != null)
+        {
+            PollenCapacity data = capacitySO.capacities.Find(
+                x => x.type == PollenCapacityType.Flower);
+
+            capacity = data != null ? data.capacity : 10;
+        }
+        else
+        {
+            if (capacity <= 0)
+                capacity = 10;
+        }
+
         currentNectar = capacity;
     }
 
