@@ -1,25 +1,18 @@
 using UnityEngine;
 
-/// <summary>
-/// 'kunduz.fbx' modeli için özel düzeltici ve prosedürel animasyon kontrolcüsü.
-/// 1. Ön ayakların (Circle.002 ve Circle.003) aşırı büyük çıkma sorununu modeli bozmadan düzeltir.
-/// 2. Blender'dan +X yönüne bakarak çıkan kunduzu Unity'nin ileri (+Z) yönüne (-90 derece) hizalar.
-/// 3. FBX içinde hazır animasyon olmadığı için 4 ayağı (Circle..Circle.003), kuyruğu (Plane.001)
-///    ve gövdeyi (Plane) yürüme/koşma durumuna göre otomatik hareket ettirir (canlandırır).
-/// </summary>
 public class BeaverModelAnimator3D : MonoBehaviour
 {
-    [Header("1. Ön Ayak (Circle.002 & Circle.003) Boyut Düzeltmesi")]
+    [Header("1.Front Paw Scale Fix")]
     [SerializeField] private bool fixFrontPawsScale = true;
     [SerializeField] private Vector3 frontPawScaleMultiplier = new Vector3(0.55f, 0.45f, 0.45f);
 
-    [Header("2. Model Genel Boyut ve Yön Hizalama (Player Altındayken)")]
+    [Header("2. Model General Size and Orientation Alignment")]
     [SerializeField] private bool autoAlignAndScaleModel = true;
     [SerializeField] private float overallModelScale = 0.22f;
     [SerializeField] private Vector3 modelLocalPositionOffset = new Vector3(0f, -0.85f, 0f);
-    [SerializeField] private Vector3 modelLocalRotationOffset = new Vector3(0f, -90f, 0f); // Blender +X yönünü Unity +Z ileri yönüne çevirir
+    [SerializeField] private Vector3 modelLocalRotationOffset = new Vector3(0f, -90f, 0f); // Beaver model is facing +X, but we want +Z forward for the player
 
-    [Header("3. Prosedürel Yürüme / Koşma / Kuyruk Animasyonu")]
+    [Header("3. Walk and Sprint Animation")]
     [SerializeField] private bool enableProceduralAnimation = true;
     [SerializeField] private float walkCycleSpeed = 10f;
     [SerializeField] private float sprintCycleSpeed = 16f;
@@ -29,13 +22,13 @@ public class BeaverModelAnimator3D : MonoBehaviour
 
     private PlayerMovement3D playerMovement;
 
-    // kunduz.fbx içindeki alt parçalar
+    // kunduz.fbx
     private Transform bodyPart;       // Plane
     private Transform tailPart;       // Plane.001
     private Transform backRightLeg;   // Circle
     private Transform backLeftLeg;    // Circle.001
-    private Transform frontRightPaw;  // Circle.002 (Büyük çıkan ön sağ ayak)
-    private Transform frontLeftPaw;   // Circle.003 (Büyük çıkan ön sol ayak)
+    private Transform frontRightPaw;  // Circle.002 
+    private Transform frontLeftPaw;   // Circle.003 
 
     private Vector3 origFrontRightScale;
     private Vector3 origFrontLeftScale;
@@ -54,7 +47,7 @@ public class BeaverModelAnimator3D : MonoBehaviour
     {
         playerMovement = GetComponentInParent<PlayerMovement3D>();
 
-        // kunduz.fbx içindeki parçaları isimlerinden otomatik bul
+        // kunduz.fbx parts
         bodyPart = FindChildRecursive(transform, "Plane");
         tailPart = FindChildRecursive(transform, "Plane.001");
         backRightLeg = FindChildRecursive(transform, "Circle");
@@ -62,7 +55,7 @@ public class BeaverModelAnimator3D : MonoBehaviour
         frontRightPaw = FindChildRecursive(transform, "Circle.002");
         frontLeftPaw = FindChildRecursive(transform, "Circle.003");
 
-        // Model Player'ın alt objesiyse yönünü (+Z ileri) ve genel boyutunu otomatik ayarla
+        // Auto align and scale the model 
         if (autoAlignAndScaleModel && transform.parent != null)
         {
             transform.localPosition = modelLocalPositionOffset;
@@ -70,7 +63,7 @@ public class BeaverModelAnimator3D : MonoBehaviour
             transform.localScale = Vector3.one * overallModelScale;
         }
 
-        // Orijinal rotasyon ve ölçekleri kaydet
+        // Save original rotations and positions for later use
         if (bodyPart != null)
         {
             origBodyRot = bodyPart.localRotation;
@@ -118,7 +111,7 @@ public class BeaverModelAnimator3D : MonoBehaviour
             float oppositeWave = Mathf.Sin(animTimer + Mathf.PI);
             float doubleWave = Mathf.Abs(Mathf.Sin(animTimer));
 
-            // Çapraz ayak hareketi (Sağ Ön + Sol Arka birlikte, Sol Ön + Sağ Arka birlikte)
+            // Realistic leg swing for walking/running
             if (frontRightPaw != null)
                 frontRightPaw.localRotation = origFrontRightRot * Quaternion.Euler(0f, wave * legSwingAngle * swingMultiplier, 0f);
 
@@ -131,17 +124,17 @@ public class BeaverModelAnimator3D : MonoBehaviour
             if (backRightLeg != null)
                 backRightLeg.localRotation = origBackRightRot * Quaternion.Euler(0f, oppositeWave * legSwingAngle * swingMultiplier, 0f);
 
-            // Kuyruk sallama (Plane.001)
+            // Tail wagging
             if (tailPart != null)
                 tailPart.localRotation = origTailRot * Quaternion.Euler(0f, 0f, Mathf.Sin(animTimer * 1.5f) * tailWagAngle * swingMultiplier);
 
-            // Gövde hafif sekme (Plane)
+            // Bob amount for body (unused in the original code, but can be used for subtle up-down movement)
             if (bodyPart != null)
                 bodyPart.localPosition = origBodyPos + new Vector3(0f, doubleWave * bodyBobAmount, 0f);
         }
         else
         {
-            // Dururken (Idle) ayakları yumuşakça başlangıç pozisyonuna döndür, kuyruğu hafifçe salla
+            // move the legs and paws back to their original positions when idle 
             float idleLerp = Time.deltaTime * 8f;
 
             if (frontRightPaw != null)

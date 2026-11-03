@@ -3,10 +3,8 @@ using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.Controls;
 using TMPro;
 
-/// <summary>
-/// Unity 6 (6000.x) ve Yeni Input System uyumlu çöp / kütük taşıma ve dinamik etkileşim prompt kontrolcüsü.
-/// Oyuncu (Player) objesine eklenir.
-/// </summary>
+// On Player object
+
 public class PlayerCarryController3D : MonoBehaviour
 {
     [Header("Ağız Yuvası")]
@@ -45,7 +43,7 @@ public class PlayerCarryController3D : MonoBehaviour
         ButtonControl mouseButton = GetMouseButton(mouseButtonIndex);
         if (mouseButton == null) return;
 
-        // Tuşa ilk basıldığı anda yakındaki objeyi tut
+        // When the button is pressed, grab the nearby item if available and not already holding an item
         if (mouseButton.wasPressedThisFrame)
         {
             if (nearbyItem != null && !HasItem)
@@ -54,7 +52,7 @@ public class PlayerCarryController3D : MonoBehaviour
             }
         }
 
-        // Tuş bırakıldığında eldeki objeyi bırak
+        // When the button is released, drop the held item
         if (mouseButton.wasReleasedThisFrame)
         {
             if (HasItem)
@@ -63,16 +61,14 @@ public class PlayerCarryController3D : MonoBehaviour
             }
         }
 
-        // Güvenlik kontrolü: Tuş basılı değilse ve hala obje tutuluyorsa bırak
+        // Control if the player is holding the button and has an item, then release it
         if (HasItem && !mouseButton.isPressed)
         {
             ReleaseItem();
         }
     }
 
-    /// <summary>
-    /// Oyuncu nesneye yaklaştığında veya nesneyi taşırken ekrandaki "Hold {Buton}" yazısını günceller.
-    /// </summary>
+    // update hold button
     private void UpdatePromptUI()
     {
         if (interactionPromptText == null || interactionPromptText.gameObject == null)
@@ -83,7 +79,7 @@ public class PlayerCarryController3D : MonoBehaviour
         if (HasItem && currentItem != null)
         {
             interactionPromptText.gameObject.SetActive(true);
-            interactionPromptText.text = useTurkishPrompt
+            interactionPromptText.text = useTurkishPrompt  // tried to implement the full Turkish translation for all text elements but due to time constraints, only the main action prompts are translated.
                 ? $"[{buttonName} Basılı Tut] (Baraja Götür)"
                 : $"Hold [{buttonName}] (Carry to Dam)";
         }
@@ -129,9 +125,7 @@ public class PlayerCarryController3D : MonoBehaviour
         };
     }
 
-    /// <summary>
-    /// Yeni Input System üzerinden seçilen mouse butonunu döndürür.
-    /// </summary>
+    // Get the corresponding mouse button based on the index
     private ButtonControl GetMouseButton(int index)
     {
         if (Mouse.current == null) return null;

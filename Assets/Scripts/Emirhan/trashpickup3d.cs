@@ -1,36 +1,32 @@
 using System;
 using UnityEngine;
 
-public enum DebrisType
+public enum DebrisType  //The type of debris determines the water restoration and drain reduction effects when added to the dam
 {
-    Trash,  // Çöp: Düşük su katkısı (+5), düşük sızıntı azaltma
-    Branch  // Dal / Kütük: Yüksek su katkısı (+10), yüksek sızıntı azaltma
+    Trash, 
+    Branch  
 }
 
-/// <summary>
-/// Unity 6 (6000.x) uyumlu, toplanabilir çöp / dal / kütük (Debris) objesi kontrolcüsü.
-/// Hem gerçek fizikle yere düşer (katı Collider + Rigidbody) hem de otomatik Trigger alanı ile oyuncuyu algılar.
-/// </summary>
 [RequireComponent(typeof(Collider))]
 [RequireComponent(typeof(Rigidbody))]
 public class TrashPickup3D : MonoBehaviour
 {
-    [Header("Nesne Türü (Çöp vs Dal)")]
+    [Header("Type of Debris")] 
     [SerializeField] private DebrisType debrisType = DebrisType.Trash;
-    [SerializeField] private float customWaterBonus = -1f; // -1 ise türe göre otomatik (Çöp: +5, Dal: +10)
-    [SerializeField] private float customDrainReduction = -1f; // -1 ise türe göre otomatik (Çöp: 0.03, Dal: 0.07)
+    [SerializeField] private float customWaterBonus = -1f; 
+    [SerializeField] private float customDrainReduction = -1f; 
 
-    [Header("Arayüz ve Algılama")]
+    [Header("Interface and Detection")]
     [SerializeField] private GameObject interactionPromptUI;
-    [SerializeField] private float pickupTriggerRadius = 1.2f; // Oyuncunun çöpü algılama yarıçapı
+    [SerializeField] private float pickupTriggerRadius = 1.2f; // Player's debris detection radius
 
-    [Header("Soket Yerleşimi")]
+    [Header("Socket Placement")]
     [SerializeField] private Vector3 holdLocalPosition = new Vector3(0f, 0f, 0.5f);
     [SerializeField] private Vector3 holdLocalRotation = Vector3.zero;
 
-    [Header("Adadan Düşme Koruması ve Su Üstü Katman")]
+    [Header("Fall Respawn Protection and Water Surface Layer")]
     [SerializeField] private float fallRespawnY = -15f;
-    [SerializeField] private int itemRenderQueue = 2010; // Suyun (2005) eşyaları ve barajı kapatmaması için üst katman
+    [SerializeField] private int itemRenderQueue = 2010; // For placing items in the upper layer to avoid collision with water and dam
 
     private Collider physicsCollider;
     private SphereCollider pickupTriggerCollider;
@@ -42,16 +38,10 @@ public class TrashPickup3D : MonoBehaviour
     public bool IsCarried => isCarried;
     public DebrisType Type => debrisType;
 
-    /// <summary>
-    /// Baraja eklendiğinde anlık kazandıracağı su miktarı (100 üzerinden: Çöp = +5, Dal = +10).
-    /// </summary>
     public float WaterRestoreAmount => customWaterBonus >= 0f
         ? customWaterBonus
         : (debrisType == DebrisType.Branch ? 10f : 5f);
 
-    /// <summary>
-    /// Baraja eklendiğinde suyun saniyelik azalma hızını düşürme miktarı.
-    /// </summary>
     public float DrainRateReduction => customDrainReduction >= 0f
         ? customDrainReduction
         : (debrisType == DebrisType.Branch ? 0.06f : 0.025f);
@@ -59,11 +49,8 @@ public class TrashPickup3D : MonoBehaviour
     public static event Action<TrashPickup3D> OnTrashPickedUp;
     public static event Action<TrashPickup3D> OnTrashDropped;
 
-    /// <summary>
-    /// Sahne yeniden başlatıldığında (Restart) eski sahnedeki silinmiş UI Image referanslarının
-    /// MissingReferenceException fırlatmasını önlemek için static eventleri temizler.
-    /// </summary>
-    public static void ResetStaticEvents()
+
+    public static void ResetStaticEvents() // Call this method when changing scenes to avoid null reference errors from lingering event subscriptions
     {
         OnTrashPickedUp = null;
         OnTrashDropped = null;
@@ -78,7 +65,7 @@ public class TrashPickup3D : MonoBehaviour
         itemRb.useGravity = true;
         itemRb.isKinematic = false;
 
-        // Suyun (2005) dal/çöp ve baraj parçalarını kapatmaması için materyali üst katmana (2010) al
+        // Renderer for water surface layer placement
         Renderer[] renderers = GetComponentsInChildren<Renderer>(true);
         for (int i = 0; i < renderers.Length; i++)
         {
@@ -92,7 +79,7 @@ public class TrashPickup3D : MonoBehaviour
             }
         }
 
-        // 1. Ana Collider'ı katı (isTrigger = false) yap ki yerçekimiyle düşerken zemine çarpıp dursun
+        // Main collider is made solid for physics
         Collider[] existingColliders = GetComponents<Collider>();
         for (int i = 0; i < existingColliders.Length; i++)
         {
@@ -112,7 +99,7 @@ public class TrashPickup3D : MonoBehaviour
             physicsCollider.isTrigger = false;
         }
 
-        // 2. Oyuncunun yaklaştığını algılamak için ikinci bir Trigger SphereCollider yoksa otomatik ekle
+        // Add a trigger collider for player detection if it doesn't exist
         if (pickupTriggerCollider == null)
         {
             pickupTriggerCollider = gameObject.AddComponent<SphereCollider>();
@@ -128,7 +115,7 @@ public class TrashPickup3D : MonoBehaviour
 
     private void Update()
     {
-        // Nesne adadan aşağı yuvarlanırsa oyunun kilitlenmemesi için başlangıç noktasına geri koy
+        // If the item is not being carried and falls below a certain Y level, reset its position to the initial spawn point
         if (!isCarried && transform.position.y < fallRespawnY)
         {
             if (itemRb != null && !itemRb.isKinematic)
@@ -180,7 +167,7 @@ public class TrashPickup3D : MonoBehaviour
             interactionPromptUI.SetActive(false);
         }
 
-        // Taşınırken yerçekimini ve çarpışmaları kapat
+        // When the item is picked up, disable its physics and colliders to prevent interference with the player
         if (itemRb != null)
         {
             if (!itemRb.isKinematic)
@@ -208,7 +195,7 @@ public class TrashPickup3D : MonoBehaviour
         transform.SetParent(null);
         transform.position = dropWorldPosition;
 
-        // Yere bırakıldığında katı Collider'ı ve Trigger'ı tekrar aç
+        // When the item is dropped, re-enable its physics and colliders so it can interact with the environment
         if (physicsCollider != null)
         {
             physicsCollider.enabled = true;
@@ -221,7 +208,7 @@ public class TrashPickup3D : MonoBehaviour
             pickupTriggerCollider.isTrigger = true;
         }
 
-        // Fizik motorunu ve yerçekimini aktif et ki nesne yere düşsün
+        // Activate physics for the item so it can fall and collide with the environment
         if (itemRb != null)
         {
             itemRb.isKinematic = false;

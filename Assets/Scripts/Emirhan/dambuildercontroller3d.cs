@@ -1,30 +1,26 @@
 using System;
 using UnityEngine;
 
-/// <summary>
-/// Unity 6 (6000.x) uyumlu, 5 Blok x 4 İçerik (Toplam 20 Parça) Baraj İnşa Kontrolcüsü.
-/// Oyuncu ağzında Çöp (+5 su) veya Dal (+10 su) ile baraj alanına girdiğinde parçayı yatay açıyla otomatik yerleştirir.
-/// </summary>
 [RequireComponent(typeof(BoxCollider))]
 public class DamBuilderController3D : MonoBehaviour
 {
-    [Header("5x4 Baraj Yapısı Ayarları")]
-    [SerializeField] private int totalBlocks = 5; // Toplam blok sayısı (5 blok)
-    [SerializeField] private int itemsPerBlock = 4; // Her bloğu oluşturan dal/çöp sayısı (4 parça)
-    [SerializeField] private bool winWhenDamCompleted = true; // "Korku değil ümit vermek": 5 blok tamamlanınca nehir kurtulsun mu?
+    [Header("Dam Settings")]
+    [SerializeField] private int totalBlocks = 5; 
+    [SerializeField] private int itemsPerBlock = 4; 
+    [SerializeField] private bool winWhenDamCompleted = true; // decision to give a good ending when the dam is fully built
 
-    [Header("Bağlantılar")]
+    [Header("Controller References")]
     [SerializeField] private WaterLevelController waterController;
-    [SerializeField] private Transform[] blockVisuals; // Opsiyonel: Her 4 parçada bir aktifleşecek 5 hazır baraj bloğu objesi
+    [SerializeField] private Transform[] blockVisuals; 
 
-    [Header("Otomatik Dizilim, Offset ve Yatay Rotasyon Ayarı")]
-    [SerializeField] private Vector3 buildStartOffset = new Vector3(-5f, 0f, 0f); // Barajın Dam objesine göre başlayacağı offset
-    [SerializeField] private Vector3 placedItemLocalRotation = new Vector3(0f, 0f, 90f); // Parçaların dik değil YATAY durması için açı (Z = 90 veya X = 90)
-    [SerializeField] private float blockSpacingX = 1.2f; // 5 bloğun yan yana (X ekseni) aralığı
-    [SerializeField] private float itemLayerSpacingY = 0.25f; // Her bloktaki 4 parçanın üst üste (Y ekseni) aralığı
+    [Header("Placement Settings")] // dam builder will automatically place the items in a grid-like structure based on these settings
+    [SerializeField] private Vector3 buildStartOffset = new Vector3(-5f, 0f, 0f); 
+    [SerializeField] private Vector3 placedItemLocalRotation = new Vector3(0f, 0f, 90f); 
+    [SerializeField] private float blockSpacingX = 1.2f; 
+    [SerializeField] private float itemLayerSpacingY = 0.25f;
 
-    [Header("Su Üstü Görünürlük (Render Queue Katmanı)")]
-    [SerializeField] private int damRenderQueue = 2010; // Suyun (2005) baraj parçalarını kapatmaması için üst katman
+    [Header("Render Queue")]
+    [SerializeField] private int damRenderQueue = 2010; // dam render queue for it not to be hidden by water surface default is 2000
 
     private int currentPlacedItems = 0;
     private int currentCompletedBlocks = 0;
@@ -35,14 +31,10 @@ public class DamBuilderController3D : MonoBehaviour
     public int CurrentCompletedBlocks => currentCompletedBlocks;
     public bool IsDamCompleted => currentCompletedBlocks >= totalBlocks;
 
-    /// <summary>
-    /// Parça eklendiğinde (eklenenParçaSayısı, toplamGerekenParça, tamamlananBlokSayısı) bilgisini fırlatır.
-    /// </summary>
+    // Events to notify other systems about dam progress
+
     public event Action<int, int, int> OnDamProgressUpdated;
 
-    /// <summary>
-    /// 5 bloğun tamamı (5x4 = 20 parça) tamamlandığında tetiklenir.
-    /// </summary>
     public event Action OnDamFullyBuilt;
 
     private void Awake()
@@ -57,7 +49,7 @@ public class DamBuilderController3D : MonoBehaviour
 
         ApplyRenderQueueToHierarchy(transform, damRenderQueue);
 
-        // Başlangıçta opsiyonel blok görsellerini kapat
+        // if block visuals are assigned, set them to inactive initially
         if (blockVisuals != null)
         {
             for (int i = 0; i < blockVisuals.Length; i++)
@@ -104,19 +96,19 @@ public class DamBuilderController3D : MonoBehaviour
         }
     }
 
-    private void PlaceItemIntoDam(TrashPickup3D item)
+    private void PlaceItemIntoDam(TrashPickup3D item) //block placement logic, item is placed in the correct position and rotation
     {
-        int blockIndex = currentPlacedItems / itemsPerBlock; // 0..4 arası hangi blok
-        int slotInBlock = currentPlacedItems % itemsPerBlock; // 0..3 arası blok içi sıra
+        int blockIndex = currentPlacedItems / itemsPerBlock; 
+        int slotInBlock = currentPlacedItems % itemsPerBlock; 
 
-        // Parçayı buildStartOffset (örn. 5 birim sol) noktasından başlayarak 5x4 ızgarada hizala
+        
         Vector3 slotLocalPos = buildStartOffset + new Vector3(
             blockIndex * blockSpacingX,
             slotInBlock * itemLayerSpacingY,
             0f
         );
 
-        // Parçanın dik çubuk gibi değil, yatay kütük/baraj duvarı gibi yerleşmesi için placedItemLocalRotation uygula
+        // rotate the item to be horizontal (laying flat) instead of vertical
         Quaternion horizontalRotation = Quaternion.Euler(placedItemLocalRotation);
         item.LockIntoDam(transform, slotLocalPos, horizontalRotation);
         ApplyRenderQueueToHierarchy(item.transform, damRenderQueue);
@@ -124,7 +116,7 @@ public class DamBuilderController3D : MonoBehaviour
         currentPlacedItems++;
         int newCompletedBlocks = currentPlacedItems / itemsPerBlock;
 
-        // Yeni bir 4'lü blok tamamlandıysa opsiyonel blok görselini aç
+        // deactivate the visual for the completed block
         if (newCompletedBlocks > currentCompletedBlocks)
         {
             currentCompletedBlocks = newCompletedBlocks;
@@ -136,7 +128,7 @@ public class DamBuilderController3D : MonoBehaviour
             }
         }
 
-        // Nehir suyuna anlık katkı yap (Çöp: +5, Dal: +10) ve azalma hızını düşür
+        // add water restoration and drain rate reduction using the item's properties 
         if (waterController != null)
         {
             waterController.AddWaterByDebris(item.WaterRestoreAmount, item.DrainRateReduction);
@@ -144,7 +136,7 @@ public class DamBuilderController3D : MonoBehaviour
 
         OnDamProgressUpdated?.Invoke(currentPlacedItems, TotalRequiredItems, currentCompletedBlocks);
 
-        // 5x4 (20 parça) tamamlandı mı kontrol et
+        // is the dam fully built?
         if (currentPlacedItems >= TotalRequiredItems)
         {
             OnDamFullyBuilt?.Invoke();

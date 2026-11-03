@@ -2,43 +2,39 @@ using System;
 using UnityEngine;
 using UnityEngine.UI;
 
-/// <summary>
-/// Unity 6 (6000.x) uyumlu 3D nehir su seviyesi, 1 dakikalık kuraklık sayacı,
-/// su barı UI entegrasyonu ve baraj su katkısı kontrolcüsü.
-/// </summary>
 [RequireComponent(typeof(BoxCollider))]
 public class WaterLevelController : MonoBehaviour
 {
-    [Header("Su Miktarı ve 60 Saniye Tükeniş Ayarları")]
-    [SerializeField] private float maxWaterAmount = 100f; // Toplam su kapasitesi (Çöp +5, Dal +10 ekler)
-    [SerializeField] private float baseDrainDurationSeconds = 60f; // Hiç müdahale edilmezse suyun tamamen bitme süresi (1 dk = 60 sn)
-    [SerializeField] private float droughtEscalationPerSecond = 0.015f; // Zaman geçtikçe kuraklığın şiddetlenme hızı
-    [SerializeField] private float minDrainRateFloor = 0.35f; // Baraj bitmeden su azalma hızının düşebileceği en alt sınır
-    [SerializeField] private float waterFillLerpSpeed = 25f; // Su eklendiğinde barın ve yüksekliğin yükselme hızı
+    [Header("Water Amount Settings")]
+    [SerializeField] private float maxWaterAmount = 100f; 
+    [SerializeField] private float baseDrainDurationSeconds = 60f; 
+    [SerializeField] private float droughtEscalationPerSecond = 0.015f;
+    [SerializeField] private float minDrainRateFloor = 0.35f; 
+    [SerializeField] private float waterFillLerpSpeed = 25f;
 
-    [Header("Fiziksel Yükseklik ve Baraj Sınırı")]
-    [SerializeField] private bool useScenePositionAsMaxY = true; // Sahnede koyduğun Y yüksekliğini başlangıç (Max) kabul eder
-    [SerializeField] private float maxWaterY = 1.0f; // Sağlıklı su yüksekliği
-    [SerializeField] private float minWaterY = -0.5f; // Nehrin kuruduğu dip yükseklik
-    [SerializeField] private Transform damCeilingReference; // Atanırsa su yüksekliği asla bu noktanın üstüne çıkmaz
-    [SerializeField] private float damMaxWaterOffset = -0.15f; // Baraj üst sınırından ne kadar aşağıda kalacağı
+    [Header("Water Level Settings")]
+    [SerializeField] private bool useScenePositionAsMaxY = true; 
+    [SerializeField] private float maxWaterY = 1.0f; 
+    [SerializeField] private float minWaterY = -0.5f; 
+    [SerializeField] private Transform damCeilingReference;
+    [SerializeField] private float damMaxWaterOffset = -0.15f; 
 
-    [Header("Suyun Karakteri ve Barajı İçine Alması & Katman Ayarı")]
-    [SerializeField] private bool solidWaterSurface = false; // False: Su karakteri ve barajı içine alır (isTrigger = true)
-    [SerializeField] private bool renderBehindPlayerAndDam = true; // True: Su dokusu karakterin ve barajın altında çizilir, onları kapatmaz
-    [SerializeField] private int waterRenderQueue = 2005; // Zemin (2000) üstünde, Karakter ve Baraj (2010) altında çizilir
-    [SerializeField] private float waterSpeedMultiplier = 0.75f; // Oyuncu suyun içindeyken hız çarpanı
+    [Header("Water Appearance")]
+    [SerializeField] private bool solidWaterSurface = false; 
+    [SerializeField] private bool renderBehindPlayerAndDam = true; 
+    [SerializeField] private int waterRenderQueue = 2005; 
+    [SerializeField] private float waterSpeedMultiplier = 0.75f; 
 
-    [Header("Su Akış Efekti (Texture Offset)")]
+    [Header("Water Flow")]
     [SerializeField] private Vector2 flowSpeed = new Vector2(0f, 0.5f);
 
-    [Header("Ekran Yanı Su Miktarı Barı (Opsiyonel Doğrudan Bağlantı)")]
-    [SerializeField] private Slider waterBarSlider; // 0 - 1 arası veya 0 - 100 arası UI Slider
-    [SerializeField] private Image waterBarFillImage; // Filled Image kullanıyorsan doğrudan buraya sürükleyebilirsin
+    [Header("Water Bar")]
+    [SerializeField] private Slider waterBarSlider; 
+    [SerializeField] private Image waterBarFillImage;
 
     private float currentWaterAmount;
     private float targetWaterAmount;
-    private float baseDrainRate; // 100 / 60 = 1.666f su/sn
+    private float baseDrainRate; // 100 / 60 = 1.666f per second
     private float totalDrainReduction = 0f;
     private float elapsedDroughtTime = 0f;
 
@@ -51,19 +47,10 @@ public class WaterLevelController : MonoBehaviour
     private Renderer rend;
     private Vector2 currentTextureOffset;
 
-    /// <summary>
-    /// UI güncellemeleri için su seviyesi oranını (0.0f - 1.0f arası) döndürür.
-    /// </summary>
     public event Action<float> OnWaterLevelRatioChanged;
 
-    /// <summary>
-    /// Su seviyesi sıfırlandığında (kuruduğunda) bir kez tetiklenir.
-    /// </summary>
     public event Action OnRiverDriedOut;
 
-    /// <summary>
-    /// 5x4 Baraj tamamlanıp nehir kurtarıldığında ("Korku değil ümit vermek" kazanma durumu) tetiklenir.
-    /// </summary>
     public event Action OnRiverSaved;
 
     public float CurrentWaterRatio => Mathf.Clamp01(currentWaterAmount / maxWaterAmount);
@@ -73,15 +60,14 @@ public class WaterLevelController : MonoBehaviour
     private void Awake()
     {
         boxCollider = GetComponent<BoxCollider>();
-        // solidWaterSurface false olduğunda isTrigger = true olur; böylece su karakteri ve barajı içine alır
-        boxCollider.isTrigger = !solidWaterSurface;
+        boxCollider.isTrigger = !solidWaterSurface; // If solidWaterSurface is true, the water will have a solid collider; otherwise, it will be a trigger.
 
         rend = GetComponent<Renderer>();
         if (rend != null && rend.material != null)
         {
             currentTextureOffset = rend.material.mainTextureOffset;
 
-            // Suyun zemini örtmesi ama karakter ve barajın (RenderQueue 2010) görünümünü kapatmaması için ZWrite kapatılır
+            // If the water should render behind the player and dam, adjust the render queue and disable ZWrite to prevent depth conflicts
             if (renderBehindPlayerAndDam)
             {
                 Material[] mats = rend.materials;
@@ -106,7 +92,7 @@ public class WaterLevelController : MonoBehaviour
             minWaterY = maxWaterY - depthRange;
         }
 
-        // Eğer baraj tavan referansı verildiyse, suyun barajın üstüne taşmasını engelle
+        // If a dam ceiling reference is provided, ensure the water level does not exceed the ceiling 
         if (damCeilingReference != null)
         {
             maxWaterY = Mathf.Min(maxWaterY, damCeilingReference.position.y + damMaxWaterOffset);
@@ -125,7 +111,7 @@ public class WaterLevelController : MonoBehaviour
 
     private void OnDestroy()
     {
-        // Sahne yeniden yüklendiğinde silinmiş UI Image referanslarına çağrı gitmesini engelle
+        // Reset events to avoid memory leaks or dangling references
         OnWaterLevelRatioChanged = null;
         OnRiverDriedOut = null;
         OnRiverSaved = null;
@@ -133,14 +119,14 @@ public class WaterLevelController : MonoBehaviour
 
     private void Update()
     {
-        // 1. Su dokusunu (texture) akış hızına göre kaydır
+        // Water surface texture scrolling
         if (rend != null && rend.material != null)
         {
             currentTextureOffset += flowSpeed * Time.deltaTime;
             rend.material.mainTextureOffset = currentTextureOffset;
         }
 
-        // 2. Kuruma aktifse (ve nehir henüz kurtarılmadıysa) su miktarını azalt
+        // if drying is active and the river hasn't been saved, decrease the water amount over time
         if (isDryingActive && !isRiverSaved)
         {
             elapsedDroughtTime += Time.deltaTime;
@@ -152,11 +138,11 @@ public class WaterLevelController : MonoBehaviour
             targetWaterAmount -= effectiveDrainRate * Time.deltaTime;
         }
 
-        // 3. Su miktarını 0 ile maxWaterAmount (100) arasında sınırla
+        // Fix water amount to be within bounds of 0-100
         targetWaterAmount = Mathf.Clamp(targetWaterAmount, 0f, maxWaterAmount);
         currentWaterAmount = Mathf.MoveTowards(currentWaterAmount, targetWaterAmount, waterFillLerpSpeed * Time.deltaTime);
 
-        // 4. Oran hesabı (0.0f - 1.0f) ve fiziksel Y yüksekliği karşılığı
+        // Calculate the water level ratio
         float ratio = Mathf.Clamp01(currentWaterAmount / maxWaterAmount);
 
         float effectiveMaxY = maxWaterY;
@@ -168,11 +154,11 @@ public class WaterLevelController : MonoBehaviour
         currentWaterY = Mathf.Lerp(minWaterY, effectiveMaxY, ratio);
         transform.position = new Vector3(transform.position.x, currentWaterY, transform.position.z);
 
-        // 5. UI Barı ve Event güncellemeleri
+        // UI update for water bar
         UpdateWaterUI(ratio);
         OnWaterLevelRatioChanged?.Invoke(ratio);
 
-        // 6. Nehir kuruma kontrolü
+        // Trigger the river dried out event if the water amount reaches zero
         if (currentWaterAmount <= 0.01f)
         {
             if (!hasRiverDriedOutTriggered)
@@ -200,18 +186,12 @@ public class WaterLevelController : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Baraja yeni bir çöp (+5) veya dal (+10) eklendiğinde hem su miktarını artırır hem de azalma hızını düşürür.
-    /// </summary>
     public void AddWaterByDebris(float waterBonusAmount, float drainReductionAmount = 0f)
     {
         targetWaterAmount = Mathf.Clamp(targetWaterAmount + waterBonusAmount, 0f, maxWaterAmount);
         totalDrainReduction += Mathf.Max(0f, drainReductionAmount);
     }
 
-    /// <summary>
-    /// 5x4 Baraj tamamen inşa edildiğinde ("Korku değil ümit vermek" kazanma durumu) nehri kurtarır ve doldurur.
-    /// </summary>
     public void CompleteDamAndSaveRiver()
     {
         isRiverSaved = true;
@@ -220,9 +200,6 @@ public class WaterLevelController : MonoBehaviour
         OnRiverSaved?.Invoke();
     }
 
-    /// <summary>
-    /// Suyun kuruma/alçalma durumunu başlatır veya durdurur.
-    /// </summary>
     public void SetDryingState(bool active)
     {
         isDryingActive = active;

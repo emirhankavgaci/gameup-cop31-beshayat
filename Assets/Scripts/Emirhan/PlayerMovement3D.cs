@@ -1,11 +1,8 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-/// <summary>
-/// Unity 6 (6000.x) ve Yeni Input System uyumlu, 3rd Person Shooter / GTA Vice City (PC) tarzı
-/// karakterin arkasından bakan kamera, Mouse ile yön dönme, WASD ile yürüme,
-/// Shift + Yön tuşu ile koşma ve Space ile zıplama kontrolcüsü.
-/// </summary>
+//on player object
+
 [RequireComponent(typeof(Rigidbody))]
 [RequireComponent(typeof(CapsuleCollider))]
 public class PlayerMovement3D : MonoBehaviour
@@ -29,10 +26,10 @@ public class PlayerMovement3D : MonoBehaviour
     [SerializeField] private float maxPitch = 65f;
     [SerializeField] private bool lockCursorOnStart = true;
 
-    [Header("Startup Ground Snap & Fall Safety (Zemine Batmayı Önleme)")]
-    [SerializeField] private bool snapToGroundOnStart = true; // Oyun başında yüksekten düşüp zemine gömülmeyi önler
+    [Header("Startup Ground Snap & Fall Safety")]
+    [SerializeField] private bool snapToGroundOnStart = true; // Prevent the character from falling through the ground at the start of the game (unused feature)
     [SerializeField] private float fallRespawnY = -15f;
-    [SerializeField] private int playerRenderQueue = 2010; // Suyun (2005) karakteri kapatmaması için üst katman
+    [SerializeField] private int playerRenderQueue = 2010; // For water surface not to hide the player, default is 2000
 
     private Rigidbody rb;
     private CapsuleCollider capsuleCollider;
@@ -50,24 +47,11 @@ public class PlayerMovement3D : MonoBehaviour
     private Vector3 initialSpawnPosition;
     private Vector3 lastSafeGroundedPosition;
 
-    /// <summary>
-    /// Karakterin baktığı yön (kuyruk darbesi, fidan/dal yerleştirme veya ateş etme hesapları için).
-    /// </summary>
-    public Vector3 FacingDirection => transform.forward;
 
-    /// <summary>
-    /// Karakterin şu anda aktif olarak hareket edip etmediğini belirtir.
-    /// </summary>
+    // stores character movement state and camera orientation, provides public properties for other scripts to access
+    public Vector3 FacingDirection => transform.forward; 
     public bool IsMoving => canMove && moveDirection.sqrMagnitude > 0.01f;
-
-    /// <summary>
-    /// Karakterin şu anda Shift basılı tutularak koşup koşmadığını belirtir.
-    /// </summary>
     public bool IsSprinting => isSprinting;
-
-    /// <summary>
-    /// Karakterin yerde olup olmadığını belirtir.
-    /// </summary>
     public bool IsGrounded => isGrounded;
 
     private void Awake()
@@ -78,13 +62,12 @@ public class PlayerMovement3D : MonoBehaviour
         defaultMoveSpeed = moveSpeed;
         defaultSprintSpeed = sprintSpeed;
 
-        // Karakterin fiziksel çarpışmalarda devrilmesini ve zeminin içine girmesini (tunneling) engelle
+        // To prevent the character from tipping over when colliding with objects, freeze rotation on all axes
         rb.constraints = RigidbodyConstraints.FreezeRotation;
         rb.interpolation = RigidbodyInterpolation.Interpolate;
         rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
 
-        // Eğer karakterin üzerinde ikinci bir Collider (Pickup Range) varsa, onun katı çarpışma yapıp
-        // karakteri zemine itmemesi için Trigger olduğundan emin ol
+        // If there are multiple colliders on the character, set all except the main capsule collider to trigger to avoid physics issues
         Collider[] allColliders = GetComponents<Collider>();
         for (int i = 0; i < allColliders.Length; i++)
         {
@@ -96,7 +79,7 @@ public class PlayerMovement3D : MonoBehaviour
 
         yaw = transform.eulerAngles.y;
 
-        // Suyun karakterin görünümünü kapatmaması için karakterin materyallerini üst katmana (2010) al
+        // render queue for player and held items to avoid being hidden by water surface
         Renderer[] renderers = GetComponentsInChildren<Renderer>(true);
         for (int i = 0; i < renderers.Length; i++)
         {
@@ -110,13 +93,13 @@ public class PlayerMovement3D : MonoBehaviour
             }
         }
 
-        // Kamera atanmadıysa sahnedeki Main Camera'yı otomatik bul
+        // find the main camera if not assigned in the inspector
         if (cameraTransform == null && Camera.main != null)
         {
             cameraTransform = Camera.main.transform;
         }
 
-        // Kamera pozisyonunu LateUpdate içinde omuz/sırt arkasından hesaplayacağımız için hiyerarşiden ayır
+        // helper method to detach the camera from the player if it is a child of the player object
         if (cameraTransform != null && cameraTransform.IsChildOf(transform))
         {
             cameraTransform.SetParent(null);
@@ -140,10 +123,6 @@ public class PlayerMovement3D : MonoBehaviour
         lastSafeGroundedPosition = transform.position;
     }
 
-    /// <summary>
-    /// Oyun başladığı anda karakterin yüksekten hızla düşüp ada zemininin içine gömülmesini önlemek için
-    /// karakterin ayak altını tam ada yüzeyine sıfır hızla oturtur.
-    /// </summary>
     private void SnapCharacterToGroundSurface()
     {
         if (capsuleCollider == null) return;
@@ -181,14 +160,14 @@ public class PlayerMovement3D : MonoBehaviour
 
     private void Update()
     {
-        // Zemin kontrolü ve son güvenli pozisyonu kaydetme
+        // Ground check using capsule collider's bottom point, no extra objects or layers needed
         isGrounded = CheckGrounded();
         if (isGrounded && transform.position.y > fallRespawnY + 2f)
         {
             lastSafeGroundedPosition = transform.position;
         }
 
-        // Adadan aşağı düşerse son güvenli noktaya geri ışınla
+        // If the character falls below a certain Y level, reset its position to the last safe grounded position or initial spawn point
         if (transform.position.y < fallRespawnY)
         {
             rb.linearVelocity = Vector3.zero;
@@ -198,7 +177,7 @@ public class PlayerMovement3D : MonoBehaviour
             return;
         }
 
-        // Oyun bittiğinde veya hareket kapatıldığında kameranın dönmesini ve yürümeyi durdur
+        // Verify if the character is allowed to move; if not, reset movement variables and exit early
         if (!canMove)
         {
             moveDirection = Vector3.zero;
@@ -207,25 +186,25 @@ public class PlayerMovement3D : MonoBehaviour
             return;
         }
 
-        // Build içinde ESC ile imleci serbest bırakma / tekrar tıklayınca kilitleme
+        // Escape key toggles cursor lock state, and left mouse button locks the cursor if not already locked
         HandleCursorLockToggle();
 
-        // 1. Mouse ile karakteri sağa-sola döndür, kameranın dikey bakış açısını güncelle
+        // Mouse look input
         if (Cursor.lockState == CursorLockMode.Locked)
         {
             HandleMouseLook();
         }
 
-        // 2. WASD tuşlarıyla karakterin baktığı yöne göre İleri/Geri ve Sağ/Sol (Strafe) hareket et
+        // 2. Movement input is read from keyboard (WASD/Arrow keys) or gamepad 
         Vector2 input = ReadMoveInput();
         moveDirection = (transform.forward * input.y + transform.right * input.x).normalized;
 
-        // 3. Shift + Yön tuşu basılıysa koş, Shift bırakıldığında yürümeye devam et
+        // 3. Sprint controls: Shift key or left stick button on gamepad
         bool shiftHeld = (Keyboard.current != null && (Keyboard.current.leftShiftKey.isPressed || Keyboard.current.rightShiftKey.isPressed))
                          || (Gamepad.current != null && Gamepad.current.leftStickButton.isPressed);
         isSprinting = shiftHeld && moveDirection.sqrMagnitude > 0.01f;
 
-        // 4. Space tuşu ile klasik zıplama (sadece yerdeyken)
+        // 4. Spacebar or gamepad south button triggers jump if grounded
         bool jumpPressed = (Keyboard.current != null && Keyboard.current.spaceKey.wasPressedThisFrame)
                            || (Gamepad.current != null && Gamepad.current.buttonSouth.wasPressedThisFrame);
         if (jumpPressed && isGrounded)
@@ -236,10 +215,10 @@ public class PlayerMovement3D : MonoBehaviour
 
     private void FixedUpdate()
     {
-        // Aktif hızı belirle (Shift basılıysa koşu hızı, bırakıldıysa yürüyüş hızı)
+        // Determine the current speed based on whether the character is sprinting or walking
         float currentSpeed = isSprinting ? sprintSpeed : moveSpeed;
 
-        // Mevcut dikey hızı koru, zıplama istendiyse dikey hızı jumpForce olarak ayarla
+        // Preserve the vertical velocity to allow for gravity and jumping, while applying horizontal movement based on input
         float verticalVelocity = rb.linearVelocity.y;
         if (jumpRequested)
         {
@@ -259,7 +238,7 @@ public class PlayerMovement3D : MonoBehaviour
         if (cameraTransform == null)
             return;
 
-        // Kamerayı karakterin sırtının/omzunun arkasında tut ve karaktere doğru baktır
+        // 3rd person camera that follows the character with a shoulder offset and adjustable pitch/yaw angles
         Quaternion camRotation = Quaternion.Euler(pitch, yaw, 0f);
         Vector3 pivotPosition = transform.position
                                 + Vector3.up * cameraPivotHeight
@@ -283,9 +262,7 @@ public class PlayerMovement3D : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// CapsuleCollider alt noktasından zemini kontrol eder (ekstra obje/layer kurulumu gerektirmez).
-    /// </summary>
+
     private bool CheckGrounded()
     {
         if (capsuleCollider == null)
@@ -298,7 +275,7 @@ public class PlayerMovement3D : MonoBehaviour
         Collider[] hits = Physics.OverlapSphere(spherePosition, radius, groundLayer, QueryTriggerInteraction.Ignore);
         for (int i = 0; i < hits.Length; i++)
         {
-            // Karakterin kendi collider'ını veya alt objelerini yoksay
+            // Ignore the character's own collider and any child colliders to avoid false positives
             if (hits[i] != capsuleCollider && !hits[i].transform.IsChildOf(transform))
             {
                 return true;
@@ -308,9 +285,7 @@ public class PlayerMovement3D : MonoBehaviour
         return false;
     }
 
-    /// <summary>
-    /// Mouse X ile karakteri (ve arkasındaki kamerayı) yatayda döndürür, Mouse Y ile kamerayı dikeyde eğer.
-    /// </summary>
+    // rotate the character and adjust camera pitch
     private void HandleMouseLook()
     {
         if (Mouse.current == null)
@@ -318,17 +293,14 @@ public class PlayerMovement3D : MonoBehaviour
 
         Vector2 mouseDelta = Mouse.current.delta.ReadValue();
 
-        // Yatay dönüş (Sağ - Sol): Doğrudan karakteri döndürür, kamera da arkasında döner
+
         yaw += mouseDelta.x * mouseSensitivity;
         transform.rotation = Quaternion.Euler(0f, yaw, 0f);
 
-        // Dikey bakış (Yukarı - Aşağı): Kameranın karaktere bakış açısını (pitch) ayarlar
         pitch = Mathf.Clamp(pitch - mouseDelta.y * mouseSensitivity, minPitch, maxPitch);
     }
 
-    /// <summary>
-    /// Yeni Input System (Klavye WASD/Ok tuşları ve Gamepad Sol Analog) girdilerini okur.
-    /// </summary>
+    // / Read movement input 
     private Vector2 ReadMoveInput()
     {
         Vector2 input = Vector2.zero;
@@ -349,10 +321,7 @@ public class PlayerMovement3D : MonoBehaviour
         return input;
     }
 
-    /// <summary>
-    /// Karakterin hareket edebilme durumunu açar veya kapatır.
-    /// </summary>
-    /// <param name="state">Hareket izni durumu</param>
+    
     public void SetCanMove(bool state)
     {
         canMove = state;
@@ -366,10 +335,7 @@ public class PlayerMovement3D : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Suya veya balçığa girildiğinde karakterin yürüme ve koşma hızını çarpan ile değiştirir.
-    /// </summary>
-    /// <param name="multiplier">Hız çarpanı (örn. 0.5f yarıya düşürür)</param>
+    // slow down the character if the player is in water
     public void ApplySpeedModifier(float multiplier)
     {
         float clampedMultiplier = Mathf.Max(0f, multiplier);
@@ -377,9 +343,7 @@ public class PlayerMovement3D : MonoBehaviour
         sprintSpeed = defaultSprintSpeed * clampedMultiplier;
     }
 
-    /// <summary>
-    /// Karakterin yürüme ve koşma hızını başlangıçtaki varsayılan değerlerine döndürür.
-    /// </summary>
+    // reset the character's speed to default values
     public void ResetSpeed()
     {
         moveSpeed = defaultMoveSpeed;

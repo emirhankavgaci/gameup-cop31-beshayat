@@ -4,67 +4,60 @@ using UnityEngine.UI;
 using UnityEngine.InputSystem;
 using TMPro;
 
-/// <summary>
-/// Unity 6 (6000.x) uyumlu, Kazanma ("Korku Değil Ümit") ve Kaybetme (Nehir Kurudu) durumlarını,
-/// Su Miktarı Barını, 5x4 Baraj İlerleme Arayüzünü, Köşe Kontrol Rehberini,
-/// Sadece Bu Sahneye Özel 60 FPS (Düşük Sistemde Otomatik 30 FPS Fallback) Ayarını,
-/// Kazanma durumunda tam ekran siyah ekran gösterip ("Across the world...") ardından 'Hasan' sahnesine geçişi ve
-/// Sahne Yeniden Başlatmayı yöneten kontrolcü.
-/// </summary>
 public class GameOutcomeController3D : MonoBehaviour
 {
-    [Header("Sistem Referansları (Boş Bırakılırsa Otomatik Bulunur)")]
+    [Header("System References")]
     [SerializeField] private WaterLevelController waterController;
     [SerializeField] private DamBuilderController3D damBuilder;
     [SerializeField] private PlayerMovement3D playerMovement;
 
-    [Header("Sonraki Sahne Geçiş Ayarları")]
-    [Tooltip("Kazanma ekranından sonra yüklenecek hedef sahne.")]
+    [Header("Next Scene Transition Settings")]
+    [Tooltip("Next scene name to load after the win screen.")]
     [SerializeField] private string nextSceneName = "Hasan";
 
-    [Tooltip("Kazanma ekranı açıldıktan sonra tuşla geçişin aktifleşeceği minimum bekleme süresi (sn).")]
+    [Tooltip("Minimum wait time (in seconds) before allowing skip after the win screen is displayed.")]
     [SerializeField] private float minReadTimeBeforeSkip = 2.0f;
 
-    [Tooltip("Kullanıcı herhangi bir tuşa basmasa dahi otomatik sahne geçişi için beklenecek maksimum süre (sn).")]
+    [Tooltip("Maximum time (in seconds) to wait for automatic scene transition, regardless of user input.")]
     [SerializeField] private float autoTransitionDelay = 20.0f;
 
-    [Header("Kazanma Siyah Ekran Ayarları")]
-    [Tooltip("Opsiyonel: Önceden hazırlanmış kazanma siyah ekran paneli (Boş bırakılırsa dinamik siyah ekran oluşturulur).")]
+    [Header("Win Screen Settings")]
+    [Tooltip("Optional: Pre-prepared win black screen panel (if left empty, a dynamic black screen will be created).")]
     [SerializeField] private GameObject winBlackScreenPanel;
 
-    [Tooltip("Opsiyonel: Hikaye metninin yazılacağı TMP bileşeni.")]
+    [Tooltip("Optional: TMP component where the story text will be displayed.")]
     [SerializeField] private TMP_Text winStoryText;
 
-    [Tooltip("Opsiyonel: Sonraki sahneye geçiş butonu.")]
+    [Tooltip("Optional: Button to transition to the next scene.")]
     [SerializeField] private Button winContinueButton;
 
-    [Tooltip("Kazanıldığında siyah ekranda gösterilecek mesaj.")]
+    [Tooltip("Message to display on the win screen.")]
     [TextArea(5, 12)]
     [SerializeField] private string winStoryMessage =
         "Across the world, rising temperatures are drying up the rivers that beavers call home, forcing nature's smallest engineers to build dams out of human trash just to survive another day. Plastic only delays the drought, but true restoration brings the water back to life. Today, you helped one beaver hold back the dry season and proved that our rivers are still worth fighting for. When we replace waste with care, we don't just save a stream—we build hope.";
 
-    [Header("Kazanma & Kaybetme Ekranları (Eski / Fallback UI)")]
-    [SerializeField] private GameObject winPanel;  // Eski UI paneli referansı
-    [SerializeField] private GameObject losePanel; // Su tamamen bittiğinde açılacak "Kaybetme" paneli
+    [Header("Win & Lose Screens")]
+    [SerializeField] private GameObject winPanel; 
+    [SerializeField] private GameObject losePanel;
 
-    [Header("Oyun İçi HUD Arayüzü (Opsiyonel)")]
+    [Header("In-Game HUD Interface (Optional)")]
     [SerializeField] private Slider waterBarSlider;
     [SerializeField] private Image waterBarFillImage;
     [SerializeField] private TMP_Text waterPercentText;
     [SerializeField] private TMP_Text damProgressText;
-    [SerializeField] private TMP_Text cornerControlsHintText; // Köşedeki sabit mini kontrol rehberi
+    [SerializeField] private TMP_Text cornerControlsHintText; 
 
-    [Header("Köşe Kontrol Rehberi Metni")]
+    [Header("Corner Controls Hint Text")]
     [SerializeField] [TextArea(2, 4)] private string defaultControlsHint =
         "WASD: Movement  |  Shift: Run  |  Space: Jump  |  Mouse: Look Around  |  Left Mouse Button (Hold): Carry";
 
-    [Header("Sahneye Özel 60 FPS & Otomatik 30 FPS Fallback (Diğer Sahneleri Etkilemez)")]
+    [Header("Scene-Specific 60 FPS & Automatic 30 FPS Fallback (Does Not Affect Other Scenes)")]
     [SerializeField] private bool enableSceneFpsControl = true;
     [SerializeField] private int preferredFps = 60;
     [SerializeField] private int fallbackFps = 30;
-    [SerializeField] private float lowFpsThreshold = 45f; // Ortalama FPS bu değerin altına düşerse 30 FPS'e sabitler
+    [SerializeField] private float lowFpsThreshold = 45f; // If FPS drops below this threshold for 2.5 seconds, fallback to 30 FPS to prevent stuttering.
 
-    [Header("Kısayol Ayarları")]
+    [Header("Shortcut Settings")]
     [SerializeField] private bool allowRKeyToRestart = true;
 
     private bool isGameEnded = false;
@@ -86,7 +79,7 @@ public class GameOutcomeController3D : MonoBehaviour
 
         if (enableSceneFpsControl)
         {
-            // Diğer ekip arkadaşlarının sahnelerini etkilememek için önceki ayarları kaydet
+            // To prevent stuttering when switching to another teammate's scene, store the previous FPS/VSync settings and restore them when leaving this scene.
             previousTargetFrameRate = Application.targetFrameRate;
             previousVSyncCount = QualitySettings.vSyncCount;
 
@@ -127,7 +120,7 @@ public class GameOutcomeController3D : MonoBehaviour
     {
         UnsubscribeEvents();
 
-        // Başka bir ekip arkadaşının sahnesine geçilirse eski FPS/VSync ayarlarını geri yükle
+        //  restore the previous FPS/VSync settings when leaving this scene to avoid affecting other scenes.
         if (enableSceneFpsControl && !isReloadingScene)
         {
             QualitySettings.vSyncCount = previousVSyncCount;
@@ -187,12 +180,12 @@ public class GameOutcomeController3D : MonoBehaviour
     {
         if (isReloadingScene) return;
 
-        // Kazanma siyah ekranı aktifse tuş kontrolleri ve otomatik geçiş kontrolü
+        // If the win screen is active, handle user input for skipping or transitioning to the next scene.
         if (isWinScreenActive)
         {
             float elapsedSinceWin = Time.unscaledTime - winStartTime;
 
-            // Minimum okuma süresi geçtikten sonra Boşluk veya Enter ile sahne geçişi yapılabilir
+            // Minimum read time has passed, so the player can skip to the next scene with Space or Enter
             if (elapsedSinceWin >= minReadTimeBeforeSkip)
             {
                 bool keyPressed = false;
@@ -215,17 +208,17 @@ public class GameOutcomeController3D : MonoBehaviour
                 }
             }
 
-            // Otomatik süre dolduğunda da sonraki sahneye geçiş yap
+            // When the auto-transition delay has passed, automatically load the next scene
             if (autoTransitionDelay > 0f && elapsedSinceWin >= autoTransitionDelay)
             {
                 LoadNextScene();
                 return;
             }
 
-            return; // Kazanma ekranı açıkken diğer oyun içi kontrolleri yürütme
+            return; // Do not process further updates while the win screen is active
         }
 
-        // Sistem 60 FPS'i kaldıramıyorsa (2.5 saniye boyunca 45 FPS altında kalırsa) dalgalanmayı önlemek için 30 FPS'e sabitle
+        // If the system can't maintain the preferred FPS, fallback to 30 FPS after a short delay to prevent stuttering.
         if (enableSceneFpsControl && !hasFallenBackTo30Fps && Time.timeSinceLevelLoad > 2.0f)
         {
             smoothedDeltaTime += (Time.unscaledDeltaTime - smoothedDeltaTime) * 0.1f;
@@ -246,7 +239,7 @@ public class GameOutcomeController3D : MonoBehaviour
             }
         }
 
-        // 'R' tuşuna basarak her an (veya oyun bittiğinde) sahneyi hızlıca yeniden başlatabilme
+        // 'R' -> restart shortcut for convenience during testing or gameplay
         if (allowRKeyToRestart && Keyboard.current != null)
         {
             if (Keyboard.current.rKey.wasPressedThisFrame)
@@ -287,9 +280,9 @@ public class GameOutcomeController3D : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// 5x4 Baraj tamamlandığında çağrılır: Tam ekran siyah ekranı ve mesajı gösterir.
-    /// </summary>
+
+    // This method is called when the river is successfully saved (win condition).
+
     private void HandleRiverSaved()
     {
         if (isGameEnded || isReloadingScene) return;
@@ -304,16 +297,12 @@ public class GameOutcomeController3D : MonoBehaviour
 
         UnlockCursorForUI();
 
-        // Oyun içi HUD öğelerini gizle
         HideInGameHUD();
 
-        // Tam ekran siyah ekranı göster
         ShowWinBlackScreen();
     }
 
-    /// <summary>
-    /// Nehir suyu tamamen tükendiğinde (Kaybetme durumu) çağrılır.
-    /// </summary>
+
     private void HandleRiverDriedOut()
     {
         if (isGameEnded || isReloadingScene) return;
@@ -378,7 +367,7 @@ public class GameOutcomeController3D : MonoBehaviour
             return;
         }
 
-        // Dinamik Tam Ekran Siyah Canvas Oluştur
+        // Create a dynamic win black screen canvas if no pre-prepared panel is assigned.
         GameObject canvasObj = new GameObject("WinBlackScreenCanvas");
         dynamicWinCanvas = canvasObj.AddComponent<Canvas>();
         dynamicWinCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
@@ -391,7 +380,7 @@ public class GameOutcomeController3D : MonoBehaviour
 
         canvasObj.AddComponent<GraphicRaycaster>();
 
-        // Tam Ekran Siyah Arka Plan
+        // Fullscreen black background
         GameObject bgObj = new GameObject("BlackBackground");
         bgObj.transform.SetParent(canvasObj.transform, false);
 
@@ -407,7 +396,7 @@ public class GameOutcomeController3D : MonoBehaviour
 
         TMP_FontAsset fontAsset = TMP_Settings.defaultFontAsset;
 
-        // Hikaye Metni
+        // Story Text
         GameObject textObj = new GameObject("StoryText");
         textObj.transform.SetParent(canvasObj.transform, false);
 
@@ -428,7 +417,7 @@ public class GameOutcomeController3D : MonoBehaviour
         storyTmp.lineSpacing = 16f;
         storyTmp.raycastTarget = false;
 
-        // "DEVAM ET" Butonu
+        // "Continue" Button
         GameObject btnObj = new GameObject("ContinueButton");
         btnObj.transform.SetParent(canvasObj.transform, false);
 
@@ -451,7 +440,7 @@ public class GameOutcomeController3D : MonoBehaviour
         btn.colors = colors;
         btn.onClick.AddListener(LoadNextScene);
 
-        // Buton Metni
+        // Button Text
         GameObject btnTextObj = new GameObject("ButtonText");
         btnTextObj.transform.SetParent(btnObj.transform, false);
 
@@ -470,7 +459,7 @@ public class GameOutcomeController3D : MonoBehaviour
         btnTmp.alignment = TextAlignmentOptions.Center;
         btnTmp.raycastTarget = false;
 
-        // İpucu Metni
+        // Hint Text
         GameObject hintObj = new GameObject("HintText");
         hintObj.transform.SetParent(canvasObj.transform, false);
 
@@ -483,7 +472,7 @@ public class GameOutcomeController3D : MonoBehaviour
 
         TextMeshProUGUI hintTmp = hintObj.AddComponent<TextMeshProUGUI>();
         if (fontAsset != null) hintTmp.font = fontAsset;
-        hintTmp.text = "Devam etmek için butona tıklayın veya Boşluk (Space) tuşuna basın";
+        hintTmp.text = "Continue by clicking the button or pressing the [SPACE] key";
         hintTmp.fontSize = 15f;
         hintTmp.fontStyle = FontStyles.Italic;
         hintTmp.color = new Color(0.6f, 0.65f, 0.7f, 0.8f);
@@ -497,20 +486,16 @@ public class GameOutcomeController3D : MonoBehaviour
         Cursor.visible = true;
     }
 
-    /// <summary>
-    /// Kazanma ekranından sonra 'Hasan' adlı sahneye geçişi gerçekleştirir.
-    /// UI üzerindeki 'DEVAM ET' butonu veya tuş kısayolu ile tetiklenir.
-    /// </summary>
+    //loads the next screen by name 
     public void LoadNextScene()
     {
         if (isReloadingScene) return;
         isReloadingScene = true;
 
-        // Sahne yüklenmeden önce tüm event aboneliklerini ve static eventleri temizle
-        UnsubscribeEvents();
+        UnsubscribeEvents(); // remove all event subscriptions to avoid memory leaks or unintended behavior
         TrashPickup3D.ResetStaticEvents();
 
-        // Başka bir ekip arkadaşının sahnesine geçildiğinde eski FPS/VSync ayarlarını geri yükle
+        // restore the previous FPS/VSync settings when leaving this scene to avoid affecting other scenes.
         if (enableSceneFpsControl)
         {
             QualitySettings.vSyncCount = previousVSyncCount;
@@ -523,15 +508,12 @@ public class GameOutcomeController3D : MonoBehaviour
         SceneManager.LoadScene(targetScene);
     }
 
-    /// <summary>
-    /// UI üzerindeki "Tekrar Dene" butonuna bağlanabilir veya 'R' tuşu ile tetiklenir.
-    /// </summary>
-    public void RestartScene()
+
+    public void RestartScene() // restart using "R" key
     {
         if (isReloadingScene) return;
         isReloadingScene = true;
 
-        // Sahne yüklenmeden önce tüm event aboneliklerini ve static eventleri temizle
         UnsubscribeEvents();
         TrashPickup3D.ResetStaticEvents();
 
@@ -540,9 +522,6 @@ public class GameOutcomeController3D : MonoBehaviour
         SceneManager.LoadScene(currentScene.buildIndex);
     }
 
-    /// <summary>
-    /// UI üzerindeki "Çıkış" butonuna bağlanabilir.
-    /// </summary>
     public void QuitGame()
     {
         Application.Quit();

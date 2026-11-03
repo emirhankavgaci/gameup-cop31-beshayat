@@ -1,28 +1,20 @@
 ﻿using UnityEngine;
 using UnityEngine.InputSystem;
 
-/// <summary>
-/// Unity 6 (6000.x) uyumlu, Kunduz (Player) iÃ§in:
-/// 1. Her ses iÃ§in ayrÄ± [SerializeField] ses seviyesi (Volume) ayarÄ± sunar.
-/// 2. Su sesinin Ã¼st Ã¼ste "taramalÄ± tÃ¼fek" gibi Ã§almasÄ±nÄ± Cooldown (varsayÄ±lan 2 sn) ile engeller.
-/// 3. ZÄ±plama sesini yalnÄ±zca yerdeyken Space tuÅŸuna basÄ±ldÄ±ÄŸÄ±nda Ã§alar (oyun baÅŸÄ±nda veya yokuÅŸta kendi kendine Ã§almaz).
-/// 4. DoÄŸa/Nehir arka plan ambiyansÄ±nÄ± (Loop) ve beyaz su kÃ¶pÃ¼ÄŸÃ¼ (Foam/Splash) efektini yÃ¶netir.
-/// Oyuncu (Player) objesine eklenir.
-/// </summary>
 public class BeaverAudioAndSplashController3D : MonoBehaviour
 {
-    [Header("Genel Ses KontrolÃ¼")]
+    [Header("Main Volume")]
     [SerializeField] [Range(0f, 1f)] private float masterVolume = 1.0f;
 
-    [Header("1. EÅŸya Alma & Baraja Koyma Sesleri (AyrÄ± Ses AyarlÄ±)")]
+    [Header("1. Item Pickup & Placement")]
     [SerializeField] private AudioClip pickupSound; // pickup.mp3
     [SerializeField] [Range(0f, 1f)] private float pickupVolume = 0.85f;
-    [SerializeField] [Range(0f, 1f)] private float dropVolume = 0.60f; // Yere normal bÄ±rakma ses yÃ¼ksekliÄŸi
+    [SerializeField] [Range(0f, 1f)] private float dropVolume = 0.60f; // Yere bırakma sesi (pickup.mp3 ile aynı, ama daha sessiz)
 
-    [SerializeField] private AudioClip putDownSound; // putdownsound.mp3 (Baraja parÃ§a yerleÅŸince)
+    [SerializeField] private AudioClip putDownSound; // putdownsound.mp3
     [SerializeField] [Range(0f, 1f)] private float putDownVolume = 0.85f;
 
-    [Header("2. Kazanma & Kaybetme Sesleri (AyrÄ± Ses AyarlÄ±)")]
+    [Header("2. Win & Fail")]
     [SerializeField] private AudioClip winSound; // winsound.mp3
     [SerializeField] [Range(0f, 1f)] private float winVolume = 0.90f;
 
@@ -32,31 +24,31 @@ public class BeaverAudioAndSplashController3D : MonoBehaviour
     [SerializeField] private AudioClip failSound; // failsound.mp3
     [SerializeField] [Range(0f, 1f)] private float failVolume = 0.90f;
 
-    [Header("3. Su SÄ±Ã§rama (Cooldown'lu) & ZÄ±plama Sesleri")]
-    [SerializeField] private AudioClip waterSplashSound; // Suya girince / suda yÃ¼rÃ¼rken ÅŸÄ±pÄ±rtÄ±
+    [Header("3. Water Sounds")]
+    [SerializeField] private AudioClip waterSplashSound; // Suya girince 
     [SerializeField] [Range(0f, 1f)] private float waterSplashVolume = 0.65f;
-    [SerializeField] private float splashSoundCooldown = 2.0f; // TaramalÄ± tÃ¼fek gibi Ã§almayÄ± Ã¶nleyen bekleme sÃ¼resi (sn)
-    [SerializeField] private bool playSplashWhileMovingInWater = true; // Suda yÃ¼zerken/yÃ¼rÃ¼rken her 2 saniyede bir Ã§alsÄ±n mÄ±?
+    [SerializeField] private float splashSoundCooldown = 2.0f; // Tekrarlama cooldown süresi 
+    [SerializeField] private bool playSplashWhileMovingInWater = true; 
 
     [SerializeField] private AudioClip jumpSound; // Space ile zÄ±plama sesi
     [SerializeField] [Range(0f, 1f)] private float jumpVolume = 0.75f;
     [SerializeField] private float jumpSoundCooldown = 0.35f;
 
-    [Header("4. Arka Plan DoÄŸa / Nehir AmbiyansÄ± (ncprime nature-sound-2 Ã¶nerilir)")]
+    [Header("4. Background Ambience")]
     [SerializeField] private AudioClip natureAmbienceClip; // ncprime-prime-facts7-nature-sound-2-291487.mp3
     [SerializeField] [Range(0f, 1f)] private float natureAmbienceVolume = 0.35f;
 
-    [Header("5. Ayarlanabilir Su SÄ±Ã§rama ve Beyaz KÃ¶pÃ¼k Efekti")]
-    [SerializeField] private bool enableWaterFoamAndSplash = true;
-    [SerializeField] [Range(0.2f, 5f)] private float effectOverallScale = 1.0f; // TÃ¼m kÃ¶pÃ¼k/sÄ±Ã§rama efektini bÃ¼yÃ¼tÃ¼p kÃ¼Ã§Ã¼ltÃ¼r
-    [SerializeField] private float foamRingRadius = 0.45f; // Kunduzun etrafÄ±ndaki beyaz kÃ¶pÃ¼k Ã§emberinin yarÄ±Ã§apÄ±
-    [SerializeField] private float foamParticleSize = 0.22f; // Beyaz kÃ¶pÃ¼k taneciklerinin boyutu
-    [SerializeField] private float splashParticleSize = 0.18f; // Suya ilk giriÅŸte sÄ±Ã§rayan damlalarÄ±n boyutu
-    [SerializeField] private int splashBurstCount = 22; // Suya girince fÄ±rlayan damla sayÄ±sÄ±
-    [SerializeField] private float foamEmissionRateIdle = 10f; // Suda dururken saniyede Ã§Ä±kan kÃ¶pÃ¼k
-    [SerializeField] private float foamEmissionRateMoving = 28f; // Suda yÃ¼rÃ¼rken saniyede Ã§Ä±kan kÃ¶pÃ¼k
-    [SerializeField] private float foamHeightOffset = 0.08f; // KÃ¶pÃ¼ÄŸÃ¼n su yÃ¼zeyinden ne kadar yukarÄ±da gÃ¶rÃ¼neceÄŸi
-    [SerializeField] private Color foamColor = new Color(0.95f, 0.98f, 1f, 0.85f); // Beyaz kÃ¶pÃ¼k rengi
+    [Header("5. Adjustable Water Splash and White Foam Effect")]
+    [SerializeField] private bool enableWaterFoamAndSplash = true; // Water splash and foam effect can be toggled on/off in the inspector
+    [SerializeField] [Range(0.2f, 5f)] private float effectOverallScale = 1.0f; 
+    [SerializeField] private float foamRingRadius = 0.45f; 
+    [SerializeField] private float foamParticleSize = 0.22f; 
+    [SerializeField] private float splashParticleSize = 0.18f;
+    [SerializeField] private int splashBurstCount = 22;
+    [SerializeField] private float foamEmissionRateIdle = 10f; 
+    [SerializeField] private float foamEmissionRateMoving = 28f;
+    [SerializeField] private float foamHeightOffset = 0.08f; 
+    [SerializeField] private Color foamColor = new Color(0.95f, 0.98f, 1f, 0.85f); 
 
     private PlayerMovement3D playerMovement;
     private WaterLevelController waterController;
@@ -82,17 +74,17 @@ public class BeaverAudioAndSplashController3D : MonoBehaviour
         waterController = FindAnyObjectByType<WaterLevelController>();
         damBuilder = FindAnyObjectByType<DamBuilderController3D>();
 
-        // 1. Ana SFX kaynaÄŸÄ±
+        // 1. MainSFX
         sfxSource = gameObject.AddComponent<AudioSource>();
         sfxSource.playOnAwake = false;
         sfxSource.spatialBlend = 0f;
 
-        // 2. Ä°kincil SFX kaynaÄŸÄ± (AlkÄ±ÅŸ ve Su Sesi Ã§akÄ±ÅŸmasÄ±n diye)
+        // 2. SecondarySFX (Applause)
         secondarySfxSource = gameObject.AddComponent<AudioSource>();
         secondarySfxSource.playOnAwake = false;
         secondarySfxSource.spatialBlend = 0f;
 
-        // 3. DoÄŸa / Nehir AmbiyansÄ± kaynaÄŸÄ± (Loop)
+        // 3. Water Ambience (Loop)
         ambienceSource = gameObject.AddComponent<AudioSource>();
         ambienceSource.playOnAwake = false;
         ambienceSource.loop = true;
@@ -113,7 +105,7 @@ public class BeaverAudioAndSplashController3D : MonoBehaviour
 
     private void OnEnable()
     {
-                GameAudioManager.OnMusicVolumeChanged += HandleMusicVolumeChanged;
+        GameAudioManager.OnMusicVolumeChanged += HandleMusicVolumeChanged;
         TrashPickup3D.OnTrashPickedUp += HandleTrashPickedUp;
         TrashPickup3D.OnTrashDropped += HandleTrashDropped;
 
@@ -131,7 +123,7 @@ public class BeaverAudioAndSplashController3D : MonoBehaviour
 
     private void OnDisable()
     {
-                GameAudioManager.OnMusicVolumeChanged -= HandleMusicVolumeChanged;
+        GameAudioManager.OnMusicVolumeChanged -= HandleMusicVolumeChanged;
         TrashPickup3D.OnTrashPickedUp -= HandleTrashPickedUp;
         TrashPickup3D.OnTrashDropped -= HandleTrashDropped;
 
@@ -149,19 +141,19 @@ public class BeaverAudioAndSplashController3D : MonoBehaviour
 
     private void Update()
     {
-        // Inspector'dan ambiyans sesi deÄŸiÅŸtirilirse canlÄ± gÃ¼ncelle
+        // ambanceSource volume is updated in real-time based on masterVolume and GameAudioManager.MusicVolume
         if (ambienceSource != null && ambienceSource.isPlaying)
         {
             ambienceSource.volume = natureAmbienceVolume * masterVolume * GameAudioManager.MusicVolume;
         }
 
-        // Su alÃ§alÄ±rken fizik motorunun anlÄ±k OnTriggerExit/Enter yapmasÄ±nÄ± yumuÅŸat (Debounce)
+        // Water contact state reset: If the player hasn't been in contact with water for a short time, consider them out of water
         if (isInWater && Time.time - lastWaterContactTime > 0.2f)
         {
             isInWater = false;
         }
 
-        // ZÄ±plama sesi kontrolÃ¼: YalnÄ±zca karakter yerdeyken Space (veya Gamepad zÄ±plama) tuÅŸuna basÄ±ldÄ±ÄŸÄ±nda Ã§alar
+        // Jump sound effect: Play jump sound when spacebar or gamepad button is pressed, but only if grounded and cooldown has passed
         if (playerMovement != null && jumpSound != null)
         {
             bool jumpPressed = (Keyboard.current != null && Keyboard.current.spaceKey.wasPressedThisFrame)
@@ -174,13 +166,13 @@ public class BeaverAudioAndSplashController3D : MonoBehaviour
             }
         }
 
-        // Suda hareket ederken Cooldown sÃ¼resinde bir (Ã¶rn. 2 saniyede bir) su sesi ve hafif sÄ±Ã§rama
+        // Water splash sound effect: Play splash sound when moving in water, but only if cooldown has passed
         if (isInWater && playSplashWhileMovingInWater && playerMovement != null && playerMovement.IsMoving)
         {
             TryPlaySplashWithCooldown();
         }
 
-        // Su iÃ§indeyken beyaz kÃ¶pÃ¼k halkasÄ±nÄ± su yÃ¼zeyinde ve kunduzun etrafÄ±nda tut
+        // Water foam and splash visual effect: Update the foam effect in real-time if enabled
         if (enableWaterFoamAndSplash && foamRingParticles != null)
         {
             UpdateFoamEffectInRealtime();
@@ -222,7 +214,7 @@ public class BeaverAudioAndSplashController3D : MonoBehaviour
             currentWaterSurfaceY = waterController.transform.position.y;
         }
 
-        // Efektin pozisyonunu kunduzun X/Z hizasÄ±nda ve suyun Y yÃ¼zeyinde tut
+        // Position the foam ring slightly above the water surface, with an offset to avoid clipping
         Vector3 foamPos = new Vector3(transform.position.x, currentWaterSurfaceY + foamHeightOffset, transform.position.z);
         foamRingParticles.transform.position = foamPos;
         if (splashBurstParticles != null)
@@ -333,7 +325,7 @@ public class BeaverAudioAndSplashController3D : MonoBehaviour
             secondarySfxSource.volume = applauseVolume * masterVolume * GameAudioManager.SFXVolume;
             secondarySfxSource.pitch = 1f;
             secondarySfxSource.Play();
-            // applause.mp3 sonundaki (00:06) konuÅŸma sesini kesmek iÃ§in 5.8 saniye sonra durdur
+            // Stop the applause sound after 5.8 seconds to avoid it playing indefinitely
             Invoke(nameof(StopSecondaryAudio), 5.8f);
         }
     }
@@ -348,7 +340,7 @@ public class BeaverAudioAndSplashController3D : MonoBehaviour
 
     private void HandleGameLost()
     {
-        // Nehir kuruduÄŸunda su/doÄŸa ambiyansÄ±nÄ± sustur ki kuraklÄ±k dramatik hissedilsin
+        // Stop the ambience sound immediately when the game is lost
         if (ambienceSource != null && ambienceSource.isPlaying)
         {
             ambienceSource.Stop();
@@ -376,9 +368,7 @@ public class BeaverAudioAndSplashController3D : MonoBehaviour
         sfxSource.PlayOneShot(clip, vol * GameAudioManager.SFXVolume);
     }
 
-    /// <summary>
-    /// DÄ±ÅŸarÄ±dan hiÃ§bir asset veya materyal gerektirmeden yumuÅŸak beyaz kÃ¶pÃ¼k dokusu ve ParticleSystem Ã¼retir.
-    /// </summary>
+    // Procedural Foam and Splash Particle Systems Creation
     private void CreateProceduralFoamAndSplashSystems()
     {
         Texture2D circleTex = new Texture2D(32, 32, TextureFormat.RGBA32, false);
@@ -404,7 +394,7 @@ public class BeaverAudioAndSplashController3D : MonoBehaviour
             generatedParticleMaterial.SetTexture("_BaseMap", circleTex);
         generatedParticleMaterial.renderQueue = 2015;
 
-        // 1. SÃ¼rekli Beyaz KÃ¶pÃ¼k HalkasÄ± (Foam Ring)
+        // 1.Foam Ring Effect
         GameObject foamObj = new GameObject("WaterFoamRing_Effect");
         foamObj.transform.SetParent(transform);
         foamObj.transform.localPosition = Vector3.zero;
@@ -435,7 +425,7 @@ public class BeaverAudioAndSplashController3D : MonoBehaviour
         var foamRenderer = foamObj.GetComponent<ParticleSystemRenderer>();
         foamRenderer.sharedMaterial = generatedParticleMaterial;
 
-        // 2. Suya Ä°lk GiriÅŸ SÄ±Ã§rama Efekti (Splash Burst)
+        // 2.Splash Burst Effect
         GameObject splashObj = new GameObject("WaterSplashBurst_Effect");
         splashObj.transform.SetParent(transform);
         splashObj.transform.localPosition = Vector3.zero;
