@@ -155,6 +155,12 @@ public class GameFlowManager : MonoBehaviour
 
         deathCount++;
         OnPlayerDied?.Invoke();
+
+        if (playerMotor != null)
+        {
+            playerMotor.SetMovementLocked(true);
+        }
+
         StartCoroutine(RespawnSequenceCoroutine());
     }
 
@@ -175,6 +181,11 @@ public class GameFlowManager : MonoBehaviour
             cameraShake.TriggerShakePulse(0.75f);
         }
 
+        if (playerMotor != null)
+        {
+            playerMotor.SetMovementLocked(true);
+        }
+
         if (instantTeleport)
         {
             RespawnImmediatelyAtLastCheckpoint();
@@ -191,6 +202,7 @@ public class GameFlowManager : MonoBehaviour
 
         if (playerMotor != null)
         {
+            playerMotor.SetMovementLocked(true);
             playerMotor.SetVelocity(Vector3.zero);
             playerMotor.SetCharacterControllerEnabled(false);
         }
@@ -204,6 +216,10 @@ public class GameFlowManager : MonoBehaviour
             {
                 SetImageAlpha(underwaterFlashImage, underwaterOverlayColor, 0f);
                 SetImageAlpha(blackFadeImage, Color.black, 0f);
+                if (playerMotor != null)
+                {
+                    playerMotor.SetMovementLocked(false);
+                }
                 isRespawning = false;
                 yield break;
             }
@@ -240,6 +256,11 @@ public class GameFlowManager : MonoBehaviour
 
         SetImageAlpha(underwaterFlashImage, underwaterOverlayColor, 0f);
         SetImageAlpha(blackFadeImage, Color.black, 0f);
+
+        if (playerMotor != null)
+        {
+            playerMotor.SetMovementLocked(false);
+        }
 
         isRespawning = false;
     }

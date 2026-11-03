@@ -50,8 +50,8 @@ public class PlayerLook : MonoBehaviour
     [Tooltip("Başlangıç ve aktif kamera bakış modu (varsayılan FirstPerson).")]
     [SerializeField] private ViewMode currentViewMode = ViewMode.FirstPerson;
 
-    [Tooltip("V tuşu ile FirstPerson / ThirdPerson geçişine izin ver (debug amaçlı kapatılabilir).")]
-    [SerializeField] private bool allowViewToggle = true;
+    [Tooltip("V tuşu ile FirstPerson / ThirdPerson geçişine izin ver (kullanıcı talebiyle kapatılmıştır).")]
+    [SerializeField] private bool allowViewToggle = false;
 
     [Tooltip("Bakış modu değiştirme kısayol tuşu (varsayılan V).")]
     [SerializeField] private KeyCode viewToggleKey = KeyCode.V;
@@ -261,8 +261,11 @@ public class PlayerLook : MonoBehaviour
 
         ApplyCameraViewDistanceFog();
 
-        thirdPersonBlend = (currentViewMode == ViewMode.ThirdPerson) ? 1f : 0f;
-        ApplyViewModeState(currentViewMode);
+        // Third Person geçişi tamamen kaldırıldı - daima First Person modunda kilitli
+        allowViewToggle = false;
+        currentViewMode = ViewMode.FirstPerson;
+        thirdPersonBlend = 0f;
+        ApplyViewModeState(ViewMode.FirstPerson);
     }
 
     private void OnEnable()
@@ -300,10 +303,7 @@ public class PlayerLook : MonoBehaviour
 
     private void Update()
     {
-        if (allowViewToggle && Input.GetKeyDown(viewToggleKey))
-        {
-            ToggleViewMode();
-        }
+        // "V" tuşu ile third person moduna geçiş tamamen kaldırıldı
 
         if (allowMouseInput)
         {
@@ -455,21 +455,15 @@ public class PlayerLook : MonoBehaviour
 
     public void ToggleViewMode()
     {
-        ViewMode nextMode = (currentViewMode == ViewMode.FirstPerson)
-            ? ViewMode.ThirdPerson
-            : ViewMode.FirstPerson;
-
-        SetViewMode(nextMode);
+        // Third Person modu tamamen kaldırıldı - daima First Person
+        SetViewMode(ViewMode.FirstPerson);
     }
 
     public void SetViewMode(ViewMode newMode)
     {
-        if (currentViewMode == newMode)
-            return;
-
-        currentViewMode = newMode;
-        ApplyViewModeState(currentViewMode);
-        OnViewModeChanged?.Invoke(currentViewMode);
+        currentViewMode = ViewMode.FirstPerson;
+        ApplyViewModeState(ViewMode.FirstPerson);
+        OnViewModeChanged?.Invoke(ViewMode.FirstPerson);
     }
 
     private void ApplyViewModeState(ViewMode mode)
@@ -496,7 +490,7 @@ public class PlayerLook : MonoBehaviour
     /// </summary>
     public void ProcessMouseLookForCurrentFrame()
     {
-        if (!allowMouseInput || lastMouseProcessedFrame == Time.frameCount)
+        if (Time.timeScale <= 0f || !allowMouseInput || lastMouseProcessedFrame == Time.frameCount)
             return;
 
         lastMouseProcessedFrame = Time.frameCount;

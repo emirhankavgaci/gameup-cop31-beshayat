@@ -105,6 +105,9 @@ public class CactusHazard : MonoBehaviour
         lastHitTime = Time.time;
         onCactusHit?.Invoke();
 
+        // Kaktüse çarptığı anda oyuncunun hareketini dondur (ölüyken yürümeyi önler)
+        motor.SetMovementLocked(true);
+
         // Sahnede GameFlowManager varsa hem ölüm sayacını artırır, hem oyuncuyu son checkpoint'e ışınlar, hem de seli geri çeker
         if (gameFlowManager != null)
         {

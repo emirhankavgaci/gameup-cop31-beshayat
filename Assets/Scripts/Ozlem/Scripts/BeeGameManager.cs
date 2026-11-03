@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -8,21 +8,21 @@ public class BeeGameManager : MonoBehaviour
     public static BeeGameManager Instance => instance;
 
     [Header("Game Time")]
-    [Tooltip("Süre sınırı (Saniye). Oyuncuya gösterilmez, arkada işler.")]
-    [SerializeField] private float gameDuration = 120f; // 2 dakika
+    [Tooltip("Sure siniri (Saniye). Oyuncuya gosterilmez, arkada isler.")]
+    [SerializeField] private float gameDuration = 60f; // 1 dakika (kullanici talebiyle 2 dakikadan 1 dakikaya indirildi)
     private float timer = 0f;
 
     [Header("References")]
     [SerializeField] private HiveArea hive;
 
     [Header("Next Level")]
-    [SerializeField] private string nextSceneName = "Zeynep";
+    [SerializeField] private string nextSceneName = "Main Menu";
 
     private bool isGameWon = false;
     private bool isGameOver = false;
     private List<BeeNectar> bees = new();
 
-    // UI Dokuları ve Stilleri
+    // UI Dokulari ve Stilleri
     private Texture2D bgBoxTex;
     private Texture2D barBgTex;
     private Texture2D barFillTex;
@@ -37,17 +37,27 @@ public class BeeGameManager : MonoBehaviour
     private GUIStyle warningStyle;
     private bool stylesInitialized = false;
 
-    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
-    private static void EnsureInstanceInScene()
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+    private static void RegisterSceneLoadedCallback()
     {
-        string activeScene = SceneManager.GetActiveScene().name;
-        if (activeScene.Equals("Ozlem", System.StringComparison.OrdinalIgnoreCase))
+        SceneManager.sceneLoaded -= OnSceneLoaded;
+        SceneManager.sceneLoaded += OnSceneLoaded;
+    }
+
+    private static void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        if (scene.name.Equals("Ozlem", System.StringComparison.OrdinalIgnoreCase))
         {
-            if (FindFirstObjectByType<BeeGameManager>() == null)
-            {
-                GameObject go = new GameObject("BeeGameManager");
-                go.AddComponent<BeeGameManager>();
-            }
+            EnsureInstanceExists();
+        }
+    }
+
+    public static void EnsureInstanceExists()
+    {
+        if (FindAnyObjectByType<BeeGameManager>() == null)
+        {
+            GameObject go = new GameObject("BeeGameManager");
+            go.AddComponent<BeeGameManager>();
         }
     }
 
@@ -61,13 +71,27 @@ public class BeeGameManager : MonoBehaviour
         instance = this;
 
         Time.timeScale = 1f;
+
+        if (hive == null)
+            hive = FindAnyObjectByType<HiveArea>();
+    }
+
+    private void OnEnable()
+    {
+        if (hive == null)
+            hive = FindAnyObjectByType<HiveArea>();
     }
 
     private void Start()
     {
         if (hive == null)
-            hive = FindFirstObjectByType<HiveArea>();
+            hive = FindAnyObjectByType<HiveArea>();
 
+        RefreshBees();
+    }
+
+    private void RefreshBees()
+    {
         bees.Clear();
         bees.AddRange(FindObjectsByType<BeeNectar>(FindObjectsSortMode.None));
     }
@@ -79,15 +103,15 @@ public class BeeGameManager : MonoBehaviour
 
         if (hive == null)
         {
-            hive = FindFirstObjectByType<HiveArea>();
+            hive = FindAnyObjectByType<HiveArea>();
             if (hive == null)
                 return;
         }
 
-        // Zaman sayacı (arkada işler, 2 dakika)
+        // Zaman sayaci (arkada isler, 1 dakika)
         timer += Time.deltaTime;
 
-        // Kaybetme koşulu: Kovan nektarı 0'a inerse
+        // Kaybetme kosulu: Kovan nektari 0'a inerse
         if (hive.CurrentNectar <= 0f)
         {
             isGameOver = true;
@@ -96,7 +120,7 @@ public class BeeGameManager : MonoBehaviour
             return;
         }
 
-        // Kazanma koşulu: 2 dakika boyunca kovanı hayatta tutarsa
+        // Kazanma kosulu: 1 dakika boyunca kovani hayatta tutarsa
         if (timer >= gameDuration)
         {
             isGameWon = true;
@@ -108,13 +132,13 @@ public class BeeGameManager : MonoBehaviour
 
     private void InitStyles()
     {
-        if (stylesInitialized)
+        if (stylesInitialized && bgBoxTex != null && barBgTex != null && barFillTex != null && blackTex != null && buttonTex != null)
             return;
 
-        bgBoxTex = MakeTexture(2, 2, new Color(0.08f, 0.08f, 0.08f, 0.85f));
+        bgBoxTex = MakeTexture(2, 2, new Color(0.08f, 0.08f, 0.08f, 0.88f));
         barBgTex = MakeTexture(2, 2, new Color(0.2f, 0.2f, 0.2f, 0.9f));
         barFillTex = MakeTexture(2, 2, Color.white);
-        blackTex = MakeTexture(2, 2, new Color(0.02f, 0.02f, 0.02f, 0.98f));
+        blackTex = MakeTexture(2, 2, new Color(0.02f, 0.02f, 0.02f, 0.88f));
         buttonTex = MakeTexture(2, 2, new Color(0.18f, 0.55f, 0.24f, 1f));
 
         headerStyle = new GUIStyle(GUI.skin.label)
@@ -173,27 +197,36 @@ public class BeeGameManager : MonoBehaviour
     {
         InitStyles();
 
-        // 1) Sağ Üst Köşe Kovan Nektarı HUD
-        if (!isGameWon && !isGameOver)
-        {
-            DrawNectarHUD();
-        }
-        // 2) Kazanma Ekranı (Siyah Arkaplan ve İklim Krizi Mesajı)
-        else if (isGameWon)
+        // 1) Kazanma Ekrani (Tum ekrani kaplayan mesaj ekrani)
+        if (isGameWon)
         {
             DrawWinScreen();
+            return;
         }
-        // 3) Kaybetme Ekranı
-        else if (isGameOver)
+
+        // 2) Kaybetme Ekrani (Panel ortada gosterilir)
+        if (isGameOver)
         {
             DrawGameOverScreen();
         }
+
+        // 3) Sag Ust Kose Kovan Nektari HUD (Hem oyun sirasinda hem de oyun kaybedildiginde sag ustte her zaman gorunur)
+        DrawNectarHUD();
     }
 
     private void DrawNectarHUD()
     {
         if (hive == null)
-            return;
+        {
+            hive = FindAnyObjectByType<HiveArea>();
+            if (hive == null)
+                return;
+        }
+
+        if (bees.Count == 0)
+        {
+            RefreshBees();
+        }
 
         float width = 310f;
         float height = 100f;
@@ -203,15 +236,15 @@ public class BeeGameManager : MonoBehaviour
         // Arka Plan Kutusu
         GUI.DrawTexture(new Rect(x, y, width, height), bgBoxTex);
 
-        // Başlık
-        GUI.Label(new Rect(x + 14, y + 10, 180, 24), "🍯 KOVAN NEKTARI", headerStyle);
+        // Baslik
+        GUI.Label(new Rect(x + 14, y + 10, 180, 24), "KOVAN NEKTARI", headerStyle);
 
-        // Değer
+        // Deger
         int curNectar = Mathf.CeilToInt(hive.CurrentNectar);
         int maxNectar = Mathf.RoundToInt(hive.MaxCapacity);
         GUI.Label(new Rect(x + 140, y + 10, width - 155, 24), $"{curNectar} / {maxNectar}", valueStyle);
 
-        // İlerleme Çubuğu (Progress Bar)
+        // Ilerleme Cubugu (Progress Bar)
         float barX = x + 14;
         float barY = y + 40;
         float barW = width - 28;
@@ -224,18 +257,18 @@ public class BeeGameManager : MonoBehaviour
 
         Color fillColor;
         if (fillRatio > 0.45f)
-            fillColor = new Color(0.96f, 0.72f, 0.18f); // Altın sarısı bal rengi
+            fillColor = new Color(0.96f, 0.72f, 0.18f); // Altin sarisi bal rengi
         else if (fillRatio > 0.2f)
             fillColor = new Color(0.95f, 0.5f, 0.15f);  // Turuncu
         else
-            fillColor = (Mathf.Sin(Time.unscaledTime * 6f) > 0f) ? new Color(1f, 0.2f, 0.2f) : new Color(0.6f, 0.1f, 0.1f); // Yanıp sönen kırmızı
+            fillColor = (Mathf.Sin(Time.unscaledTime * 6f) > 0f) ? new Color(1f, 0.2f, 0.2f) : new Color(0.6f, 0.1f, 0.1f); // Yanip sonen kirmizi
 
         Color oldColor = GUI.color;
         GUI.color = fillColor;
         GUI.DrawTexture(new Rect(barX, barY, fillW, barH), barFillTex);
         GUI.color = oldColor;
 
-        // Arıların Taşıdığı Polen Bilgisi
+        // Arilarin Tasidigi Polen Bilgisi
         int carriedPollen = 0;
         for (int i = 0; i < bees.Count; i++)
         {
@@ -243,9 +276,10 @@ public class BeeGameManager : MonoBehaviour
                 carriedPollen += bees[i].CurrentNectar;
         }
 
-        if (fillRatio <= 0.2f)
+        if (fillRatio <= 0.2f || isGameOver)
         {
-            GUI.Label(new Rect(x + 14, y + 66, width - 28, 22), "⚠️ Nektar tükeniyor! Çiçek toplayıp kovana dön!", warningStyle);
+            string warnText = isGameOver ? "Nektar tukendi!" : "Nektar tukeniyor! Cicek toplayip kovana don!";
+            GUI.Label(new Rect(x + 14, y + 66, width - 28, 22), warnText, warningStyle);
         }
         else
         {
@@ -255,13 +289,13 @@ public class BeeGameManager : MonoBehaviour
                 alignment = TextAnchor.MiddleLeft
             };
             subStyle.normal.textColor = new Color(0.85f, 0.85f, 0.85f);
-            GUI.Label(new Rect(x + 14, y + 66, width - 28, 22), $"🐝 Taşınan Polen: {carriedPollen}", subStyle);
+            GUI.Label(new Rect(x + 14, y + 66, width - 28, 22), $"Tasinan Polen: {carriedPollen}", subStyle);
         }
     }
 
     private void DrawWinScreen()
     {
-        // Tüm ekranı kaplayan siyah arka plan
+        // Tum ekrani kaplayan siyah arka plan
         GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), blackTex);
 
         float panelWidth = Mathf.Min(780f, Screen.width - 40f);
@@ -269,20 +303,19 @@ public class BeeGameManager : MonoBehaviour
         float panelX = (Screen.width - panelWidth) / 2f;
         float panelY = (Screen.height - panelHeight) / 2f;
 
-        // Başlık
+        // Baslik
         GUI.Label(
             new Rect(panelX, panelY + 15, panelWidth, 45),
-            "BÖLÜM TAMAMLANDI - KOVANI KORUDUN! 🐝",
+            "BOLUM TAMAMLANDI - KOVANI KORUDUN!",
             winTitleStyle
         );
 
-        // Kullanıcının istediği birebir mesaj
-        string message = "İklim krizi, arıların yaşamını ciddi şekilde tehdit ediyor. " +
-                         "Artan sıcaklıklar, kuraklık ve değişen mevsimler çiçeklerin azalmasına, " +
-                         "arıların besin kaynaklarının tükenmesine neden oluyor. " +
-                         "Bu durum, arı popülasyonlarının azalmasına ve bazı türlerin neslinin " +
-                         "tükenme tehlikesiyle karşı karşıya kalmasına yol açıyor. " +
-                         "Arıları korumak, doğanın dengesini korumak için büyük önem taşıyor.";
+        string message = "Iklim krizi, arilarin yasamini ciddi sekilde tehdit ediyor. " +
+                         "Artan sicakliklar, kuraklik ve degisen mevsimler ciceklerin azalmasina, " +
+                         "arilarin besin kaynaklarinin tukenmesine neden oluyor. " +
+                         "Bu durum, ari populasyonlarinin azalmasina ve bazi turlerin neslinin " +
+                         "tukenme tehlikesiyle karsi karsiya kalmasina yol aciyor. " +
+                         "Arilari korumak, doganin dengesini korumak icin buyuk onem tasiyor.";
 
         GUI.Label(
             new Rect(panelX + 30, panelY + 80, panelWidth - 60, panelHeight - 190),
@@ -304,6 +337,7 @@ public class BeeGameManager : MonoBehaviour
 
     private void DrawGameOverScreen()
     {
+        // Yari saydam arka plan (arkadaki oyun ve sag ustteki HUD hafifce gorunsun)
         GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), blackTex);
 
         float panelWidth = Mathf.Min(600f, Screen.width - 40f);
@@ -311,15 +345,18 @@ public class BeeGameManager : MonoBehaviour
         float panelX = (Screen.width - panelWidth) / 2f;
         float panelY = (Screen.height - panelHeight) / 2f;
 
+        // Kutu arka plani
+        GUI.DrawTexture(new Rect(panelX, panelY, panelWidth, panelHeight), bgBoxTex);
+
         GUIStyle lostTitle = new GUIStyle(winTitleStyle);
         lostTitle.normal.textColor = new Color(1f, 0.25f, 0.25f);
 
-        GUI.Label(new Rect(panelX, panelY + 20, panelWidth, 40), "KOVAN NEKTARI TÜKENDİ! 🥀", lostTitle);
+        GUI.Label(new Rect(panelX, panelY + 20, panelWidth, 40), "KOVAN NEKTARI TUKENDI!", lostTitle);
 
         GUI.Label(
             new Rect(panelX + 20, panelY + 80, panelWidth - 40, 100),
-            "Kovandaki nektar tükendi ve arılar besinsiz kaldı.\n\n" +
-            "Çiçeklerden daha hızlı nektar toplayıp kovana taşımalısın!",
+            "Kovandaki nektar tukendi ve arilar besinsiz kaldi.\n\n" +
+            "Ciceklerden daha hizli nektar toplayip kovana tasimalisin!",
             winMessageStyle
         );
 
@@ -334,7 +371,7 @@ public class BeeGameManager : MonoBehaviour
         if (GUI.Button(new Rect(btnX, btnY, btnWidth, btnHeight), "TEKRAR DENE", retryStyle))
         {
             Time.timeScale = 1f;
-            SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+            SceneManager.LoadScene(SceneManager.GetActiveScene().name);
         }
     }
 

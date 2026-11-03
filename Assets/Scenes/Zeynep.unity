@@ -2160,6 +2160,7 @@ GameObject:
   - component: {fileID: 330585548}
   - component: {fileID: 330585547}
   - component: {fileID: 330585549}
+  - component: {fileID: 330585550}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -2322,6 +2323,15 @@ MonoBehaviour:
   fadedAlpha: 0.3
   fadeSpeed: 5
   sphereRadius: 0.25
+--- !u!45 &330585550
+Skybox:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 330585543}
+  m_Enabled: 1
+  m_CustomSkybox: {fileID: 2100000, guid: 85cf0b004bc4a654b9e501efcce47902, type: 2}
 --- !u!1001 &332461684
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -13809,6 +13819,7 @@ MonoBehaviour:
   objectiveUI: {fileID: 699320411}
   pondHealthManager: {fileID: 699320408}
   nextSceneName: Emirhan
+  buttonText: TAMAM
 --- !u!4 &1940628101 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 8334290621563257007, guid: 61d87800d3fee664c9a6653c6f5a78a6, type: 3}

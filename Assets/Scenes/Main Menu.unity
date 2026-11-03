@@ -663,7 +663,7 @@ MonoBehaviour:
   soundIconSprite: {fileID: 21300000, guid: b8af4c1f82f697b42954b1afba78e715, type: 3}
   sliderLineSprite: {fileID: 21300000, guid: 9aced4cbf0f37de4daf5940678e621f4, type: 3}
   sliderKnobSprite: {fileID: 21300000, guid: 7356d6ee39f05dc4d9289fae4e5458c3, type: 3}
-  menuMusicClip: {fileID: 0}
+  menuMusicClip: {fileID: 8300000, guid: bec6845603392b140b2ccc6abd742052, type: 3}
   sfxPreviewClip: {fileID: 0}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:

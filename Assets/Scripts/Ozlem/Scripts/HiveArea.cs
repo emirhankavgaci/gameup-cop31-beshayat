@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 public class HiveArea : MonoBehaviour
 {
@@ -9,7 +9,7 @@ public class HiveArea : MonoBehaviour
 
     [Header("Nectar Consumption")]
     [Tooltip("Her saniye kovandan tüketilen nektar miktarı")]
-    [SerializeField] private float drainRatePerSecond = 0.8f;
+    [SerializeField] private float drainRatePerSecond = 1.4f;
     [SerializeField] private bool autoDrain = true;
 
     public float CurrentNectar => currentNectar;

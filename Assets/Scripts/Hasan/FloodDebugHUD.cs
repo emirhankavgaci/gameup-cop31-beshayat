@@ -82,10 +82,7 @@ public class FloodDebugHUD : MonoBehaviour
 
     private void Update()
     {
-        if (Input.GetKeyDown(toggleKey))
-        {
-            showHud = !showHud;
-        }
+        // Sel mesafe çubuğunun daima ekranda kalması için F4 toggle kapatıldı
     }
 
     private void OnGUI()
@@ -96,7 +93,7 @@ public class FloodDebugHUD : MonoBehaviour
         EnsureStyles();
 
         DrawTopDistanceBar();
-        DrawInfoPanel();
+        // DrawInfoPanel() kaldırıldı: Kullanıcı isteği üzerine sağ üstteki HUD kaldırıldı, sadece sel mesafesi gösteriliyor.
     }
 
     private void DrawTopDistanceBar()

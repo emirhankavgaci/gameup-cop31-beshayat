@@ -345,12 +345,14 @@ public class MainMenuController : MonoBehaviour
         return null;
     }
 
+    private const string PATH_MENU_MUSIC = "Assets/Audio/Hasan/gamejamses/Comptine d'un autre été, l'après-midi - Yann Tiersen (320k).mp3";
+
     private void LoadAudioClips()
     {
         if (menuMusicClip == null)
         {
 #if UNITY_EDITOR
-            menuMusicClip = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/Zeynep/gamemusic.mp3");
+            menuMusicClip = AssetDatabase.LoadAssetAtPath<AudioClip>(PATH_MENU_MUSIC);
             if (menuMusicClip == null)
                 menuMusicClip = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/Hasan/gamejamses/musicloop.mp3");
 #endif
@@ -705,8 +707,20 @@ public class MainMenuController : MonoBehaviour
 
     public void StartGame()
     {
+        if (musicAudioSource != null && musicAudioSource.isPlaying)
+        {
+            musicAudioSource.Stop();
+        }
         string target = string.IsNullOrWhiteSpace(firstGameSceneName) ? "Zeynep" : firstGameSceneName.Trim();
         SceneManager.LoadScene(target);
+    }
+
+    private void OnDestroy()
+    {
+        if (musicAudioSource != null && musicAudioSource.isPlaying)
+        {
+            musicAudioSource.Stop();
+        }
     }
 
     public void OpenSettings()

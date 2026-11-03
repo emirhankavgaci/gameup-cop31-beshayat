@@ -3061,7 +3061,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TutorialTrigger
   tutorialId: tut_06_branch_transfer
   message: BE THE MONKEY AND GRAB BRANCH  <color=#FFD54A>[E]</color>
-  duration: 1
+  duration: 2
   fadeInTime: 0.25
   fadeOutTime: 0.25
   triggered: 0
@@ -81048,7 +81048,7 @@ MonoBehaviour:
   crosshairUI: {fileID: 0}
   attachCameraToEyeMesh: 1
   currentViewMode: 0
-  allowViewToggle: 1
+  allowViewToggle: 0
   viewToggleKey: 118
   thirdPersonOffset: {x: 0, y: 1.2, z: -3.2}
   viewTransitionDuration: 0.25
@@ -88332,7 +88332,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: adfedfb162124fc4c826f7488acbce23, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CactusHazard
-  instantRespawn: 1
+  instantRespawn: 0
   hitCooldown: 0.25
   fallbackRespawnFloodDistance: 60
   gameFlowManager: {fileID: 0}
@@ -139997,7 +139997,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: adfedfb162124fc4c826f7488acbce23, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CactusHazard
-  instantRespawn: 1
+  instantRespawn: 0
   hitCooldown: 0.25
   fallbackRespawnFloodDistance: 60
   gameFlowManager: {fileID: 0}
@@ -165371,7 +165371,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: adfedfb162124fc4c826f7488acbce23, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CactusHazard
-  instantRespawn: 1
+  instantRespawn: 0
   hitCooldown: 0.25
   fallbackRespawnFloodDistance: 60
   gameFlowManager: {fileID: 0}
@@ -196351,7 +196351,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: adfedfb162124fc4c826f7488acbce23, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CactusHazard
-  instantRespawn: 1
+  instantRespawn: 0
   hitCooldown: 0.25
   fallbackRespawnFloodDistance: 60
   gameFlowManager: {fileID: 1002095873}
@@ -240488,7 +240488,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: adfedfb162124fc4c826f7488acbce23, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CactusHazard
-  instantRespawn: 1
+  instantRespawn: 0
   hitCooldown: 0.25
   fallbackRespawnFloodDistance: 60
   gameFlowManager: {fileID: 0}
@@ -284678,25 +284678,12 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1854024018}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c5379c8a6ab5572429129a74ee53561d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerDebugHUD
-  motor: {fileID: 0}
-  playerLook: {fileID: 0}
-  animationDriver: {fileID: 0}
-  playerVisual: {fileID: 0}
-  wallRunHandler: {fileID: 0}
-  branchGrabHandler: {fileID: 0}
-  slideHandler: {fileID: 0}
-  showDebugHud: 1
-  toggleHudKey: 284
-  panelMarginX: 16
-  panelMarginY: 16
-  panelWidth: 310
-  panelHeight: 215
-  fontSize: 14
+  showDebugHud: 0
 --- !u!114 &1854024024
 MonoBehaviour:
   m_ObjectHideFlags: 0

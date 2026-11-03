@@ -181,6 +181,44 @@ public class PlayerMotor : MonoBehaviour
     public bool JumpPressedThisFrame => jumpPressedThisFrame;
     public bool HasBufferedJump => jumpBufferTimer > 0f;
 
+    private bool isMovementLocked = false;
+    public bool IsMovementLocked => isMovementLocked;
+
+    /// <summary>
+    /// Kaktüse çarpma veya ölüm durumunda oyuncunun hareketini tamamen kilitler/açar.
+    /// Kilitliyken tüm girdi, hız ve parkur mekanizmaları sıfırlanır ve dondurulur.
+    /// </summary>
+    public void SetMovementLocked(bool locked)
+    {
+        isMovementLocked = locked;
+        if (locked)
+        {
+            velocity = Vector3.zero;
+            horizontalInput = 0f;
+            verticalInput = 0f;
+            moveInputDirection = Vector3.zero;
+            jumpPressedThisFrame = false;
+            jumpBufferTimer = 0f;
+            coyoteTimer = 0f;
+            isSprinting = false;
+
+            if (slideHandler != null)
+            {
+                slideHandler.ForceCancelSlide();
+            }
+
+            if (branchGrabHandler != null)
+            {
+                branchGrabHandler.ForceResetBranchState();
+            }
+
+            if (wallRunHandler != null)
+            {
+                wallRunHandler.ForceResetWallRunState();
+            }
+        }
+    }
+
     private void Awake()
     {
         controller = GetComponent<CharacterController>();
@@ -208,6 +246,24 @@ public class PlayerMotor : MonoBehaviour
         if (playerLook != null)
         {
             playerLook.ProcessMouseLookForCurrentFrame();
+        }
+
+        // Kaktüse çarptığında veya ölüm respawn sürecindeyken oyuncunun hareketini tamamen dondur
+        if (isMovementLocked)
+        {
+            velocity = Vector3.zero;
+            horizontalInput = 0f;
+            verticalInput = 0f;
+            moveInputDirection = Vector3.zero;
+            jumpPressedThisFrame = false;
+            jumpBufferTimer = 0f;
+            isSprinting = false;
+
+            if (playerLook != null)
+            {
+                playerLook.UpdateCameraEffects(0f, true, false, 0f, dt);
+            }
+            return;
         }
 
         // 1. Oyuncu girdilerini (ve Space basışını tek bir yerde) EN BAŞTA oku
@@ -768,6 +824,7 @@ public class PlayerMotor : MonoBehaviour
 
     public void TeleportAndResetState(Vector3 targetPosition, Quaternion targetRotation)
     {
+        SetMovementLocked(false);
         SetCharacterControllerEnabled(false);
 
         if (branchGrabHandler != null)
@@ -818,6 +875,7 @@ public class PlayerMotor : MonoBehaviour
 
     public void ResetMotorVelocityAndState()
     {
+        SetMovementLocked(false);
         TeleportAndResetState(transform.position, transform.rotation);
     }
 
